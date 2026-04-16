@@ -59,13 +59,13 @@ rl.question('Which AI Agent will you use for the setup? (e.g. claude, cursor, co
 
   if (agent === 'claude') {
     if (fs.existsSync(claudeSetupSrc)) {
-      const dest = path.join(targetDir, '.claude.md');
+      const dest = path.join(targetDir, '.agentic-setup.md');
       fs.copyFileSync(claudeSetupSrc, dest);
-      console.log(`✅ Setup agent profile written to .claude.md`);
+      console.log(`✅ Setup agent profile written to .agentic-setup.md`);
       console.log(`\n${green}🎉 Done! To start the conversational setup:${reset}`);
       console.log(`${cyan}\t1. Type 'claude'${reset}`);
-      console.log(`${cyan}\t2. It should automatically detect Setup Mode and prompt you.${reset}`);
-      console.log(`\nNote: The agent expects templates in .agentic-pdlc/templates.\n`);
+      console.log(`${cyan}\t2. Ask Claude to "read .agentic-setup.md to enter Setup Mode."${reset}`);
+      console.log(`\nNote: Once setup is completed, the agent will typically delete .agentic-setup.md to keep your root clean.\n`);
     } else {
       console.error(`❌ Could not find claude instruction file at ${claudeSetupSrc}`);
     }
