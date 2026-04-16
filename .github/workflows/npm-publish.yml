@@ -8,7 +8,6 @@ jobs:
   publish-npm:
     name: Publish NPM Package
     runs-on: ubuntu-latest
-    environment: npm-publish
     permissions:
       contents: read
       id-token: write # Required for NPM provenance tracking
@@ -21,6 +20,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22.x'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Sync Version with GitHub Release Tag
         run: |
@@ -34,3 +34,5 @@ jobs:
 
       - name: Publish to NPM Registry
         run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
