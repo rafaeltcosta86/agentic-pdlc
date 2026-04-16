@@ -1,0 +1,38 @@
+name: Publish to NPM
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish-npm:
+    name: Publish NPM Package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Required for NPM provenance tracking
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Sync Version with GitHub Release Tag
+        run: |
+          # Strip 'v' from tag (e.g., v1.0.2 -> 1.0.2)
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "Setting package version to $VERSION"
+          npm version $VERSION --no-git-tag-version
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Publish to NPM Registry
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
