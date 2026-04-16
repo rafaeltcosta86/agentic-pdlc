@@ -21,6 +21,6 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/rafaeltcosta86/agentic-pdlc.git"
+    "url": "git+https://github.com/rafaeltcosta86/agentic-pdlc.git"
   }
 }
