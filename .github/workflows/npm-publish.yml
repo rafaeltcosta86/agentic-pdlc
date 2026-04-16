@@ -8,6 +8,7 @@ jobs:
   publish-npm:
     name: Publish NPM Package
     runs-on: ubuntu-latest
+    environment: npm-publish
     permissions:
       contents: read
       id-token: write # Required for NPM provenance tracking
