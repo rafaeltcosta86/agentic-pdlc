@@ -39,7 +39,7 @@ function copyDirSync(src, dest) {
   }
 }
 
-rl.question('Which AI Agent do you use to bootstrap? (claude / cursor): ', (answer) => {
+rl.question('Which AI Agent will you use for the setup? (e.g. claude, cursor, copilot, or other): ', (answer) => {
   const agent = answer.trim().toLowerCase();
   
   console.log(`\n${yellow}Scaffolding Agentic PDLC into your project...${reset}`);
