@@ -1,52 +1,78 @@
-# Agentic PDLC Framework
+# 🤖 Agentic PDLC Framework
 
-A reusable Product Development Life Cycle (PDLC) framework designed for solo developers building applications with AI agents. 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 
-This framework standardizes how your agents interpret tasks, understand project invariants, and collaborate seamlessly across the idea-to-production journey.
+> **Supercharge your solo development with a fully automated, AI-native Product Development Life Cycle (PDLC).**
 
-## Overview
+Building software with AI agents is the future, but raw context windows aren't enough. Without structure, agents lose track, write inconsistent code, and break invariants. 
 
-The Agentic PDLC bridges the gap between high-level roadmaps and deterministic execution. It splits the workflow into two clear scopes:
+The **Agentic PDLC Framework** is a lightweight, universal boilerplate that standardizes how your AI assistants (Claude, Cursor, Copilot, etc.) interpret tasks, respect your project's rules, and collaborate seamlessly from an idea to production.
 
-1. **Upstream (Ideas → Specs):** Conversational AI (e.g., Claude Code, Cursor chat) acts as a brainstorm partner to flesh out user stories and technical specs.
-2. **Downstream (Specs → Prod):** Implementation agents (e.g., Jules, Sweep) act on approved, deterministic specs using an automated GitHub Project board flow.
+---
 
-## Multi-Assistant Support
+## 🌟 Why use this framework?
 
-The framework operates via adapters and templates tailored to specific platforms. However, the universal truth for your project lies in `AGENTS.md` and `docs/pdlc.md`.
+- 🧠 **Contextual Perfection**: Gives every AI agent a single "source of truth" to abide by (`AGENTS.md`), preventing hallucinated dependencies or broken architectural rules.
+- 🔄 **Automated Handoffs**: Built-in GitHub Actions automate the flow between brainstorming an idea and having an autonomous agent implement it.
+- ⚡ **Multi-Assistant Support**: Works flawlessly whether you use Claude Code in the terminal, Cursor as your IDE, or autonomous sweeper agents.
+- 🛠️ **Setup in Seconds**: Our interactive "Setup Mode" can scaffold your entire product context dynamically!
 
-| Assistant | Instruction File | Setup |
-|---|---|---|
-| **Claude Code** | `CLAUDE.md` + Claude Skill | Uses `adapters/claude-code/skill.md` (includes Setup Mode) |
+---
+
+## 🏗️ How It Works: The Two Scopes
+
+The Agentic PDLC bridges the gap between high-level human ideas and deterministic AI execution. It splits the workflow into two clear phases:
+
+### 🌊 1. Upstream (Idea → Spec)
+You use conversational AI (e.g., **Claude Code**, **Cursor Chat**) as your brainstorming partner. Together, you flesh out user stories, acceptance criteria, and technical specifications until they are rock solid.
+
+### 🏭 2. Downstream (Spec → Production)
+Once the spec is approved, autonomous implementation agents (e.g., **Jules**, **Sweep**, **Copilot Workspace**) pick up the task via an automated GitHub Project board flow. They execute the deterministic specs while being strictly governed by your project's invariants.
+
+---
+
+## 🤝 Universal Multi-Assistant Support
+
+The framework relies on a universal source of truth (`AGENTS.md`), but uses elegant adapters to teach specific AI platforms how to read them.
+
+| AI Assistant | Instruction File | How it Integrates |
+|:---|:---|:---|
+| **Claude Code** | `CLAUDE.md` + Claude Skill | Uses `adapters/claude-code/skill.md` *(Includes Auto-Setup Mode)* |
 | **Cursor** | `.cursor/rules/*.md` | Uses `adapters/cursor/rules.md` |
 | **GitHub Copilot** | `.github/copilot-instructions.md` | Uses `templates/.github/copilot-instructions.md` |
-| **Codex (OpenAI)** | `AGENTS.md` | Reads `AGENTS.md` natively |
-| **Antigravity (Google)**| `AGENTS.md` | Reads `AGENTS.md` natively |
+| **Codex / Antigravity** | `AGENTS.md` | Reads the contract natively |
 
-All integrations converge upon the same standardized templates to ensure context is maintained identically across any AI you decide to pair with.
+*No matter which AI you pair with, they will all share the exact same context.*
 
-## Project Structure
+---
 
-This repository provides all the templates you need. Once initialized in your target project, the expected structure is:
+## 📂 Expected Structure
 
-```
+Once initialized in your project, the framework provides the following layout:
+
+```text
 your-project/
-  AGENTS.md                          ← The universal contract mapping rules to any AI.
-  docs/
-    pdlc.md                          ← The PDLC pipeline defining board columns and IDs.
-  .github/
-    workflows/
-      project-automation.yml         ← Automates GitHub Project card movement (Reviews, Merges).
-      agent-trigger.yml              ← Triggers your implementation agent upon `spec:approved`.
-      ci.yml                         ← The Sentinel enforcing invariants and tests.
+├── AGENTS.md                          ← The universal contract mapping rules to any AI.
+├── docs/
+│   └── pdlc.md                        ← The PDLC pipeline defining board columns and IDs.
+└── .github/
+    └── workflows/
+        ├── project-automation.yml     ← Automates GitHub Project card movement.
+        ├── agent-trigger.yml          ← Wakes up your agent upon `spec:approved`.
+        └── ci.yml                     ← The Sentinel enforcing invariants and tests.
 ```
 
-## Setup Instructions
+---
 
-To implement the framework in your repository, refer to the detailed manual instructions in [`SETUP.md`](SETUP.md).
+## 🚀 Quick Start
 
-> **Note for Claude Code users:** You can load the skill found in `adapters/claude-code/skill.md` in a fresh repository. The tool will detect missing artifacts and orchestrate an interactive **Setup Mode**, prompting you to automatically generate all files.
+Ready to build at the speed of thought? Head over to our **[Setup Guide](SETUP.md)** to implement the framework in your repository.
 
-## Contributing
+> **💡 Magic Setup for Claude Code:** If you use Claude Code, simply drop `adapters/claude-code/skill.md` into a fresh repository. Claude will detect missing artifacts and launch an interactive **Setup Mode**, prompting you to automatically generate all structured files.
 
-Please check [`CONTRIBUTING.md`](CONTRIBUTING.md) for details on how to improve this framework.
+---
+
+## ❤️ Contributing
+
+We welcome improvements from other solo-founders and AI-engineers! Please check our **[Contributing Guidelines](CONTRIBUTING.md)** on how to submit PRs, add new AI platform adapters, or improve the documentation.
