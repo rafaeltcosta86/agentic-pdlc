@@ -67,9 +67,15 @@ your-project/
 
 ## 🚀 Quick Start
 
-Ready to build at the speed of thought? Head over to our **[Setup Guide](SETUP.md)** to implement the framework in your repository.
+Ready to build at the speed of thought? Scaffold the entire framework interactively without copy-pasting code!
 
-> **💡 Magic Setup for Claude Code:** If you use Claude Code, simply drop `adapters/claude-code/skill.md` into a fresh repository. Claude will detect missing artifacts and launch an interactive **Setup Mode**, prompting you to automatically generate all structured files.
+Simply run our installer in the root of your project:
+
+```bash
+npx create-agentic-pdlc
+```
+
+> **💡 How it works:** The CLI acts as a bridge. It asks which AI assistant you prefer (e.g., Claude Code, Cursor), drops the required system instructions into your workspace, and hands control over to your AI. Your AI will then chat with you to customize your framework!
 
 ---
 

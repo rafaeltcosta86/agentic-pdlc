@@ -48,43 +48,22 @@ gh label create "architecture-violation" --repo $REPO --color "d93f0b" --descrip
 
 ---
 
-## Step 3 — Copy and Fill the Artifacts
+## Step 3 — Scaffold the Framework Files
 
-### 3a. `AGENTS.md`
+Instead of manually copying templates around, you can interactively inject the framework into your project using our open-source NPM tool.
 
-Copy `templates/AGENTS.md` from the `agentic-pdlc` framework into the root of your target repository.
-
-Replace the placeholders:
-- `{{PROJECT_NAME}}` — Your project name
-- `{{PROJECT_DESCRIPTION}}` — 2-3 lines describing the project
-- `{{PROJECT_STRUCTURE}}` — Relevant directory structure mapping
-- `{{INVARIANTS}}` — Non-negotiable business rules (e.g., Human-in-the-Loop)
-- `{{TEST_COMMAND}}` — Test command (e.g., `pnpm test`)
-- `{{LINT_COMMAND}}` — Lint command (e.g., `pnpm lint`)
-- `{{BUILD_COMMAND}}` — Build command (e.g., `pnpm build`)
-
-### 3b. `docs/pdlc.md`
+Run the following command in the root of your project:
 
 ```bash
-mkdir -p docs
+npx create-agentic-pdlc
 ```
-Copy `templates/docs/pdlc.md` into `docs/pdlc.md`.
 
-Replace the placeholders with the column IDs obtained in Step 1.
+The CLI will:
+1. Ask you which AI Agent you use (Claude Code, Cursor, etc.).
+2. Copy the system instructions pointing to our interactive Setup Mode.
+3. Automatically download the base templates to `.agentic-pdlc/templates/`.
 
-### 3c. GitHub Actions
-
-```bash
-mkdir -p .github/workflows
-```
-Copy all files from `templates/.github/workflows/` into `.github/workflows/`.
-
-Replace the following in the workflow YAML files:
-- `{{PROJECT_ID}}`, `{{STATUS_FIELD_ID}}` — Board IDs
-- `{{ID_CODE_REVIEW}}`, `{{ID_PULL_REQUEST}}`, `{{ID_PRODUCAO}}` — Option IDs for the columns
-- `{{AGENT_HANDLE}}` — The mention handle for the implementation agent (e.g., `@google-labs-jules`)
-- `{{IMPLEMENTATION_AGENT_NAME}}` — Agent name (e.g., `Jules`)
-- `{{TEST_COMMAND}}`, `{{LINT_COMMAND}}`, `{{BUILD_COMMAND}}` — In `ci.yml`
+Once the CLI finishes, it will instruct you to open your AI agent and run the **Setup Mode**. Your AI agent will then ask you the required project variables interactively and generate `AGENTS.md`, `docs/pdlc.md`, and the GitHub Actions for you!
 
 ---
 

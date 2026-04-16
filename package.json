@@ -1,0 +1,26 @@
+{
+  "name": "create-agentic-pdlc",
+  "version": "1.0.0",
+  "description": "Scaffold the Agentic PDLC framework effortlessly",
+  "type": "commonjs",
+  "bin": {
+    "create-agentic-pdlc": "./bin/cli.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "agentic",
+    "pdlc",
+    "claude",
+    "cursor",
+    "copilot",
+    "framework"
+  ],
+  "author": "Rafael Costa",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rafaeltcosta86/agentic-pdlc.git"
+  }
+}
