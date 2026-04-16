@@ -1,0 +1,150 @@
+name: PDLC Board Automation
+
+on:
+  pull_request:
+    types: [opened, reopened, closed]
+  pull_request_review:
+    types: [submitted]
+
+env:
+  PROJECT_ID: "{{PROJECT_ID}}"
+  STATUS_FIELD_ID: "{{STATUS_FIELD_ID}}"
+  STATUS_CODE_REVIEW: "{{ID_CODE_REVIEW}}"
+  STATUS_PULL_REQUEST: "{{ID_PULL_REQUEST}}"
+  STATUS_PRODUCAO: "{{ID_PRODUCAO}}"
+
+jobs:
+  # PR Opened → Move linked issue to Code Review
+  move-card-on-pr-open:
+    name: Open PR → Code Review
+    if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'reopened')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Move linked issue to Code Review
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const { owner, repo } = context.repo;
+
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+            const body = pr.body ?? '';
+
+            // Extract issues linked via "Closes #N", "Fixes #N", "Resolves #N"
+            const linkedIssues = [...body.matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)]
+              .map(m => parseInt(m[1]));
+
+            const moveItem = async (nodeId) => {
+              const { addProjectV2ItemById: { item } } = await github.graphql(`
+                mutation($p: ID!, $c: ID!) {
+                  addProjectV2ItemById(input: {projectId: $p, contentId: $c}) { item { id } }
+                }`, { p: process.env.PROJECT_ID, c: nodeId });
+
+              await github.graphql(`
+                mutation($p: ID!, $i: ID!, $f: ID!, $v: ProjectV2FieldValue!) {
+                  updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f, value: $v}) {
+                    projectV2Item { id }
+                  }
+                }`, {
+                  p: process.env.PROJECT_ID, i: item.id, f: process.env.STATUS_FIELD_ID,
+                  v: { singleSelectOptionId: process.env.STATUS_CODE_REVIEW }
+                });
+            };
+
+            if (linkedIssues.length > 0) {
+              for (const n of linkedIssues) {
+                const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
+                await moveItem(issue.node_id);
+                console.log(`Issue #${n} → Code Review`);
+              }
+            } else {
+              await moveItem(pr.node_id);
+              console.log(`PR #${prNumber} → Code Review (no linked issue)`);
+            }
+
+            await github.rest.issues.addLabels({ owner, repo, issue_number: prNumber, labels: ['pr:review'] }).catch(() => {});
+
+  # Review Approved → Pull Request
+  move-card-on-review-approved:
+    name: Approved PR → Pull Request
+    if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Move issue to Pull Request
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const { owner, repo } = context.repo;
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+            const body = pr.body ?? '';
+            const linkedIssues = [...body.matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)].map(m => parseInt(m[1]));
+
+            const moveItem = async (nodeId) => {
+              const { addProjectV2ItemById: { item } } = await github.graphql(`
+                mutation($p: ID!, $c: ID!) {
+                  addProjectV2ItemById(input: {projectId: $p, contentId: $c}) { item { id } }
+                }`, { p: process.env.PROJECT_ID, c: nodeId });
+              await github.graphql(`
+                mutation($p: ID!, $i: ID!, $f: ID!, $v: ProjectV2FieldValue!) {
+                  updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f, value: $v}) {
+                    projectV2Item { id }
+                  }
+                }`, { p: process.env.PROJECT_ID, i: item.id, f: process.env.STATUS_FIELD_ID,
+                      v: { singleSelectOptionId: process.env.STATUS_PULL_REQUEST } });
+            };
+
+            if (linkedIssues.length > 0) {
+              for (const n of linkedIssues) {
+                const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
+                await moveItem(issue.node_id);
+              }
+            } else {
+              await moveItem(pr.node_id);
+            }
+
+            try { await github.rest.issues.removeLabel({ owner, repo, issue_number: prNumber, name: 'pr:review' }); } catch {}
+            await github.rest.issues.addLabels({ owner, repo, issue_number: prNumber, labels: ['pr:approved'] }).catch(() => {});
+
+  # PR Merged → Production
+  move-card-on-pr-merge:
+    name: Merged PR → Production
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Move issue to Production
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const { owner, repo } = context.repo;
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+            const body = pr.body ?? '';
+            const linkedIssues = [...body.matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)].map(m => parseInt(m[1]));
+
+            const moveItem = async (nodeId) => {
+              const { addProjectV2ItemById: { item } } = await github.graphql(`
+                mutation($p: ID!, $c: ID!) {
+                  addProjectV2ItemById(input: {projectId: $p, contentId: $c}) { item { id } }
+                }`, { p: process.env.PROJECT_ID, c: nodeId });
+              await github.graphql(`
+                mutation($p: ID!, $i: ID!, $f: ID!, $v: ProjectV2FieldValue!) {
+                  updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f, value: $v}) {
+                    projectV2Item { id }
+                  }
+                }`, { p: process.env.PROJECT_ID, i: item.id, f: process.env.STATUS_FIELD_ID,
+                      v: { singleSelectOptionId: process.env.STATUS_PRODUCAO } });
+            };
+
+            if (linkedIssues.length > 0) {
+              for (const n of linkedIssues) {
+                const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
+                await moveItem(issue.node_id);
+                console.log(`Issue #${n} → Production`);
+              }
+            } else {
+              await moveItem(pr.node_id);
+            }

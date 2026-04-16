@@ -1,0 +1,29 @@
+name: Sentinel / CI
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  validate:
+    name: Run tests and linters
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup environment
+        run: echo "Replace this with your language/toolchain setup (e.g., actions/setup-node)"
+        
+      - name: Install dependencies
+        run: echo "Replace this with your package manager install command"
+
+      - name: Run Linters
+        run: {{LINT_COMMAND}}
+
+      - name: Build
+        run: {{BUILD_COMMAND}}
+
+      - name: Run Tests
+        run: {{TEST_COMMAND}}
