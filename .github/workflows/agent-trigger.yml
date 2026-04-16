@@ -1,0 +1,77 @@
+name: Trigger Implementation Agent
+
+# Triggers when spec:approved is added to an issue (Gate 2)
+# or when an architecture-violation issue is modified (Sentinel flow)
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  trigger-implementation-agent:
+    name: Trigger {{IMPLEMENTATION_AGENT_NAME}} for implementation
+    # Runs only when spec:approved is added
+    if: github.event.label.name == 'spec:approved'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment on issue to trigger agent
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issueNumber = context.payload.issue.number;
+            const issueTitle = context.payload.issue.title;
+
+            const body = [
+              `{{AGENT_HANDLE}} The spec for this issue has been approved. Please implement it exactly as described in the body above.`,
+              '',
+              '**Mandatory steps before you begin:**',
+              '1. `git fetch origin && git checkout main && git pull` — always start from the current HEAD',
+              '2. Read `AGENTS.md` — mandatory rules for agents in this repository',
+              '3. Read `docs/pdlc.md` — Definition of Done and invariants reference',
+              '',
+              '**Rules:**',
+              '- Implement strictly what the Acceptance Criteria describes',
+              '- Run `{{TEST_COMMAND}}` before opening the Pull Request',
+              `- Include \`Closes #${issueNumber}\` in the PR body`,
+              '- Create a descriptive branch branching from `main`',
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body,
+            });
+
+  trigger-agent-on-violation:
+    name: Trigger {{IMPLEMENTATION_AGENT_NAME}} for architecture violation
+    # Runs when architecture-violation is added (Sentinel flow)
+    if: github.event.label.name == 'architecture-violation'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment on issue to trigger agent
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issueNumber = context.payload.issue.number;
+
+            const body = [
+              `{{AGENT_HANDLE}} Please fix the architecture violation described in this issue.`,
+              '',
+              '**Mandatory steps before you begin:**',
+              '1. `git fetch origin && git checkout main && git pull` — always start from the current HEAD',
+              '2. Read `AGENTS.md` — mandatory rules for agents in this repository',
+              '',
+              '**Rules:**',
+              '- Fix only what the violation points out — do not refactor unrelated code',
+              '- Run `{{TEST_COMMAND}}` before opening the Pull Request',
+              `- Include \`Closes #${issueNumber}\` in the PR body`,
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body,
+            });
