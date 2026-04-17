@@ -25,12 +25,14 @@ jobs:
     name: Upstream Comment Marker → Move Card
     if: github.event_name == 'issue_comment' && github.event.action == 'created'
     runs-on: ubuntu-latest
+    env:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
       - name: Detect Marker and Move Issue
-        if: ${{ secrets.PROJECT_TOKEN != '' }}
+        if: ${{ env.PROJECT_TOKEN != '' }}
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.PROJECT_TOKEN }}
+          github-token: ${{ env.PROJECT_TOKEN }}
           script: |
             const body = context.payload.comment.body;
             let targetStatusId = null;
@@ -83,12 +85,14 @@ jobs:
     name: Open PR → Code Review
     if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'reopened')
     runs-on: ubuntu-latest
+    env:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
       - name: Move linked issue to Code Review
-        if: ${{ secrets.PROJECT_TOKEN != '' }}
+        if: ${{ env.PROJECT_TOKEN != '' }}
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.PROJECT_TOKEN }}
+          github-token: ${{ env.PROJECT_TOKEN }}
           script: |
             const prNumber = context.payload.pull_request.number;
             const { owner, repo } = context.repo;
@@ -135,12 +139,14 @@ jobs:
     name: Approved PR → Pull Request
     if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
     runs-on: ubuntu-latest
+    env:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
       - name: Move issue to Pull Request
-        if: ${{ secrets.PROJECT_TOKEN != '' }}
+        if: ${{ env.PROJECT_TOKEN != '' }}
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.PROJECT_TOKEN }}
+          github-token: ${{ env.PROJECT_TOKEN }}
           script: |
             const prNumber = context.payload.pull_request.number;
             const { owner, repo } = context.repo;
@@ -179,12 +185,14 @@ jobs:
     name: Merged PR → Production
     if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    env:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
       - name: Move issue to Production
-        if: ${{ secrets.PROJECT_TOKEN != '' }}
+        if: ${{ env.PROJECT_TOKEN != '' }}
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.PROJECT_TOKEN }}
+          github-token: ${{ env.PROJECT_TOKEN }}
           script: |
             const prNumber = context.payload.pull_request.number;
             const { owner, repo } = context.repo;
