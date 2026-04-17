@@ -5,15 +5,79 @@ on:
     types: [opened, reopened, closed]
   pull_request_review:
     types: [submitted]
+  issue_comment:
+    types: [created]
 
 env:
   PROJECT_ID: "{{PROJECT_ID}}"
   STATUS_FIELD_ID: "{{STATUS_FIELD_ID}}"
+  STATUS_EXPLORATION: "{{ID_EXPLORATION}}"
+  STATUS_BRAINSTORMING: "{{ID_BRAINSTORMING}}"
+  STATUS_DETAILING: "{{ID_DETAILING}}"
+  STATUS_APPROVAL: "{{ID_APPROVAL}}"
   STATUS_CODE_REVIEW: "{{ID_CODE_REVIEW}}"
   STATUS_PULL_REQUEST: "{{ID_PULL_REQUEST}}"
   STATUS_PRODUCAO: "{{ID_PRODUCAO}}"
 
 jobs:
+  # Issue Comment → Move Upstream
+  move-card-on-comment:
+    name: Upstream Comment Marker → Move Card
+    if: github.event_name == 'issue_comment' && github.event.action == 'created'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Detect Marker and Move Issue
+        if: ${{ secrets.PROJECT_TOKEN != '' }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const body = context.payload.comment.body;
+            let targetStatusId = null;
+            let stageName = null;
+
+            if (body.includes('<!-- PDLC:stage:exploration -->')) {
+              targetStatusId = process.env.STATUS_EXPLORATION;
+              stageName = 'Exploration';
+            } else if (body.includes('<!-- PDLC:stage:brainstorming -->')) {
+              targetStatusId = process.env.STATUS_BRAINSTORMING;
+              stageName = 'Brainstorming';
+            } else if (body.includes('<!-- PDLC:stage:detailing -->')) {
+              targetStatusId = process.env.STATUS_DETAILING;
+              stageName = 'Detailing';
+            } else if (body.includes('<!-- PDLC:stage:approval -->')) {
+              targetStatusId = process.env.STATUS_APPROVAL;
+              stageName = 'Approval';
+            }
+
+            if (!targetStatusId) {
+              console.log('No upstream PDLC marker found. Skipping.');
+              return;
+            }
+
+            const { issue: { number, node_id } } = context.payload;
+
+            const moveItem = async (nodeId, statusId) => {
+              const { addProjectV2ItemById: { item } } = await github.graphql(`
+                mutation($p: ID!, $c: ID!) {
+                  addProjectV2ItemById(input: {projectId: $p, contentId: $c}) { item { id } }
+                }`, { p: process.env.PROJECT_ID, c: nodeId });
+
+              await github.graphql(`
+                mutation($p: ID!, $i: ID!, $f: ID!, $v: ProjectV2FieldValue!) {
+                  updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f, value: $v}) {
+                    projectV2Item { id }
+                  }
+                }`, {
+                  p: process.env.PROJECT_ID, i: item.id, f: process.env.STATUS_FIELD_ID,
+                  v: { singleSelectOptionId: statusId }
+                });
+            };
+
+            await moveItem(node_id, targetStatusId);
+            console.log(`Issue #${number} moved to ${stageName}`);
+
+
   # PR Opened → Move linked issue to Code Review
   move-card-on-pr-open:
     name: Open PR → Code Review
@@ -21,6 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Move linked issue to Code Review
+        if: ${{ secrets.PROJECT_TOKEN != '' }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.PROJECT_TOKEN }}
@@ -72,6 +137,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Move issue to Pull Request
+        if: ${{ secrets.PROJECT_TOKEN != '' }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.PROJECT_TOKEN }}
@@ -115,6 +181,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Move issue to Production
+        if: ${{ secrets.PROJECT_TOKEN != '' }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.PROJECT_TOKEN }}

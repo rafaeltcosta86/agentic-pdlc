@@ -29,6 +29,7 @@ Always start from the current `main` HEAD. Never work over stale snapshots.
 
 ## Mandatory Workflow
 
+0. **Identity**: Always prefix your GitHub comments with `🤖 **Agent:** ` to distinguish yourself.
 1. Read the issue entirely — understand its type (US/BUG/TASK/SPIKE) and the Acceptance Criteria.
 2. Read `docs/pdlc.md` — understand the PDLC and the Definition of Done in this project.
 3. Read all files mentioned in the issue's technical context.
