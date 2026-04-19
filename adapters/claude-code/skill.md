@@ -22,7 +22,7 @@ If any of these files are missing, you are in **Setup Mode**. Do not proceed wit
    - **Project basics:** Project Name, Description, Technical Stack (Structure).
    - **Commands:** Test command, Lint command, Build command.
    - **Invariants:** Critical business rules agents must never violate (e.g. Human-in-the-loop).
-   - **Board IDs:** PROJECT_ID, STATUS_FIELD_ID, column option IDs (provide standard PDLC options: Idea, Exploration, Brainstorming, Detail Solution, Approval, Development, Testing, Code Review, Pull Request, Production). Allow user to answer "skip", which means you leave the placeholders intact.
+   - **Board IDs:** PROJECT_ID, STATUS_FIELD_ID, column option IDs (provide standard PDLC options: Idea, Exploration, Brainstorming, Detail Solution, Approval, Development, Testing, Code Review / PR, Merge, Production). Allow user to answer "skip", which means you leave the placeholders intact.
    - **Implementation agent handle:** e.g., `@google-labs-jules`, or "none".
 3. Generate and write the missing files replacing the `{{SCREAMING_SNAKE_CASE}}` placeholders using the templates logic you know (usually they reside in standard Agentic PDLC templates).
 4. Offer to run the `gh` commands for labels (`spec:approved`, `pr:review`, `pr:approved`, `architecture-violation`).

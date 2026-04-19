@@ -15,8 +15,8 @@ env:
   STATUS_BRAINSTORMING: "{{ID_BRAINSTORMING}}"
   STATUS_DETAILING: "{{ID_DETAILING}}"
   STATUS_APPROVAL: "{{ID_APPROVAL}}"
-  STATUS_CODE_REVIEW: "{{ID_CODE_REVIEW}}"
-  STATUS_PULL_REQUEST: "{{ID_PULL_REQUEST}}"
+  STATUS_CODE_REVIEW_PR: "{{ID_CODE_REVIEW_PR}}"
+  STATUS_MERGE: "{{ID_MERGE}}"
   STATUS_PRODUCAO: "{{ID_PRODUCAO}}"
 
 jobs:
@@ -80,15 +80,15 @@ jobs:
             console.log(`Issue #${number} moved to ${stageName}`);
 
 
-  # PR Opened → Move linked issue to Code Review
+  # PR Opened → Move linked issue to Code Review / PR
   move-card-on-pr-open:
-    name: Open PR → Code Review
+    name: Open PR → Code Review / PR
     if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'reopened')
     runs-on: ubuntu-latest
     env:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
-      - name: Move linked issue to Code Review
+      - name: Move linked issue to Code Review / PR
         if: ${{ env.PROJECT_TOKEN != '' }}
         uses: actions/github-script@v7
         with:
@@ -117,7 +117,7 @@ jobs:
                   }
                 }`, {
                   p: process.env.PROJECT_ID, i: item.id, f: process.env.STATUS_FIELD_ID,
-                  v: { singleSelectOptionId: process.env.STATUS_CODE_REVIEW }
+                  v: { singleSelectOptionId: process.env.STATUS_CODE_REVIEW_PR }
                 });
             };
 
@@ -125,24 +125,24 @@ jobs:
               for (const n of linkedIssues) {
                 const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
                 await moveItem(issue.node_id);
-                console.log(`Issue #${n} → Code Review`);
+                console.log(`Issue #${n} → Code Review / PR`);
               }
             } else {
               await moveItem(pr.node_id);
-              console.log(`PR #${prNumber} → Code Review (no linked issue)`);
+              console.log(`PR #${prNumber} → Code Review / PR (no linked issue)`);
             }
 
             await github.rest.issues.addLabels({ owner, repo, issue_number: prNumber, labels: ['pr:review'] }).catch(() => {});
 
-  # Review Approved → Pull Request
+  # Review Approved → Merge
   move-card-on-review-approved:
-    name: Approved PR → Pull Request
+    name: Approved PR → Merge
     if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
     runs-on: ubuntu-latest
     env:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
-      - name: Move issue to Pull Request
+      - name: Move issue to Merge
         if: ${{ env.PROJECT_TOKEN != '' }}
         uses: actions/github-script@v7
         with:
@@ -165,7 +165,7 @@ jobs:
                     projectV2Item { id }
                   }
                 }`, { p: process.env.PROJECT_ID, i: item.id, f: process.env.STATUS_FIELD_ID,
-                      v: { singleSelectOptionId: process.env.STATUS_PULL_REQUEST } });
+                      v: { singleSelectOptionId: process.env.STATUS_MERGE } });
             };
 
             if (linkedIssues.length > 0) {

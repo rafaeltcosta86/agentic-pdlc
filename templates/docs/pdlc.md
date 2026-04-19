@@ -11,13 +11,13 @@
 | ✅ Approval | Spec ready, awaiting `spec:approved` label | Claude Code |
 | ⚙️ Development | Agent implementing the spec | Jules / Implementation Agent |
 | 🧪 Testing | CI pipeline running | GitHub Actions |
-| 👁 Code Review | PR opened, awaiting human review | GitHub Actions |
-| 🔀 Pull Request | PR approved, awaiting merge | GitHub Actions |
+| 👁 Code Review / PR | PR opened, awaiting human review | GitHub Actions |
+| 🔀 Merge | PR approved, awaiting merge | GitHub Actions |
 | 🚀 Production | Merged | GitHub Actions |
 
 <!--
 Adapt columns as needed. The functional baseline is:
-💡 Idea → ⚙️ Development → 👁 Code Review → 🚀 Production
+💡 Idea → ⚙️ Development → 👁 Code Review / PR → 🚀 Production
 -->
 
 ## Board Identifiers (GitHub Projects)
@@ -39,8 +39,8 @@ REPO         = {{REPO_OWNER}}/{{REPO_NAME}}
 | ✅ Approval | `{{ID_APPROVAL}}` |
 | ⚙️ Development | `{{ID_DEVELOPMENT}}` |
 | 🧪 Testing | `{{ID_TESTING}}` |
-| 👁 Code Review | `{{ID_CODE_REVIEW}}` |
-| 🔀 Pull Request | `{{ID_PULL_REQUEST}}` |
+| 👁 Code Review / PR | `{{ID_CODE_REVIEW_PR}}` |
+| 🔀 Merge | `{{ID_MERGE}}` |
 | 🚀 Production | `{{ID_PRODUCTION}}` |
 
 ## Agent × Phase Mapping
@@ -49,7 +49,7 @@ REPO         = {{REPO_OWNER}}/{{REPO_NAME}}
 |---|---|
 | 💡 → 📐 (upstream) | Claude (or ideation agent) in conversational session |
 | ⚙️ → 🔀 (downstream) | {{IMPLEMENTATION_AGENT}} (e.g. Jules `@google-labs-jules`) |
-| 👁 Code Review | Human (you) |
+| 👁 Code Review / PR | Human (you) |
 | Automatic transitions | GitHub Actions |
 
 ## Issue Title Conventions
