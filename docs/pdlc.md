@@ -4,12 +4,12 @@
 
 | Column | Meaning | Who moves the card |
 |---|---|---|
-| 💡 Idea | Backlog — every new issue lands here | Claude Code / Manual |
-| 🔍 Exploration | Claude is analyzing code and context | Claude Code |
-| 🧠 Brainstorming | Claude proposed approaches, awaiting PM gate | Claude Code |
-| 📐 Detail Solution | Claude is writing the technical spec | Claude Code |
-| ✅ Approval | Spec ready, awaiting `spec:approved` label | Claude Code |
-| ⚙️ Development | Agent implementing the spec | Jules / Implementation Agent |
+| 💡 Idea | Backlog — every new issue lands here | Manual |
+| 🔍 Exploration | Claude is analyzing code and context | Label `stage:exploration` |
+| 🧠 Brainstorming | Claude proposed approaches, awaiting PM gate | Label `stage:brainstorming` |
+| 📐 Detail Solution | Claude is writing the technical spec | Label `stage:detailing` |
+| ✅ Approval | Spec ready, awaiting `spec:approved` label | Label `spec:approved` |
+| ⚙️ Development | Agent implementing the spec | Label `stage:development` |
 | 🧪 Testing | CI pipeline running | GitHub Actions |
 | 👁 Code Review / PR | PR opened, awaiting human review | GitHub Actions |
 | 🔀 Merge | PR approved, awaiting merge | GitHub Actions |
@@ -67,6 +67,10 @@ REPO         = {{REPO_OWNER}}/{{REPO_NAME}}
 
 | Label | Entity | Color | Meaning |
 |---|---|---|---|
+| `stage:exploration` | Issue | Purple | Issue is being evaluated |
+| `stage:brainstorming` | Issue | Pink | Proposed approaches awaiting PM gate |
+| `stage:detailing` | Issue | Blue | Technical spec is being written |
+| `stage:development` | Issue | Orange | Agent is implementing the spec |
 | `spec:approved` | Issue | Green | Gate 2 — agent is cleared to implement |
 | `pr:review` | PR | Yellow | Awaiting code review |
 | `pr:approved` | PR | Green | Code review approved |

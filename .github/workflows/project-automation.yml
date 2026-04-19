@@ -5,8 +5,8 @@ on:
     types: [opened, reopened, closed]
   pull_request_review:
     types: [submitted]
-  issue_comment:
-    types: [created]
+  issues:
+    types: [labeled]
 
 env:
   PROJECT_ID: "{{PROJECT_ID}}"
@@ -15,45 +15,49 @@ env:
   STATUS_BRAINSTORMING: "{{ID_BRAINSTORMING}}"
   STATUS_DETAILING: "{{ID_DETAILING}}"
   STATUS_APPROVAL: "{{ID_APPROVAL}}"
+  STATUS_DEVELOPMENT: "{{ID_DEVELOPMENT}}"
   STATUS_CODE_REVIEW_PR: "{{ID_CODE_REVIEW_PR}}"
   STATUS_MERGE: "{{ID_MERGE}}"
   STATUS_PRODUCAO: "{{ID_PRODUCAO}}"
 
 jobs:
-  # Issue Comment → Move Upstream
-  move-card-on-comment:
-    name: Upstream Comment Marker → Move Card
-    if: github.event_name == 'issue_comment' && github.event.action == 'created'
+  # Issue Labeled → Move Upstream
+  move-card-on-label:
+    name: Upstream Label → Move Card
+    if: github.event_name == 'issues' && github.event.action == 'labeled'
     runs-on: ubuntu-latest
     env:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
-      - name: Detect Marker and Move Issue
+      - name: Detect Label and Move Issue
         if: ${{ env.PROJECT_TOKEN != '' }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |
-            const body = context.payload.comment.body;
+            const labelName = context.payload.label.name;
             let targetStatusId = null;
             let stageName = null;
 
-            if (body.includes('<!-- PDLC:stage:exploration -->')) {
+            if (labelName === 'stage:exploration') {
               targetStatusId = process.env.STATUS_EXPLORATION;
               stageName = 'Exploration';
-            } else if (body.includes('<!-- PDLC:stage:brainstorming -->')) {
+            } else if (labelName === 'stage:brainstorming') {
               targetStatusId = process.env.STATUS_BRAINSTORMING;
               stageName = 'Brainstorming';
-            } else if (body.includes('<!-- PDLC:stage:detailing -->')) {
+            } else if (labelName === 'stage:detailing') {
               targetStatusId = process.env.STATUS_DETAILING;
               stageName = 'Detailing';
-            } else if (body.includes('<!-- PDLC:stage:approval -->')) {
+            } else if (labelName === 'spec:approved') {
               targetStatusId = process.env.STATUS_APPROVAL;
               stageName = 'Approval';
+            } else if (labelName === 'stage:development') {
+              targetStatusId = process.env.STATUS_DEVELOPMENT;
+              stageName = 'Development';
             }
 
             if (!targetStatusId) {
-              console.log('No upstream PDLC marker found. Skipping.');
+              console.log('No upstream PDLC label found. Skipping.');
               return;
             }
 

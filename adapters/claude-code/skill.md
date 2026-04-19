@@ -47,3 +47,9 @@ Once approved, you will detail the solution directly into the GitHub Issue body.
 
 ### 3. Handoff
 Do not write code for downstream features! Your goal is to refine the Spec, so the human Tech Lead can label the issue `spec:approved`. This label triggers the downstream agent via `agent-trigger.yml`.
+
+### 4. Moving the Board (Upstream States)
+As you actively work with the user advancing the feature, you MUST use the GitHub CLI to update internal state labels. This triggers GitHub Actions behind the scenes.
+- Starting context evaluation: Run `gh issue edit <N> --add-label "stage:exploration"`
+- Presenting architecture/approaches: Run `gh issue edit <N> --add-label "stage:brainstorming"`
+- Starting to write the technical spec: Run `gh issue edit <N> --add-label "stage:detailing"`
