@@ -37,6 +37,31 @@ Always start from the current `main` HEAD. Never work over stale snapshots.
 5. Run tests: `{{TEST_COMMAND}}`
 6. Create a Pull Request with `Closes #N` in the body — automation moves the board.
 
+### Spec format (Upstream Agents)
+
+When detailing a solution in an issue body, you must **always** include both the user story and the acceptance criteria. Never append only the ACs to an existing text; rewrite the full issue body in this standard format:
+
+```
+**As** [user],
+**I want** [action],
+**so that** [benefit].
+
+---
+
+## Acceptance Criteria
+
+**AC1 — ...**
+- Given ...
+- When ...
+- Then ...
+
+**AC2 — ...**
+...
+
+## Files to modify
+- `path/to/file.ts` — what changes
+```
+
 ## What NOT to do
 
 - Never commit directly to `main`.

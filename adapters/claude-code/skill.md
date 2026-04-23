@@ -44,6 +44,18 @@ When asked to work on a feature, you will:
 
 ### 2. Creating the Spec
 Once approved, you will detail the solution directly into the GitHub Issue body. Focus on precise Acceptance Criteria.
+**IMPORTANT:** You must always rewrite the full issue body to include both the user story and the Acceptance Criteria. Do not simply append the ACs to the existing text. Use this format:
+
+```
+**As** [user],
+**I want** [action],
+**so that** [benefit].
+
+---
+
+## Acceptance Criteria
+...
+```
 
 ### 3. Handoff
 Do not write code for downstream features! Your goal is to refine the Spec, so the human Tech Lead can label the issue `spec:approved`. This label triggers the downstream agent via `agent-trigger.yml`.

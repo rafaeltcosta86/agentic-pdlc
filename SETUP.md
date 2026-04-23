@@ -122,7 +122,13 @@ For each known idea or feature, create an issue using the convention:
 gh issue create \
   --repo owner/repo \
   --title "👤 US: [short description]" \
-  --body "Initial idea issue. Spec to be detailed."
+  --body "**As** [user],
+**I want** [action],
+**so that** [benefit].
+
+---
+
+Initial idea issue. Spec to be detailed."
 ```
 
 Move the issues to the `Idea` column on the board matching your setup.
