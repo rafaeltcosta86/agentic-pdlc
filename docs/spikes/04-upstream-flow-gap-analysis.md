@@ -28,7 +28,7 @@ After the agent posts an exploration/brainstorming comment on the issue, it need
 
 **Analysis:**
 Cards in the "Approval" column wait for the PM to add the `spec:approved` label to signal the handoff to the implementation agent.
-- `jules-trigger.yml` correctly fires on the `spec:approved` label and comments on the issue to notify the implementation agent (e.g., Jules).
+- `agent-trigger.yml` correctly fires on the `spec:approved` label and comments on the issue to notify the implementation agent (e.g., Jules).
 - However, when `spec:approved` is added, `project-automation.yml` currently tries to move the card to `STATUS_APPROVAL` — which is the column it is already in.
 - The intent is for the card to move to "Development" when the handoff occurs.
 

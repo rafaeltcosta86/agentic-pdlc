@@ -59,7 +59,7 @@ your-project/
 └── .github/
     └── workflows/
         ├── project-automation.yml     ← Automates GitHub Project card movement.
-        ├── jules-trigger.yml          ← Wakes up your agent upon `spec:approved`.
+        ├── agent-trigger.yml          ← Wakes up your agent upon `spec:approved`.
         └── ci.yml                     ← The Sentinel enforcing invariants and tests.
 ```
 

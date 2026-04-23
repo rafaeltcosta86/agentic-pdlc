@@ -14,7 +14,7 @@ Specifically, check for:
 - `AGENTS.md`
 - `docs/pdlc.md`
 - `.github/workflows/project-automation.yml`
-- `.github/workflows/jules-trigger.yml`
+- `.github/workflows/agent-trigger.yml`
 
 If any of these files are missing, you are in **Setup Mode**. Do not proceed with feature requests until setup is complete.
 1. Acknowledge that the framework is not yet set up.
@@ -59,7 +59,7 @@ Once approved, you will detail the solution directly into the GitHub Issue body.
 ```
 
 ### 3. Handoff
-Do not write code for downstream features! Your goal is to refine the Spec, so the human Tech Lead can label the issue `spec:approved`. This label triggers the downstream agent via `jules-trigger.yml`.
+Do not write code for downstream features! Your goal is to refine the Spec, so the human Tech Lead can label the issue `spec:approved`. This label triggers the downstream agent via `agent-trigger.yml`.
 
 ### 4. Moving the Board (Upstream States)
 As you actively work with the user advancing the feature, you MUST use the GitHub CLI to update internal state labels. This triggers GitHub Actions behind the scenes.

@@ -39,7 +39,7 @@ jobs:
               owner,
               repo,
               issue_number,
-              labels: ['upstream:development', 'jules']
+              labels: ['upstream:development', '{{IMPLEMENTATION_AGENT_LABEL}}']
             });
 
       - name: Comment on issue to trigger agent

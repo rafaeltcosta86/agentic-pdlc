@@ -74,10 +74,10 @@ Issue exists in the backlog with no `upstream:` label.
 
 **⏸ Human gate (Gate 2 — PM + TL):** Both PM (business decisions) and TL (technical decisions) review the spec. When both are satisfied, PM adds label `spec:approved`.
 
-**Workflow:** `jules-trigger.yml` detects `spec:approved` →
+**Workflow:** `agent-trigger.yml` detects `spec:approved` →
 1. Removes `upstream:approval`
 2. Adds `upstream:development`
-3. Adds `jules` label
+3. Adds specific agent label (e.g., `jules`)
 4. Posts a structured comment with implementation instructions for Jules
 
 **Workflow:** `project-automation.yml` moves card to Development.
@@ -131,11 +131,11 @@ Issue exists in the backlog with no `upstream:` label.
 | `upstream:exploration` | PM (human) or Claude | Claude |
 | `upstream:brainstorming` | Claude | `upstream-gate.yml` |
 | `upstream:detailing` | `upstream-gate.yml` | Claude |
-| `upstream:approval` | Claude | `jules-trigger.yml` |
-| `upstream:development` | `jules-trigger.yml` | Jules |
+| `upstream:approval` | Claude | `agent-trigger.yml` |
+| `upstream:development` | `agent-trigger.yml` | Jules |
 | `upstream:testing` | Jules | `project-automation.yml` (on PR open) |
 | `spec:approved` | PM (human) | — |
-| `jules` | `jules-trigger.yml` | — |
+| `jules` (or other agent) | `agent-trigger.yml` | — |
 | `pr:in-review` | `project-automation.yml` | `project-automation.yml` |
 | `pr:approved` | `project-automation.yml` | — |
 
