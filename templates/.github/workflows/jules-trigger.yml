@@ -12,7 +12,36 @@ jobs:
     # Runs only when spec:approved is added
     if: github.event.label.name == 'spec:approved'
     runs-on: ubuntu-latest
+    env:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
+      - name: Update Labels
+        if: ${{ env.PROJECT_TOKEN != '' }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ env.PROJECT_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.issue.number;
+            
+            try {
+              await github.rest.issues.removeLabel({
+                owner,
+                repo,
+                issue_number,
+                name: 'upstream:approval'
+              });
+            } catch (error) {
+              console.log('Label upstream:approval not found or could not be removed');
+            }
+            
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number,
+              labels: ['upstream:development', 'jules']
+            });
+
       - name: Comment on issue to trigger agent
         uses: actions/github-script@v7
         with:

@@ -1,0 +1,54 @@
+name: Upstream Gate 1
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  evaluate-gate:
+    name: Evaluate Brainstorming Approval
+    if: ${{ !github.event.issue.pull_request && contains(github.event.issue.labels.*.name, 'upstream:brainstorming') }}
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+    steps:
+      - name: Check for approval and swap label
+        if: ${{ env.PROJECT_TOKEN != '' }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ env.PROJECT_TOKEN }}
+          script: |
+            const comment = context.payload.comment.body.toLowerCase();
+            const isApproved = 
+              comment.includes('approved') || 
+              comment.includes('lgtm') || 
+              /option\s+[a-z0-9]/i.test(comment) ||
+              /go\s+with\s+[a-z0-9]/i.test(comment) ||
+              /proceed/i.test(comment);
+
+            if (isApproved) {
+              const { owner, repo } = context.repo;
+              const issue_number = context.payload.issue.number;
+
+              console.log('Approval detected, swapping labels...');
+
+              try {
+                await github.rest.issues.removeLabel({
+                  owner,
+                  repo,
+                  issue_number,
+                  name: 'upstream:brainstorming'
+                });
+              } catch (e) {
+                console.log('Could not remove upstream:brainstorming label');
+              }
+
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number,
+                labels: ['upstream:detailing']
+              });
+            } else {
+              console.log('No approval pattern detected in the comment.');
+            }

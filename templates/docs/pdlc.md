@@ -83,7 +83,7 @@ Format: *"Approved — proceed with option X."*
 
 **Gate 2 — Tech Lead (Spec):**
 You add the `spec:approved` label to the issue after reviewing the technical spec in the body.
-This triggers the implementation agent via `agent-trigger.yml`.
+This triggers the implementation agent via `jules-trigger.yml`.
 
 ## Shortcuts by Type
 

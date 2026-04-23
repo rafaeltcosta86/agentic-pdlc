@@ -175,7 +175,7 @@ If you skipped this during setup but want to add it later, you can append the fo
 - [ ] `AGENTS.md` is present at the root, completely devoid of placeholders
 - [ ] `docs/pdlc.md` has the correct IDs
 - [ ] `project-automation.yml` is active (test with a dummy PR)
-- [ ] `agent-trigger.yml` is active (test by adding `spec:approved` to an issue)
+- [ ] `jules-trigger.yml` is active (test by adding `spec:approved` to an issue)
 - [ ] `ci.yml` correctly runs tests and linters
 - [ ] Branch protection active on `main`
 - [ ] Implementation agent correctly connected to the repo

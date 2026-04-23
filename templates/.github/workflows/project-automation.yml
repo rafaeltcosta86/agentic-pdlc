@@ -16,8 +16,8 @@ env:
   STATUS_DETAILING: "{{ID_DETAILING}}"
   STATUS_APPROVAL: "{{ID_APPROVAL}}"
   STATUS_DEVELOPMENT: "{{ID_DEVELOPMENT}}"
+  STATUS_TESTING: "{{ID_TESTING}}"
   STATUS_CODE_REVIEW_PR: "{{ID_CODE_REVIEW_PR}}"
-  STATUS_MERGE: "{{ID_MERGE}}"
   STATUS_PRODUCAO: "{{ID_PRODUCAO}}"
 
 jobs:
@@ -39,21 +39,24 @@ jobs:
             let targetStatusId = null;
             let stageName = null;
 
-            if (labelName === 'stage:exploration') {
+            if (labelName === 'upstream:exploration') {
               targetStatusId = process.env.STATUS_EXPLORATION;
               stageName = 'Exploration';
-            } else if (labelName === 'stage:brainstorming') {
+            } else if (labelName === 'upstream:brainstorming') {
               targetStatusId = process.env.STATUS_BRAINSTORMING;
               stageName = 'Brainstorming';
-            } else if (labelName === 'stage:detailing') {
+            } else if (labelName === 'upstream:detailing') {
               targetStatusId = process.env.STATUS_DETAILING;
               stageName = 'Detailing';
-            } else if (labelName === 'spec:approved') {
+            } else if (labelName === 'upstream:approval') {
               targetStatusId = process.env.STATUS_APPROVAL;
               stageName = 'Approval';
-            } else if (labelName === 'stage:development') {
+            } else if (labelName === 'upstream:development') {
               targetStatusId = process.env.STATUS_DEVELOPMENT;
               stageName = 'Development';
+            } else if (labelName === 'upstream:testing') {
+              targetStatusId = process.env.STATUS_TESTING;
+              stageName = 'Testing';
             }
 
             if (!targetStatusId) {
@@ -137,17 +140,17 @@ jobs:
               console.log(`PR #${prNumber} → Code Review / PR (no linked issue)`);
             }
 
-            await github.rest.issues.addLabels({ owner, repo, issue_number: prNumber, labels: ['pr:review'] }).catch(() => {});
+            await github.rest.issues.addLabels({ owner, repo, issue_number: prNumber, labels: ['pr:in-review'] }).catch(() => {});
 
-  # Review Approved → Merge
+  # Review Approved → Add Label
   move-card-on-review-approved:
-    name: Approved PR → Merge
+    name: Approved PR → Add Label
     if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
     runs-on: ubuntu-latest
     env:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
-      - name: Move issue to Merge
+      - name: Swap PR labels
         if: ${{ env.PROJECT_TOKEN != '' }}
         uses: actions/github-script@v7
         with:
@@ -155,34 +158,7 @@ jobs:
           script: |
             const prNumber = context.payload.pull_request.number;
             const { owner, repo } = context.repo;
-            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
-            const body = pr.body ?? '';
-            const linkedIssues = [...body.matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)].map(m => parseInt(m[1]));
-
-            const moveItem = async (nodeId) => {
-              const { addProjectV2ItemById: { item } } = await github.graphql(`
-                mutation($p: ID!, $c: ID!) {
-                  addProjectV2ItemById(input: {projectId: $p, contentId: $c}) { item { id } }
-                }`, { p: process.env.PROJECT_ID, c: nodeId });
-              await github.graphql(`
-                mutation($p: ID!, $i: ID!, $f: ID!, $v: ProjectV2FieldValue!) {
-                  updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f, value: $v}) {
-                    projectV2Item { id }
-                  }
-                }`, { p: process.env.PROJECT_ID, i: item.id, f: process.env.STATUS_FIELD_ID,
-                      v: { singleSelectOptionId: process.env.STATUS_MERGE } });
-            };
-
-            if (linkedIssues.length > 0) {
-              for (const n of linkedIssues) {
-                const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
-                await moveItem(issue.node_id);
-              }
-            } else {
-              await moveItem(pr.node_id);
-            }
-
-            try { await github.rest.issues.removeLabel({ owner, repo, issue_number: prNumber, name: 'pr:review' }); } catch {}
+            try { await github.rest.issues.removeLabel({ owner, repo, issue_number: prNumber, name: 'pr:in-review' }); } catch {}
             await github.rest.issues.addLabels({ owner, repo, issue_number: prNumber, labels: ['pr:approved'] }).catch(() => {});
 
   # PR Merged → Production
