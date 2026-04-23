@@ -22,6 +22,9 @@ jobs:
       - name: Run Linters
         run: {{LINT_COMMAND}}
 
+      - name: Typecheck
+        run: {{TYPECHECK_COMMAND}}
+
       - name: Build
         run: {{BUILD_COMMAND}}
 
