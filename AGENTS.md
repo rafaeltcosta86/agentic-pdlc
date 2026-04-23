@@ -32,7 +32,8 @@ Always start from the current `main` HEAD. Never work over stale snapshots.
 3. Read all files mentioned in the issue's technical context.
 4. Implement the **minimum viable change** that satisfies the ACs — do not refactor beyond scope.
 5. Run tests: `echo "No tests/build needed."`
-6. Create a Pull Request with `Closes #N` in the body — automation moves the board.
+6. Run typecheck: `echo "No typecheck needed."`
+7. Create a Pull Request with `Closes #N` in the body — automation moves the board.
 
 ## What NOT to do
 
@@ -46,4 +47,5 @@ Always start from the current `main` HEAD. Never work over stale snapshots.
 
 - **Tests:** `echo "No tests/build needed."`
 - **Lint/Types:** `echo "No tests/build needed."`
+- **Typecheck:** `echo "No typecheck needed."`
 - **Build:** `echo "No tests/build needed."`
