@@ -26,7 +26,7 @@ If any of these files are missing, you are in **Setup Mode**. Do not proceed wit
    - **Architecture Violation:** Ask "Does your project use an automated architecture auditing tool (e.g., a CI job that creates issues with an `architecture-violation` label)?". If yes, replace `{{OPTIONAL_ARCHITECTURE_VIOLATION_JOB}}` in `project-automation.yml` with the job definition (available in the framework documentation). If no, ask if they would like help implementing one, reminding them that it significantly improves their agentic development process. If they decline, remove the placeholder.
    - **Implementation agent handle:** e.g., `@google-labs-jules`, or "none".
 3. Generate and write the missing files replacing the `{{SCREAMING_SNAKE_CASE}}` placeholders using the templates logic you know (usually they reside in standard Agentic PDLC templates).
-4. Offer to run the `gh` commands for labels (`spec:approved`, `pr:review`, `pr:approved`, `architecture-violation`).
+4. Offer to run the `gh` commands for labels (`spec:approved`, `pr:in-review`, `pr:approved`, `architecture-violation`).
 5. Commit everything with the message: `chore: setup agentic-pdlc framework`.
 6. Conclude Setup Mode.
 

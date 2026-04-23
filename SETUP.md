@@ -41,7 +41,7 @@ Note down the `PROJECT_ID` and the `STATUS_FIELD_ID` for future steps.
 ```bash
 REPO="owner/repo"
 gh label create "spec:approved"          --repo $REPO --color "0e8a16" --description "Spec approved — agent can implement"
-gh label create "pr:review"              --repo $REPO --color "e4e669" --description "PR awaiting code review"
+gh label create "pr:in-review"           --repo $REPO --color "e4e669" --description "PR awaiting code review"
 gh label create "pr:approved"            --repo $REPO --color "0e8a16" --description "PR approved, ready for merge"
 gh label create "architecture-violation" --repo $REPO --color "d93f0b" --description "Invariant violation detected by CI"
 ```
