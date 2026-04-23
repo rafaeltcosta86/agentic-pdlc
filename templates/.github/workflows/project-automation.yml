@@ -18,7 +18,7 @@ env:
   STATUS_DEVELOPMENT: "{{ID_DEVELOPMENT}}"
   STATUS_TESTING: "{{ID_TESTING}}"
   STATUS_CODE_REVIEW_PR: "{{ID_CODE_REVIEW_PR}}"
-  STATUS_PRODUCAO: "{{ID_PRODUCAO}}"
+  STATUS_PRODUCTION: "{{ID_PRODUCTION}}"
 
 jobs:
   # Issue Labeled → Move Upstream
@@ -192,7 +192,7 @@ jobs:
                     projectV2Item { id }
                   }
                 }`, { p: process.env.PROJECT_ID, i: item.id, f: process.env.STATUS_FIELD_ID,
-                      v: { singleSelectOptionId: process.env.STATUS_PRODUCAO } });
+                      v: { singleSelectOptionId: process.env.STATUS_PRODUCTION } });
             };
 
             if (linkedIssues.length > 0) {
