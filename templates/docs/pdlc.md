@@ -72,7 +72,7 @@ REPO         = {{REPO_OWNER}}/{{REPO_NAME}}
 | `stage:detailing` | Issue | Blue | Technical spec is being written |
 | `stage:development` | Issue | Orange | Agent is implementing the spec |
 | `spec:approved` | Issue | Green | Gate 2 — agent is cleared to implement |
-| `pr:review` | PR | Yellow | Awaiting code review |
+| `pr:in-review` | PR | Yellow | Awaiting code review |
 | `pr:approved` | PR | Green | Code review approved |
 
 ## Approval Gates
