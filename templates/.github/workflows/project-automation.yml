@@ -83,6 +83,7 @@ jobs:
             await moveItem(node_id, targetStatusId);
             console.log(`Issue #${number} moved to ${stageName}`);
 
+{{OPTIONAL_ARCHITECTURE_VIOLATION_JOB}}
 
   # PR Opened → Move linked issue to Code Review / PR
   move-card-on-pr-open:
