@@ -13,13 +13,15 @@ If the user invokes you in a new project, you must first check if the PDLC artif
 Specifically, check for:
 - `AGENTS.md`
 - `docs/pdlc.md`
+- `.github/CODEOWNERS`
 - `.github/workflows/project-automation.yml`
 - `.github/workflows/agent-trigger.yml`
+- `.github/workflows/pdlc-health-check.yml`
 
 If any of these files are missing, you are in **Setup Mode**. Do not proceed with feature requests until setup is complete.
 1. Acknowledge that the framework is not yet set up.
 2. Interactively ask the user for required values **one group at a time**:
-   - **Project basics:** Project Name, Description, Technical Stack (Structure).
+   - **Project basics:** Project Name, Description, Technical Stack (Structure), and GitHub Username (for CODEOWNERS security).
    - **Commands:** Test command, Lint command, Build command.
    - **Invariants:** Critical business rules agents must never violate (e.g. Human-in-the-loop).
    - **Board IDs:** PROJECT_ID, STATUS_FIELD_ID, column option IDs (provide standard PDLC options: Idea, Exploration, Brainstorming, Detail Solution, Approval, Development, Testing, Code Review / PR, Merge, Production). Allow user to answer "skip", which means you leave the placeholders intact.

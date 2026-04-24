@@ -1,0 +1,123 @@
+name: PDLC Health Check (Drift Detection)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 8 * * 1' # Every Monday at 8am
+
+env:
+  PROJECT_ID: "{{PROJECT_ID}}"
+  STATUS_FIELD_ID: "{{STATUS_FIELD_ID}}"
+  STATUS_EXPLORATION: "{{ID_EXPLORATION}}"
+  STATUS_BRAINSTORMING: "{{ID_BRAINSTORMING}}"
+  STATUS_DETAILING: "{{ID_DETAILING}}"
+  STATUS_APPROVAL: "{{ID_APPROVAL}}"
+  STATUS_DEVELOPMENT: "{{ID_DEVELOPMENT}}"
+  STATUS_TESTING: "{{ID_TESTING}}"
+  STATUS_CODE_REVIEW_PR: "{{ID_CODE_REVIEW_PR}}"
+  STATUS_PRODUCTION: "{{ID_PRODUCTION}}"
+
+jobs:
+  check-drift:
+    name: Detect Project Board Drift
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+    permissions:
+      issues: write
+    steps:
+      - name: Validate Board Configuration
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ env.PROJECT_TOKEN }}
+          script: |
+            const projectId = process.env.PROJECT_ID;
+            const statusFieldId = process.env.STATUS_FIELD_ID;
+            const envVars = {
+              'STATUS_EXPLORATION': process.env.STATUS_EXPLORATION,
+              'STATUS_BRAINSTORMING': process.env.STATUS_BRAINSTORMING,
+              'STATUS_DETAILING': process.env.STATUS_DETAILING,
+              'STATUS_APPROVAL': process.env.STATUS_APPROVAL,
+              'STATUS_DEVELOPMENT': process.env.STATUS_DEVELOPMENT,
+              'STATUS_TESTING': process.env.STATUS_TESTING,
+              'STATUS_CODE_REVIEW_PR': process.env.STATUS_CODE_REVIEW_PR,
+              'STATUS_PRODUCTION': process.env.STATUS_PRODUCTION
+            };
+
+            const query = `
+              query($projectId: ID!) {
+                node(id: $projectId) {
+                  ... on ProjectV2 {
+                    title
+                    fields(first: 20) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options {
+                            id
+                            name
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            let result;
+            try {
+              result = await github.graphql(query, { projectId });
+            } catch (error) {
+              console.log("❌ Error fetching project. Verify your PROJECT_ID.");
+              console.log(error);
+              return;
+            }
+
+            const project = result.node;
+            if (!project) {
+              console.log("❌ Project not found.");
+              return;
+            }
+
+            const statusField = project.fields.nodes.find(f => f.id === statusFieldId);
+            if (!statusField) {
+              console.log("❌ Status field not found.");
+              return;
+            }
+
+            const validOptions = statusField.options;
+            const validOptionIds = validOptions.map(o => o.id);
+
+            let hasDrift = false;
+            let missingVars = [];
+
+            for (const [varName, id] of Object.entries(envVars)) {
+              if (id && !id.startsWith('{{') && !validOptionIds.includes(id)) {
+                hasDrift = true;
+                missingVars.push(varName);
+              }
+            }
+
+            if (hasDrift) {
+              console.log("🚨 Drift detected! The following mapped columns no longer exist: " + missingVars.join(", "));
+              
+              let table = "| Column Name | New ID |\n|---|---|\n";
+              validOptions.forEach(opt => {
+                table += `| ${opt.name} | \`${opt.id}\` |\n`;
+              });
+
+              const body = `🚨 **Agentic PDLC Drift Detected**\n\nThe following columns mapped in your \`.github/workflows/project-automation.yml\` no longer exist in your project board:\n\n**${missingVars.join(", ")}**\n\n### How to fix it:\nHere is the list of current columns in your board with their valid IDs. Please update the \`env\` block in your \`.github/workflows/project-automation.yml\` and \`.github/workflows/pdlc-health-check.yml\`.\n\n${table}`;
+
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '🚨 Agentic PDLC Drift Detected in Project Board',
+                body: body,
+                labels: ['bug']
+              });
+            } else {
+              console.log("✅ No drift detected. Board configuration is healthy.");
+            }

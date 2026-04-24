@@ -9,6 +9,10 @@
 
 It standardizes how your AI assistants (Claude, Cursor, Copilot, Jules) interpret tasks, respect invariants, and collaborate seamlessly from an idea to production.
 
+<div align="center">
+  <img src=".github/assets/agentic-pdlc-flow.svg" alt="Agentic PDLC Architecture Flow" width="100%">
+</div>
+
 ---
 
 ## ⚡ Why you need this

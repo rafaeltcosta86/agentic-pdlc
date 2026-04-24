@@ -1,0 +1,255 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 450" width="100%" height="100%">
+  <defs>
+    <style>
+      :root {
+        --bg-color: transparent;
+        --card-bg: #ffffff;
+        --card-border: #e2e8f0;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --accent-blue: #3b82f6;
+        --accent-purple: #8b5cf6;
+        --accent-green: #10b981;
+        --glow-blue: rgba(59, 130, 246, 0.15);
+        --glow-purple: rgba(139, 92, 246, 0.15);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --card-bg: #0d1117;
+          --card-border: #30363d;
+          --text-main: #e6edf3;
+          --text-muted: #848d97;
+          --accent-blue: #58a6ff;
+          --accent-purple: #bc8cff;
+          --accent-green: #238636;
+          --glow-blue: rgba(88, 166, 255, 0.2);
+          --glow-purple: rgba(188, 140, 255, 0.2);
+        }
+      }
+
+      body { background-color: var(--bg-color); }
+      
+      .card { fill: var(--card-bg); stroke: var(--card-border); stroke-width: 2; rx: 16; }
+      .card-glow-left { fill: var(--glow-blue); filter: blur(40px); rx: 16; }
+      .card-glow-right { fill: var(--glow-purple); filter: blur(40px); rx: 16; }
+      
+      .text-title { fill: var(--text-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+      .text-subtitle { fill: var(--text-muted); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 16px; font-weight: 500; }
+      .text-label { fill: var(--text-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; font-weight: 600; }
+      
+      .icon-container { fill: var(--card-bg); stroke: var(--card-border); stroke-width: 2; rx: 12; }
+      
+      .path-line { stroke: url(#gradientLine); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; fill: none; stroke-dasharray: 8 8; animation: dashMove 15s linear infinite; }
+      .path-glow { stroke: url(#gradientLine); stroke-width: 12; stroke-linecap: round; stroke-linejoin: round; fill: none; opacity: 0.3; filter: blur(8px); }
+      .path-interaction { stroke: var(--text-muted); stroke-width: 2; stroke-linecap: round; fill: none; stroke-dasharray: 4 4; opacity: 0.5; animation: dashMove 20s linear infinite reverse; }
+
+      .badge-bg { fill: var(--card-bg); stroke: var(--accent-blue); stroke-width: 2; rx: 17; }
+      .badge-text { fill: var(--accent-blue); font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 15px; font-weight: 700; }
+      
+      .pr-badge-bg { fill: var(--accent-green); rx: 8; }
+      .pr-badge-text { fill: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 15px; font-weight: 700; }
+
+      .pulse { animation: pulse 2s infinite; }
+      .pulse-slow { animation: pulse 4s infinite; }
+      
+      @keyframes dashMove {
+        from { stroke-dashoffset: 1000; }
+        to { stroke-dashoffset: 0; }
+      }
+      
+      @keyframes pulse {
+        0% { filter: drop-shadow(0 0 4px var(--accent-green)); }
+        50% { filter: drop-shadow(0 0 12px var(--accent-green)); }
+        100% { filter: drop-shadow(0 0 4px var(--accent-green)); }
+      }
+
+      /* Gear Animation */
+      .gear { transform-origin: 0px 0px; animation: spin 8s linear infinite; }
+      .gear-reverse { transform-origin: 0px 0px; animation: spin-reverse 8s linear infinite; }
+      @keyframes spin { 100% { transform: rotate(360deg); } }
+      @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+
+      /* Blinking Cursor and Typing */
+      @keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+      .blinking-cursor { animation: blink 1s infinite; }
+      
+      @keyframes typeEffect {
+        0%, 10% { opacity: 0; transform: translateY(5px); }
+        20%, 80% { opacity: 1; transform: translateY(0); }
+        90%, 100% { opacity: 0; transform: translateY(-5px); }
+      }
+      .code-line-1 { animation: typeEffect 6s infinite; }
+      .code-line-2 { animation: typeEffect 6s infinite 0.5s; }
+      .code-line-3 { animation: typeEffect 6s infinite 1s; }
+
+      /* Conceiving Spec:Approved Badge Animation */
+      @keyframes conceive {
+        0% { transform: translate(-300px, 0px) scale(0.5); opacity: 0; }
+        15% { transform: translate(-100px, 10px) scale(0.8); opacity: 1; }
+        30%, 70% { transform: translate(0px, 0px) scale(1); opacity: 1; filter: drop-shadow(0 0 15px var(--accent-blue)); }
+        85% { transform: translate(150px, -10px) scale(0.8); opacity: 1; }
+        100% { transform: translate(300px, -20px) scale(0.5); opacity: 0; }
+      }
+      .conceive-badge { animation: conceive 8s ease-in-out infinite; }
+      
+      /* Orb traversing from human to AIs */
+      @keyframes dataFlow {
+        0% { transform: translate(0,0); opacity: 0; }
+        10% { opacity: 1; }
+        90% { opacity: 1; }
+        100% { transform: translate(120px, 0); opacity: 0; }
+      }
+    </style>
+    
+    <linearGradient id="gradientLine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="var(--accent-blue)" />
+      <stop offset="100%" stop-color="var(--accent-purple)" />
+    </linearGradient>
+
+    <!-- 3D Human Gradients -->
+    <radialGradient id="headGrad" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#e2e8f0" />
+      <stop offset="100%" stop-color="#475569" />
+    </radialGradient>
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#cbd5e1" />
+      <stop offset="100%" stop-color="#334155" />
+    </linearGradient>
+  </defs>
+
+  <!-- Left Block: Upstream -->
+  <g transform="translate(50, 70)">
+    <rect class="card-glow-left" x="0" y="0" width="360" height="320" />
+    <rect class="card" x="0" y="0" width="360" height="320" />
+    
+    <text class="text-title" x="180" y="50" text-anchor="middle">🌊 Upstream</text>
+    <text class="text-subtitle" x="180" y="75" text-anchor="middle">Idea → Specification</text>
+
+    <!-- Human Icon (3D Style) -->
+    <g transform="translate(60, 110)">
+      <rect class="icon-container" x="0" y="0" width="80" height="80" />
+      
+      <!-- 3D Human Silhouette -->
+      <circle cx="40" cy="28" r="14" fill="url(#headGrad)" />
+      <path d="M40 48 C18 48, 12 70, 12 80 L68 80 C68 70, 62 48, 40 48 Z" fill="url(#bodyGrad)" />
+      
+      <text class="text-label" x="40" y="110" text-anchor="middle">Human / PM</text>
+    </g>
+
+    <!-- Interaction Animations -->
+    <!-- Human to AGENTS.md -->
+    <path class="path-interaction" d="M 100 190 Q 140 220 180 240" />
+    <!-- AIs to AGENTS.md -->
+    <path class="path-interaction" d="M 260 190 Q 220 220 180 240" />
+    <!-- Human to AIs (Collaboration) -->
+    <path class="path-interaction" d="M 140 150 L 220 150" />
+    
+    <!-- Floating Data Orb between Human and AIs -->
+    <circle cx="140" cy="150" r="4" fill="var(--accent-blue)" filter="blur(1px)">
+      <animate attributeName="cx" values="140; 220; 140" dur="4s" repeatCount="indefinite" />
+    </circle>
+
+    <!-- AI Assistants Group -->
+    <g transform="translate(220, 110)">
+      <rect class="icon-container" x="0" y="0" width="80" height="80" />
+      
+      <!-- Claude-like Asterisk/Brain -->
+      <g transform="translate(20, 20) scale(0.6)">
+        <path d="M20 5 L20 35 M5 20 L35 20 M10 10 L30 30 M10 30 L30 10" style="stroke: #d97757; stroke-width: 6; stroke-linecap: round;" />
+      </g>
+      
+      <!-- Cursor-like Pointer -->
+      <g transform="translate(45, 20) scale(0.7)">
+        <path d="M5 5 L15 35 L20 20 L35 15 Z" style="fill: var(--accent-blue); stroke: var(--accent-blue); stroke-width: 2; stroke-linejoin: round;" />
+      </g>
+      
+      <!-- Copilot-like Hexagon/Wings -->
+      <g transform="translate(32, 45) scale(0.6)">
+        <path d="M10 25 C 10 10, 30 10, 30 25 C 30 35, 20 40, 20 40 C 20 40, 10 35, 10 25 Z M 5 20 L 10 25 M 35 20 L 30 25" style="fill: none; stroke: var(--text-main); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round;" />
+      </g>
+
+      <text class="text-label" x="40" y="110" text-anchor="middle">Agnostic AIs</text>
+    </g>
+
+    <!-- The Resulting Spec -->
+    <g transform="translate(100, 240)">
+      <rect x="0" y="0" width="160" height="46" rx="8" style="fill: var(--card-bg); stroke: var(--card-border); stroke-width: 2;" />
+      <path d="M25 15h15M25 23h25M25 31h20M15 15v16" style="stroke: var(--accent-blue); stroke-width: 2; stroke-linecap: round;" />
+      <text class="text-label" x="50" y="28">AGENTS.md</text>
+    </g>
+  </g>
+
+  <!-- The Bridge / Connection -->
+  <g transform="translate(410, 230)">
+    <!-- Animated Path connecting boxes -->
+    <path class="path-glow" d="M 0 0 C 60 0, 120 0, 180 0" />
+    <path class="path-line" d="M 0 0 C 60 0, 120 0, 180 0" />
+    
+    <!-- Floating Spec:Approved Badge that travels from Human to Agent -->
+    <g class="conceive-badge" transform="translate(0, -35)">
+      <rect class="badge-bg" x="0" y="0" width="160" height="34" />
+      <!-- Removed the bullet, centered text perfectly -->
+      <text class="badge-text" x="80" y="22" text-anchor="middle">spec:approved</text>
+    </g>
+  </g>
+
+  <!-- Right Block: Downstream -->
+  <g transform="translate(600, 70)">
+    <rect class="card-glow-right" x="0" y="0" width="360" height="320" />
+    <rect class="card" x="0" y="0" width="360" height="320" />
+    
+    <text class="text-title" x="180" y="50" text-anchor="middle">🏭 Downstream</text>
+    <text class="text-subtitle" x="180" y="75" text-anchor="middle">Spec → Production Code</text>
+
+    <!-- Central Auto Agent Factory Graphic -->
+    <g transform="translate(80, 110)">
+      <!-- Server / Terminal Window representing the AI Workspace -->
+      <rect x="0" y="0" width="200" height="110" rx="6" style="fill: var(--card-bg); stroke: var(--card-border); stroke-width: 3;" />
+      <!-- Terminal Header -->
+      <path d="M0 25 L200 25" style="stroke: var(--card-border); stroke-width: 3;" />
+      <circle cx="15" cy="12.5" r="4" style="fill: #ff5f56;" />
+      <circle cx="30" cy="12.5" r="4" style="fill: #ffbd2e;" />
+      <circle cx="45" cy="12.5" r="4" style="fill: #27c93f;" />
+      
+      <!-- Terminal Code Content with Animation -->
+      <path d="M20 45 L35 60 L20 75" style="stroke: var(--accent-purple); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; fill: none;" />
+      
+      <!-- Blinking Cursor -->
+      <line x1="45" y1="75" x2="55" y2="75" class="blinking-cursor" style="stroke: var(--text-main); stroke-width: 3; stroke-linecap: round;" />
+      
+      <!-- Animated Code Lines Typing -->
+      <rect class="code-line-1" x="20" y="90" width="60" height="6" rx="3" style="fill: var(--text-muted); opacity: 0.5;" />
+      <rect class="code-line-2" x="85" y="90" width="40" height="6" rx="3" style="fill: var(--accent-blue); opacity: 0.5;" />
+      <rect class="code-line-3" x="20" y="105" width="90" height="6" rx="3" style="fill: var(--text-muted); opacity: 0.5;" />
+      
+      <!-- Gears processing the code -->
+      <g transform="translate(150, 65)">
+        <g class="gear">
+          <circle cx="0" cy="0" r="16" style="fill: none; stroke: var(--text-muted); stroke-width: 4; stroke-dasharray: 6 4;" />
+          <circle cx="0" cy="0" r="6" style="fill: var(--text-muted);" />
+        </g>
+        <g class="gear-reverse" transform="translate(-18, 22) scale(0.7)">
+          <circle cx="0" cy="0" r="16" style="fill: none; stroke: var(--accent-purple); stroke-width: 4; stroke-dasharray: 6 4;" />
+          <circle cx="0" cy="0" r="6" style="fill: var(--accent-purple);" />
+        </g>
+      </g>
+    </g>
+
+    <!-- Result: Pull Request Badge -->
+    <g transform="translate(100, 240)" class="pulse">
+      <rect class="pr-badge-bg" x="0" y="0" width="160" height="46" />
+      
+      <!-- PR Icon (GitHub style) -->
+      <g transform="translate(15, 13) scale(1.2)" style="fill: none; stroke: #ffffff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;">
+        <circle cx="4" cy="4" r="2" />
+        <circle cx="4" cy="14" r="2" />
+        <circle cx="14" cy="4" r="2" />
+        <path d="M4 6 v6" />
+        <path d="M14 6 v2 c0 2 -2 2 -2 2 h-4 c0 0 -2 0 -2 2 v2" />
+      </g>
+      
+      <text class="pr-badge-text" x="45" y="28">Pull Request</text>
+    </g>
+  </g>
+</svg>
