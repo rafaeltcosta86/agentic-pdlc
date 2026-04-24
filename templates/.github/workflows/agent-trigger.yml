@@ -12,6 +12,10 @@ jobs:
     # Runs only when spec:approved is added
     if: github.event.label.name == 'spec:approved'
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
     env:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
@@ -39,10 +43,10 @@ jobs:
               owner,
               repo,
               issue_number,
-              labels: ['upstream:development', '{{IMPLEMENTATION_AGENT_LABEL}}']
+              labels: ['upstream:development', '{{IMPLEMENTATION_AGENT_LABEL}}', 'agent:working']
             });
 
-      - name: Comment on issue to trigger agent
+      - name: Comment on issue to trigger agent and prevent race conditions
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -51,6 +55,8 @@ jobs:
             const issueTitle = context.payload.issue.title;
 
             const body = [
+              `🤖 **Agentic PDLC Orchestrator:** I have dispatched the implementation agent. Please wait for the Pull Request and avoid making concurrent commits on this task to prevent race conditions.`,
+              '',
               `{{AGENT_HANDLE}} The spec for this issue has been approved. Please implement it exactly as described in the body above.`,
               '',
               '**Mandatory steps before you begin:**',
@@ -77,6 +83,10 @@ jobs:
     # Runs when architecture-violation is added (Sentinel flow)
     if: github.event.label.name == 'architecture-violation'
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
     steps:
       - name: Comment on issue to trigger agent
         uses: actions/github-script@v7
