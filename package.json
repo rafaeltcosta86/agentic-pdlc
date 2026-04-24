@@ -1,6 +1,6 @@
 {
   "name": "create-agentic-pdlc",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Agentic PDLC Framework - Conversational setup for your AI coding assistants",
   "type": "commonjs",
   "bin": {

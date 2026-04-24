@@ -12,7 +12,6 @@
 | ⚙️ Development | Agent implementing the spec | Label `stage:development` |
 | 🧪 Testing | CI pipeline running | GitHub Actions |
 | 👁 Code Review / PR | PR opened, awaiting human review | GitHub Actions |
-| 🔀 Merge | PR approved, awaiting merge | GitHub Actions |
 | 🚀 Production | Merged | GitHub Actions |
 
 <!--
@@ -40,7 +39,6 @@ REPO         = {{REPO_OWNER}}/{{REPO_NAME}}
 | ⚙️ Development | `{{ID_DEVELOPMENT}}` |
 | 🧪 Testing | `{{ID_TESTING}}` |
 | 👁 Code Review / PR | `{{ID_CODE_REVIEW_PR}}` |
-| 🔀 Merge | `{{ID_MERGE}}` |
 | 🚀 Production | `{{ID_PRODUCTION}}` |
 
 ## Agent × Phase Mapping
