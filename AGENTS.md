@@ -27,13 +27,14 @@ Always start from the current `main` HEAD. Never work over stale snapshots.
 ## Mandatory Workflow
 
 0. **Identity**: Always prefix your GitHub comments with `🤖 **Agent:** ` to distinguish yourself.
-1. Read the issue entirely — understand its type (US/BUG/TASK/SPIKE) and the Acceptance Criteria.
-2. Read `docs/pdlc.md` — understand the PDLC and the Definition of Done in this project.
-3. Read all files mentioned in the issue's technical context.
-4. Implement the **minimum viable change** that satisfies the ACs — do not refactor beyond scope.
-5. Run tests: `echo "No tests/build needed."`
-6. Run typecheck: `echo "No typecheck needed."`
-7. Create a Pull Request with `Closes #N` in the body — automation moves the board.
+1. **Initial State**: When beginning work on a new issue, your very first action must be to apply the `stage:exploration` label using the GitHub CLI (`gh issue edit <N> --add-label "stage:exploration"`).
+2. Read the issue entirely — understand its type (US/BUG/TASK/SPIKE) and the Acceptance Criteria.
+3. Read `docs/pdlc.md` — understand the PDLC and the Definition of Done in this project.
+4. Read all files mentioned in the issue's technical context.
+5. Implement the **minimum viable change** that satisfies the ACs — do not refactor beyond scope.
+6. Run tests: `echo "No tests/build needed."`
+7. Run typecheck: `echo "No typecheck needed."`
+8. Create a Pull Request with `Closes #N` in the body — automation moves the board.
 
 ## What NOT to do
 
