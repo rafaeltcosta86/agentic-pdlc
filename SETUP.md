@@ -137,34 +137,9 @@ Move the issues to the `Idea` column on the board matching your setup.
 
 ## (Optional) Architecture Violation Integration
 
-If your project uses an automated architecture auditing tool (e.g., a CI job that creates issues with an `architecture-violation` label), the Setup Mode can automatically add a GitHub Actions job to `project-automation.yml` that moves these issues to the `Idea` column.
+If your project uses an automated architecture auditing tool (e.g., a CI job that creates issues with an `architecture-violation` label), you can easily integrate it with your project board.
 
-If you skipped this during setup but want to add it later, you can append the following job to `.github/workflows/project-automation.yml` under the `jobs` section:
-
-```yaml
-  move-violation-to-board:
-    name: architecture-violation → 💡 Idea
-    if: github.event_name == 'issues' && github.event.label.name == 'architecture-violation'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.PROJECT_TOKEN }}
-          script: |
-            const issueNodeId = context.payload.issue.node_id;
-            const addResult = await github.graphql(`
-              mutation($p: ID!, $c: ID!) {
-                addProjectV2ItemById(input: {projectId: $p, contentId: $c}) { item { id } }
-              }`, { p: process.env.PROJECT_ID, c: issueNodeId });
-            const itemId = addResult.addProjectV2ItemById.item.id;
-            await github.graphql(`
-              mutation($p: ID!, $i: ID!, $f: ID!, $v: ProjectV2FieldValue!) {
-                updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f, value: $v}) {
-                  projectV2Item { id }
-                }
-              }`, { p: process.env.PROJECT_ID, i: itemId, f: process.env.STATUS_FIELD_ID,
-                    v: { singleSelectOptionId: process.env.STATUS_IDEA } });
-```
+Simply open `.github/workflows/project-automation.yml` and uncomment the `move-violation-to-board` job in the `jobs` section. This will automatically move any issues labeled with `architecture-violation` to the `Idea` column on your board.
 
 ---
 
