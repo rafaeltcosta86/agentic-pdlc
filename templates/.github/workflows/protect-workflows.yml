@@ -1,0 +1,20 @@
+name: Protect Workflows
+
+on:
+  pull_request:
+    paths:
+      - '.github/**'
+
+jobs:
+  block-unauthorized-edits:
+    name: Protect .github directory
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for Human Approval
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'human-approved') }}
+        run: |
+          echo "🚨 Modificações na pasta .github/ detectadas."
+          echo "Como medida de segurança, este repositório bloqueia edições em workflows por padrão."
+          echo "Se você for um Agente IA, não adicione a label de aprovação por conta própria."
+          echo "Se você for o humano responsável, adicione a label 'human-approved' no PR para liberar o merge."
+          exit 1
