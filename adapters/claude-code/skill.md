@@ -31,7 +31,8 @@ If any of these files are missing, you are in **Setup Mode**. Do not proceed wit
 3. Generate and write the missing files replacing the `{{SCREAMING_SNAKE_CASE}}` placeholders using the templates logic you know (usually they reside in standard Agentic PDLC templates).
 4. Offer to run the `gh` commands for labels (`spec:approved`, `pr:in-review`, `pr:approved`, `architecture-violation`).
 5. Commit everything with the message: `chore: setup agentic-pdlc framework`.
-6. Conclude Setup Mode.
+6. **IMPORTANT:** Delete this setup prompt file (e.g., `.agentic-setup.md`, `.agentic-setup-prompt.md`, or `.agentic-pdlc/SETUP_PROMPT.md`) from the root or `.agentic-pdlc/` directory to clean up the workspace.
+7. Conclude Setup Mode.
 
 ---
 

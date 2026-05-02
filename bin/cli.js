@@ -61,13 +61,17 @@ rl.question('Which AI Agent will you use for the setup? (e.g. claude, cursor, co
     if (fs.existsSync(claudeSetupSrc)) {
       const dest = path.join(targetDir, '.agentic-setup.md');
       fs.copyFileSync(claudeSetupSrc, dest);
-      console.log(`✅ Setup agent profile written to .agentic-setup.md`);
-      console.log(`\n${green}🎉 Done! To start the conversational setup:${reset}`);
-      console.log(`${cyan}\tStep 1: Open the Claude Code CLI in your terminal (type 'claude')${reset}`);
-      console.log(`${cyan}\t        [Or open your preferred IDE Agent chat, like Antigravity, Cursor, Codex, GitHub Copilot, etc]${reset}`);
-      console.log(`${cyan}\tStep 2: Paste this exact prompt:${reset}`);
-      console.log(`${yellow}\t        "read .agentic-setup.md to enter Setup Mode."${reset}`);
-      console.log(`\nNote: Once setup is completed, the agent will typically delete .agentic-setup.md to keep your root clean.\n`);
+      console.log(`✅ Setup agent profile written to .agentic-setup.md\n`);
+      console.log(`${green}============================================================${reset}`);
+      console.log(`${green}🎉 Framework files scaffolded to .agentic-pdlc/templates/${reset}`);
+      console.log(`${green}============================================================${reset}\n`);
+      console.log(`${yellow}👉 NEXT STEPS:${reset}`);
+      console.log(`${cyan}1. Open your AI Assistant (Claude, Cursor, Copilot, etc).${reset}`);
+      console.log(`${cyan}2. Ask it to read the .agentic-setup.md and start Setup Mode in any language you prefer. Example 👇${reset}`);
+      console.log(`${cyan}>>> English: "Read .agentic-setup.md and guide me through the setup."${reset}`);
+      console.log(`${cyan}>>> Español: "Lea el archivo .agentic-setup.md e inicie el Setup Mode"${reset}`);
+      console.log(`${cyan}>>> Português: "Leia o arquivo .agentic-setup.md e inicie o Setup Mode."${reset}\n`);
+      console.log(`Note: The agent will clean up the .agentic-setup.md file automatically when finished.\n`);
     } else {
       console.error(`❌ Could not find claude instruction file at ${claudeSetupSrc}`);
     }

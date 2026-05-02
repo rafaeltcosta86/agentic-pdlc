@@ -114,24 +114,18 @@ git push
 
 ---
 
-## Step 7 — Populate the Initial Backlog
+## Step 7 — Ignite the Backlog
 
-For each known idea or feature, create an issue using the convention:
+Forget heavy templates and CLI commands. Just drop your raw idea and let the AI do the heavy lifting:
 
-```bash
-gh issue create \
-  --repo owner/repo \
-  --title "👤 US: [short description]" \
-  --body "**As** [user],
-**I want** [action],
-**so that** [benefit].
+1. Open your **GitHub Project** board.
+2. Under the **Idea** column, click **`+ Add item`**.
+3. Type your feature title and hit **Enter**.
+4. Select **Blank issue**.
+5. In the right sidebar, add a brief description of what you want.
+6. Ask your AI Assistant to read the issue and write the full specification!
 
----
-
-Initial idea issue. Spec to be detailed."
-```
-
-Move the issues to the `Idea` column on the board matching your setup.
+Your AI will handle the refinement and automatically move it to the `Specification` stage.
 
 ---
 
