@@ -11,6 +11,7 @@ on:
 env:
   PROJECT_ID: "{{PROJECT_ID}}"
   STATUS_FIELD_ID: "{{STATUS_FIELD_ID}}"
+  STATUS_IDEA: "{{ID_IDEA}}"
   STATUS_EXPLORATION: "{{ID_EXPLORATION}}"
   STATUS_BRAINSTORMING: "{{ID_BRAINSTORMING}}"
   STATUS_DETAILING: "{{ID_DETAILING}}"
@@ -30,7 +31,7 @@ jobs:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
       - name: Detect Label and Move Issue
-        if: ${{ env.PROJECT_TOKEN != '' }}
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
@@ -39,28 +40,28 @@ jobs:
             let targetStatusId = null;
             let stageName = null;
 
-            if (labelName === 'upstream:exploration') {
+            if (labelName === 'stage:exploration') {
               targetStatusId = process.env.STATUS_EXPLORATION;
               stageName = 'Exploration';
-            } else if (labelName === 'upstream:brainstorming') {
+            } else if (labelName === 'stage:brainstorming') {
               targetStatusId = process.env.STATUS_BRAINSTORMING;
               stageName = 'Brainstorming';
-            } else if (labelName === 'upstream:detailing') {
+            } else if (labelName === 'stage:detailing') {
               targetStatusId = process.env.STATUS_DETAILING;
               stageName = 'Detailing';
-            } else if (labelName === 'upstream:approval') {
+            } else if (labelName === 'stage:approval') {
               targetStatusId = process.env.STATUS_APPROVAL;
               stageName = 'Approval';
-            } else if (labelName === 'upstream:development') {
+            } else if (labelName === 'stage:development') {
               targetStatusId = process.env.STATUS_DEVELOPMENT;
               stageName = 'Development';
-            } else if (labelName === 'upstream:testing') {
+            } else if (labelName === 'stage:testing') {
               targetStatusId = process.env.STATUS_TESTING;
               stageName = 'Testing';
             }
 
             if (!targetStatusId) {
-              console.log('No upstream PDLC label found. Skipping.');
+              console.log('No stage PDLC label found. Skipping.');
               return;
             }
 
@@ -86,9 +87,36 @@ jobs:
             await moveItem(node_id, targetStatusId);
             console.log(`Issue #${number} moved to ${stageName}`);
 
-{{OPTIONAL_ARCHITECTURE_VIOLATION_JOB}}
+  # OPTIONAL: Uncomment to enable architecture-violation → Idea
+  # move-violation-to-board:
+  #   name: architecture-violation → 💡 Idea
+  #   if: github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'architecture-violation'
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Move issue to Idea
+  #       if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
+  #       uses: actions/github-script@v7
+  #       with:
+  #         github-token: ${{ env.PROJECT_TOKEN }}
+  #         script: |
+  #           const { issue: { number, node_id } } = context.payload;
+  #           const { addProjectV2ItemById: { item } } = await github.graphql(`
+  #             mutation($p: ID!, $c: ID!) {
+  #               addProjectV2ItemById(input: {projectId: $p, contentId: $c}) { item { id } }
+  #             }`, { p: process.env.PROJECT_ID, c: node_id });
+  #           await github.graphql(`
+  #             mutation($p: ID!, $i: ID!, $f: ID!, $v: ProjectV2FieldValue!) {
+  #               updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f, value: $v}) {
+  #                 projectV2Item { id }
+  #               }
+  #             }`, {
+  #               p: process.env.PROJECT_ID, i: item.id, f: process.env.STATUS_FIELD_ID,
+  #               v: { singleSelectOptionId: process.env.STATUS_IDEA }
+  #             });
+  #           console.log(`Issue #${number} moved to Idea`);
 
   # PR Opened → Move linked issue to Code Review / PR
+  # 💡 VARIANT B (QA Agent): If using an AI QA agent, change `STATUS_CODE_REVIEW_PR` to `STATUS_TESTING` on line ~158
   move-card-on-pr-open:
     name: Open PR → Code Review / PR
     if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'reopened')
@@ -97,7 +125,7 @@ jobs:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
       - name: Move linked issue to Code Review / PR
-        if: ${{ env.PROJECT_TOKEN != '' }}
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
@@ -151,7 +179,7 @@ jobs:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
       - name: Swap PR labels
-        if: ${{ env.PROJECT_TOKEN != '' }}
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
@@ -170,7 +198,7 @@ jobs:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
       - name: Move issue to Production
-        if: ${{ env.PROJECT_TOKEN != '' }}
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
