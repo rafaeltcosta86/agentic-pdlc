@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 
 // The directory where CLI is executed
 const targetDir = process.cwd();
@@ -152,7 +152,7 @@ async function runSetup() {
   console.log(`\n${cyan}${i18n.creating_labels}${reset}`);
   for (const label of labels) {
     try {
-      execSync(`gh label create "${label.name}" --color "${label.color}" --description "${label.description}" --repo ${repo} --force`, { stdio: 'ignore' });
+      execFileSync('gh', ['label', 'create', label.name, '--color', label.color, '--description', label.description, '--repo', repo, '--force'], { stdio: 'ignore' });
       console.log(`  ${i18n.label_ok}${label.name}`);
     } catch (err) {
       console.log(`  ${i18n.label_warn}${label.name}`);
@@ -162,7 +162,7 @@ async function runSetup() {
   // Branch Protection
   console.log(`\n${cyan}${i18n.applying_protection}'${branchName}'...${reset}`);
   const protectionPayload = {
-    required_status_checks: { strict: true, checks: [{ context: "Sentinel / CI" }] },
+    required_status_checks: { strict: true, checks: [{ context: "Detect Project Board Drift" }] },
     enforce_admins: false,
     required_pull_request_reviews: { required_approving_review_count: 1, dismiss_stale_reviews: true },
     restrictions: null,
@@ -171,7 +171,7 @@ async function runSetup() {
   };
 
   try {
-    execSync(`gh api repos/${repo}/branches/${branchName}/protection --method PUT --input -`, {
+    execFileSync('gh', ['api', `repos/${repo}/branches/${branchName}/protection`, '--method', 'PUT', '--input', '-'], {
       input: JSON.stringify(protectionPayload),
       stdio: 'ignore'
     });
@@ -185,14 +185,14 @@ async function runSetup() {
   let ownerId, projectId;
   try {
     if (isOrg) {
-      const orgOutput = execSync(`gh api graphql -f query='query($login: String!) { organization(login: $login) { id } }' -f login="${repoOwner}" --jq '.data.organization.id'`).toString().trim();
+      const orgOutput = execFileSync('gh', ['api', 'graphql', '-f', 'query=query($login: String!) { organization(login: $login) { id } }', '-f', `login=${repoOwner}`, '--jq', '.data.organization.id']).toString().trim();
       ownerId = orgOutput;
     } else {
-      const userOutput = execSync(`gh api graphql -f query='{ viewer { id } }' --jq '.data.viewer.id'`).toString().trim();
+      const userOutput = execFileSync('gh', ['api', 'graphql', '-f', 'query={ viewer { id } }', '--jq', '.data.viewer.id']).toString().trim();
       ownerId = userOutput;
     }
 
-    const projectCreateOutput = execSync(`gh api graphql -f query='mutation($owner: ID!, $title: String!) { createProjectV2(input: {ownerId: $owner, title: $title}) { projectV2 { id } } }' -f owner="${ownerId}" -f title="PDLC - ${repoName}" --jq '.data.createProjectV2.projectV2.id'`).toString().trim();
+    const projectCreateOutput = execFileSync('gh', ['api', 'graphql', '-f', 'query=mutation($owner: ID!, $title: String!) { createProjectV2(input: {ownerId: $owner, title: $title}) { projectV2 { id } } }', '-f', `owner=${ownerId}`, '-f', `title=PDLC - ${repoName}`, '--jq', '.data.createProjectV2.projectV2.id']).toString().trim();
     projectId = projectCreateOutput;
 
     console.log(`  ${i18n.project_ok}${projectId})`);
@@ -206,7 +206,7 @@ async function runSetup() {
   if (projectId) {
     console.log(`  ${cyan}${i18n.config_columns}${reset}`);
     try {
-      const fieldsOutput = execSync(`gh api graphql -f query='query($projectId: ID!) { node(id: $projectId) { ... on ProjectV2 { fields(first: 20) { nodes { ... on ProjectV2SingleSelectField { id name } } } } } }' -f projectId="${projectId}" --jq '.data.node.fields.nodes[] | select(.name == "Status") | .id'`).toString().trim();
+      const fieldsOutput = execFileSync('gh', ['api', 'graphql', '-f', 'query=query($projectId: ID!) { node(id: $projectId) { ... on ProjectV2 { fields(first: 20) { nodes { ... on ProjectV2SingleSelectField { id name } } } } } }', '-f', `projectId=${projectId}`, '--jq', '.data.node.fields.nodes[] | select(.name == "Status") | .id']).toString().trim();
       statusFieldId = fieldsOutput;
 
       if (statusFieldId) {
@@ -243,9 +243,9 @@ async function runSetup() {
           }
         });
 
-        const updateOutput = execSync(`gh api graphql --input -`, { input: queryPayload }).toString().trim();
-        const jsonResponse = JSON.parse(updateOutput);
-        const returnedOptions = jsonResponse.data.updateProjectV2SingleSelectField.projectV2SingleSelectField.options;
+        const updateOutput = execFileSync('gh', ['api', 'graphql', '--input', '-'], { input: queryPayload }).toString().trim();
+        const jsonResponse = updateOutput ? JSON.parse(updateOutput) : null;
+        const returnedOptions = jsonResponse?.data?.updateProjectV2SingleSelectField?.projectV2SingleSelectField?.options || [];
         
         for (const opt of returnedOptions) {
           optionMap[opt.name] = opt.id;
@@ -311,7 +311,7 @@ async function runSetup() {
       console.log(`${cyan}${i18n.step_1}${reset}`);
       console.log(`${cyan}${i18n.step_2}${reset}`);
       console.log(`${cyan}>>> English: "Read .agentic-setup.md and guide me through the setup."${reset}`);
-      console.log(`${cyan}>>> Español: "Lea el arquivo .agentic-setup.md e inicie el Setup Mode"${reset}`);
+      console.log(`${cyan}>>> Español: "Lea el archivo .agentic-setup.md e inicie el Setup Mode"${reset}`);
       console.log(`${cyan}>>> Português: "Leia o arquivo .agentic-setup.md e inicie o Setup Mode."${reset}\n`);
       console.log(`${i18n.note_cleanup}`);
     } else {
