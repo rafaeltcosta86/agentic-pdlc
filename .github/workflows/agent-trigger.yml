@@ -20,7 +20,7 @@ jobs:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
       - name: Update Labels
-        if: ${{ env.PROJECT_TOKEN != '' }}
+        if: ${{ env.PROJECT_TOKEN != '' && !contains('{{IMPLEMENTATION_AGENT_LABEL}}', '{{') }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
@@ -33,20 +33,21 @@ jobs:
                 owner,
                 repo,
                 issue_number,
-                name: 'upstream:approval'
+                name: 'stage:approval'
               });
             } catch (error) {
-              console.log('Label upstream:approval not found or could not be removed');
+              console.log('Label stage:approval not found or could not be removed');
             }
             
             await github.rest.issues.addLabels({
               owner,
               repo,
               issue_number,
-              labels: ['upstream:development', '{{IMPLEMENTATION_AGENT_LABEL}}', 'agent:working']
+              labels: ['stage:development', '{{IMPLEMENTATION_AGENT_LABEL}}', 'agent:working']
             });
 
       - name: Comment on issue to trigger agent and prevent race conditions
+        if: ${{ !contains('{{IMPLEMENTATION_AGENT_LABEL}}', '{{') }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -89,6 +90,7 @@ jobs:
       contents: read
     steps:
       - name: Comment on issue to trigger agent
+        if: ${{ !contains('{{IMPLEMENTATION_AGENT_LABEL}}', '{{') }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
