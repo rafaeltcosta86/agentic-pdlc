@@ -19,8 +19,9 @@ Specifically, check for:
 - `.github/workflows/pdlc-health-check.yml`
 
 If any of these files are missing, you are in **Setup Mode**. Do not proceed with feature requests until setup is complete.
-1. Acknowledge that the framework is not yet set up.
-2. Interactively ask the user for required values **one group at a time**:
+1. **Language Detection:** Analyze the user's previous prompts and preferred language. Conduct this entire Setup Mode and ask all your interactive questions in that same language.
+2. Acknowledge that the framework is not yet set up.
+3. Interactively ask the user for required values **one group at a time**:
    - **Project basics:** Project Name, Description, Technical Stack (Structure), and GitHub Username (for CODEOWNERS security).
    - **Commands:** Test command, Lint command, Build command.
    - **Invariants:** Critical business rules agents must never violate (e.g. Human-in-the-loop).
