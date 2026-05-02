@@ -11,6 +11,7 @@ on:
 env:
   PROJECT_ID: "{{PROJECT_ID}}"
   STATUS_FIELD_ID: "{{STATUS_FIELD_ID}}"
+  STATUS_IDEA: "{{ID_IDEA}}"
   STATUS_EXPLORATION: "{{ID_EXPLORATION}}"
   STATUS_BRAINSTORMING: "{{ID_BRAINSTORMING}}"
   STATUS_DETAILING: "{{ID_DETAILING}}"
@@ -86,18 +87,13 @@ jobs:
             await moveItem(node_id, targetStatusId);
             console.log(`Issue #${number} moved to ${stageName}`);
 
-  # OPTIONAL: Uncomment to enable architecture-violation → Exploration
+  # OPTIONAL: Uncomment to enable architecture-violation → Idea
   # move-violation-to-board:
   #   name: architecture-violation → 💡 Idea
   #   if: github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'architecture-violation'
   #   runs-on: ubuntu-latest
-  #   env:
-  #     PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
-  #     PROJECT_ID: '{{PROJECT_ID}}'
-  #     STATUS_FIELD_ID: '{{STATUS_FIELD_ID}}'
-  #     STATUS_IDEA: '{{STATUS_IDEA}}'
   #   steps:
-  #     - name: Move issue to Exploration
+  #     - name: Move issue to Idea
   #       if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
   #       uses: actions/github-script@v7
   #       with:
