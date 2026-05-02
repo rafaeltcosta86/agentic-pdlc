@@ -1,5 +1,5 @@
 # This file prevents autonomous agents from modifying core security, automation, and instruction rules
 # without explicit approval from the repository owner.
 
-.github/ @{{GITHUB_USERNAME}}
-AGENTS.md @{{GITHUB_USERNAME}}
+.github/ @rafaeltcosta86
+AGENTS.md @rafaeltcosta86
