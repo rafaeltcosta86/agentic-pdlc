@@ -21,16 +21,20 @@ jobs:
 
       - name: Run Linters
         if: ${{ !contains('{{LINT_COMMAND}}', '{{') }}
-        run: {{LINT_COMMAND}}
+        run: |
+          {{LINT_COMMAND}}
 
       - name: Typecheck
         if: ${{ !contains('{{TYPECHECK_COMMAND}}', '{{') }}
-        run: {{TYPECHECK_COMMAND}}
+        run: |
+          {{TYPECHECK_COMMAND}}
 
       - name: Build
         if: ${{ !contains('{{BUILD_COMMAND}}', '{{') }}
-        run: {{BUILD_COMMAND}}
+        run: |
+          {{BUILD_COMMAND}}
 
       - name: Run Tests
         if: ${{ !contains('{{TEST_COMMAND}}', '{{') }}
-        run: {{TEST_COMMAND}}
+        run: |
+          {{TEST_COMMAND}}
