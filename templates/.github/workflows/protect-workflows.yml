@@ -2,6 +2,7 @@ name: Protect Workflows
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - '.github/**'
 
@@ -13,8 +14,8 @@ jobs:
       - name: Check for Human Approval
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'human-approved') }}
         run: |
-          echo "🚨 Modificações na pasta .github/ detectadas."
-          echo "Como medida de segurança, este repositório bloqueia edições em workflows por padrão."
-          echo "Se você for um Agente IA, não adicione a label de aprovação por conta própria."
-          echo "Se você for o humano responsável, adicione a label 'human-approved' no PR para liberar o merge."
+          echo "🚨 Modifications in the .github/ directory detected."
+          echo "As a security measure, this repository blocks workflow edits by default."
+          echo "If you are an AI Agent, do not add the approval label yourself."
+          echo "If you are the human owner, please add the 'human-approved' label to this PR to allow merging."
           exit 1
