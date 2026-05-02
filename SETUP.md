@@ -143,6 +143,18 @@ Simply open `.github/workflows/project-automation.yml` and uncomment the `move-v
 
 ---
 
+## (Optional) AI QA Agent Integration (Variant B)
+
+If you use an AI QA Agent (e.g., QAWolf, a secondary AI script) to test your PRs before Code Review, you can switch to **Variant B**.
+
+Simply open `.github/workflows/project-automation.yml`:
+1. In the `move-card-on-pr-open` job, change the PR destination from `STATUS_CODE_REVIEW_PR` to `STATUS_TESTING`.
+2. Uncomment the `move-card-on-qa-pass` job at the bottom of the file to move tested issues to `Code Review / PR` upon receiving a `qa:pass` label.
+
+If you don't use this, you can safely delete `templates/.github/workflows/qa-agent.yml`.
+
+---
+
 ## Final Verification Checklist
 
 - [ ] Board has 10 columns fully configured

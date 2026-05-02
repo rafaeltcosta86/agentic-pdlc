@@ -116,6 +116,7 @@ jobs:
   #           console.log(`Issue #${number} moved to Idea`);
 
   # PR Opened → Move linked issue to Code Review / PR
+  # 💡 VARIANT B (QA Agent): If using an AI QA agent, change `STATUS_CODE_REVIEW_PR` to `STATUS_TESTING` on line ~158
   move-card-on-pr-open:
     name: Open PR → Code Review / PR
     if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'reopened')
