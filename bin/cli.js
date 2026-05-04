@@ -194,17 +194,15 @@ async function runSetup() {
   try {
     execFileSync('gh', ['api', `repos/${repo}/branches/${branchName}/protection`, '--method', 'PUT', '--input', '-'], {
       input: JSON.stringify(protectionPayload),
-      stdio: 'ignore'
+      stdio: ['pipe', 'pipe', 'pipe']
     });
     console.log(`  ${i18n.protection_ok}${branchName}`);
   } catch (err) {
     console.log(`  ${i18n.protection_warn}`);
-    try {
-      const visibility = execFileSync('gh', ['repo', 'view', repo, '--json', 'visibility', '--jq', '.visibility']).toString().trim();
-      if (visibility.toUpperCase() === 'PRIVATE') {
-        console.log(`  ${yellow}Note: Branch protection on Private repos requires GitHub Pro or GitHub Team.${reset}`);
-      }
-    } catch (e) {}
+    if (err.stderr) {
+      const errMsg = err.stderr.toString().trim().split('\n').pop();
+      console.log(`  ${yellow}Detalhes do GitHub: ${errMsg}${reset}`);
+    }
   }
 
   // Project V2
