@@ -120,6 +120,7 @@ async function runSetup() {
   while (true) {
     let repoUrl = (await askQuestion(i18n.ask_repo)).trim();
     if (repoUrl.endsWith('/')) repoUrl = repoUrl.slice(0, -1);
+    if (repoUrl.endsWith('.git')) repoUrl = repoUrl.slice(0, -4);
     const repoParts = repoUrl.split('/');
     if (repoParts.length >= 2) {
       repoOwner = repoParts[repoParts.length - 2];
