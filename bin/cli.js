@@ -36,7 +36,7 @@ const i18n = {
   gh_ok: t('✅ GitHub CLI is authenticated.', '✅ GitHub CLI está autenticado.', '✅ GitHub CLI está autenticado.'),
   gh_error: t('❌ GitHub CLI (gh) is not installed or not authenticated.', '❌ GitHub CLI (gh) não está instalado ou não autenticado.', '❌ GitHub CLI (gh) no está instalado o no está autenticado.'),
   gh_install: t('Please install it from https://cli.github.com/ and run "gh auth login" before continuing.\n', 'Por favor, instale em https://cli.github.com/ e rode "gh auth login" antes de continuar.\n', 'Por favor, instálalo desde https://cli.github.com/ y ejecuta "gh auth login" antes de continuar.\n'),
-  ask_agent: t('Which AI Agent will you use for the setup? (e.g. claude, cursor, copilot, or other): ', 'Qual Agente de IA você usará para o setup? (ex: claude, cursor, copilot, ou outro): ', '¿Qué Agente de IA usarás para la configuración? (ej: claude, cursor, copilot, u otro): '),
+  ask_agent: t('Which AI Agent will you use for the setup? (e.g. claude, cursor, copilot, antigravity, or other): ', 'Qual Agente de IA você usará para o setup? (ex: claude, cursor, copilot, antigravity, ou outro): ', '¿Qué Agente de IA usarás para la configuración? (ej: claude, cursor, copilot, antigravity, u otro): '),
   ask_repo: t('What is your GitHub repository URL? (e.g., https://github.com/YOUR_USER/repo_name): ', 'Qual é a URL do seu repositório no GitHub? (ex: https://github.com/SEU_USUARIO/repo_name): ', '¿Cuál es la URL de tu repositorio en GitHub? (ej: https://github.com/TU_USUARIO/repo_name): '),
   invalid_repo: t('❌ Invalid repository URL. Expected format: https://github.com/OWNER/REPO', '❌ URL de repositório inválida. Formato esperado: https://github.com/OWNER/REPO', '❌ URL de repositorio inválida. Formato esperado: https://github.com/OWNER/REPO'),
   ask_org: t('Does this repository belong to a personal User account (e.g., github.com/rafaeltcosta86) or an Organization (e.g., github.com/google-labs)? (user/org): ', 'Esse repositório pertence a um Usuário pessoal (ex: github.com/rafaeltcosta86) ou a uma Organização (ex: github.com/google-labs)? (user/org): ', '¿Este repositorio pertenece a un Usuario personal (ej: github.com/rafaeltcosta86) o a una Organización (ej: github.com/google-labs)? (user/org): '),
@@ -113,7 +113,7 @@ async function runSetup() {
   const agentAnswer = await askQuestion(i18n.ask_agent);
   const agent = agentAnswer.trim().toLowerCase();
   if (!['claude', 'cursor', 'copilot'].includes(agent)) {
-    console.log(t(`⚠️ Agent '${agent}' not recognized natively. Will use generic setup.`, `⚠️ Agente '${agent}' não reconhecido nativamente. Usará setup genérico.`, `⚠️ Agente '${agent}' no reconocido nativamente. Usará configuración genérica.`));
+    console.log(t(`ℹ️ Generating Universal Setup for '${agent}' (Compatible with any Markdown-reading agent).`, `ℹ️ Gerando Setup Universal para '${agent}' (Compatível com qualquer agente que leia Markdown).`, `ℹ️ Generando Setup Universal para '${agent}' (Compatible con cualquier agente que lea Markdown).`));
   }
 
   let repoOwner, repoName, repo;
@@ -206,10 +206,10 @@ async function runSetup() {
       // If the error is a 403 (Upgrade required for private repos)
       if (errMsg.includes('403') || errMsg.toLowerCase().includes('upgrade')) {
         console.log(`  ${cyan}👉 Dica: Repositórios privados na conta Gratuita não suportam a API de Branch Protection Clássica.${reset}`);
-        console.log(`  ${cyan}   Opções para resolver:${reset}`);
-        console.log(`  ${cyan}   1. Mude o repositório para Público (totalmente grátis).${reset}`);
-        console.log(`  ${cyan}   2. Configure um "Ruleset" manualmente nas configurações do repositório (grátis para privados).${reset}`);
-        console.log(`  ${cyan}   3. Faça upgrade para o GitHub Pro/Team.${reset}`);
+        console.log(`  ${cyan}   Nota: Essa proteção é opcional (evita commits diretos na main) e não impede o restante do setup!${reset}`);
+        console.log(`  ${cyan}   Se quiser ativar a proteção gratuitamente, você tem duas opções:${reset}`);
+        console.log(`  ${cyan}   1. Mudar o repositório para Público (Settings > Danger Zone).${reset}`);
+        console.log(`  ${cyan}   2. Ou configurar um "Ruleset" manualmente (Settings > Rules > Rulesets), que é a nova funcionalidade grátis do GitHub.${reset}`);
       }
     }
   }
