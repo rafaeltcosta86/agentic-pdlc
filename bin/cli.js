@@ -223,24 +223,22 @@ async function runSetup() {
           { name: "🚀 Production", description: "Merged", color: "GREEN" }
         ];
 
-        const updateFieldQuery = `mutation($projectId: ID!, $fieldId: ID!, $options: [ProjectV2SingleSelectFieldOptionInput!]) {
+        const updateFieldQuery = `mutation($fieldId: ID!, $options: [ProjectV2SingleSelectFieldOptionInput!]) {
           updateProjectV2Field(input: {
-            projectId: $projectId,
             fieldId: $fieldId,
             singleSelectOptions: $options
-          }) { 
-            projectV2Field { 
+          }) {
+            projectV2Field {
               ... on ProjectV2SingleSelectField {
-                options { id name } 
+                options { id name }
               }
-            } 
+            }
           }
         }`;
 
         const queryPayload = JSON.stringify({
           query: updateFieldQuery,
           variables: {
-            projectId: projectId,
             fieldId: statusFieldId,
             options: columns
           }

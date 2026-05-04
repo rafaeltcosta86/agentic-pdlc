@@ -5,11 +5,11 @@
 | Column | Meaning | Who moves the card |
 |---|---|---|
 | 💡 Idea | Backlog — every new issue lands here | Manual |
-| 🔍 Exploration | Claude is analyzing code and context | Label `stage:exploration` |
-| 🧠 Brainstorming | Claude proposed approaches, awaiting PM gate | Label `stage:brainstorming` |
-| 📐 Detail Solution | Claude is writing the technical spec | Label `stage:detailing` |
-| ✅ Approval | Spec ready, awaiting `spec:approved` label | Label `spec:approved` |
-| ⚙️ Development | Agent implementing the spec | Label `stage:development` |
+| 🔍 Exploration | AI is analyzing code and context | Label `stage:exploration` |
+| 🧠 Brainstorming | AI proposed approaches and trade-offs | Label `stage:brainstorming` |
+| 📐 Detail Solution | AI is writing the technical spec | Label `stage:detailing` |
+| ✅ Approval | Your turn, awaiting `spec:approved` label | Label `spec:approved` |
+| ⚙️ Development | AI implementing the spec | Label `stage:development` |
 | 🧪 Testing | CI pipeline running | GitHub Actions |
 | 👁 Code Review / PR | PR opened, awaiting human review | GitHub Actions |
 | 🚀 Production | Merged | GitHub Actions |
