@@ -202,6 +202,15 @@ async function runSetup() {
     if (err.stderr) {
       const errMsg = err.stderr.toString().trim().split('\n').pop();
       console.log(`  ${yellow}Detalhes do GitHub: ${errMsg}${reset}`);
+      
+      // If the error is a 403 (Upgrade required for private repos)
+      if (errMsg.includes('403') || errMsg.toLowerCase().includes('upgrade')) {
+        console.log(`  ${cyan}👉 Dica: Repositórios privados na conta Gratuita não suportam a API de Branch Protection Clássica.${reset}`);
+        console.log(`  ${cyan}   Opções para resolver:${reset}`);
+        console.log(`  ${cyan}   1. Mude o repositório para Público (totalmente grátis).${reset}`);
+        console.log(`  ${cyan}   2. Configure um "Ruleset" manualmente nas configurações do repositório (grátis para privados).${reset}`);
+        console.log(`  ${cyan}   3. Faça upgrade para o GitHub Pro/Team.${reset}`);
+      }
     }
   }
 
