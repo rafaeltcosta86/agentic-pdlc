@@ -63,7 +63,7 @@ const i18n = {
   step_1: t('1. Open your AI Assistant (Claude, Cursor, Copilot, etc).', '1. Abra o seu Assistente de IA (Claude, Cursor, Copilot, etc).', '1. Abre tu Asistente de IA (Claude, Cursor, Copilot, etc).'),
   step_2: t('2. Ask it to read the .agentic-setup.md and start Setup Mode in any language you prefer. Example 👇', '2. Peça para ele ler o .agentic-setup.md e iniciar o Setup Mode. Exemplo 👇', '2. Pídele que lea .agentic-setup.md e inicie el Setup Mode. Ejemplo 👇'),
   note_cleanup: t('Note: The agent will clean up the .agentic-setup.md file automatically when finished.\n', 'Nota: O agente irá limpar o arquivo .agentic-setup.md automaticamente quando terminar.\n', 'Nota: El agente limpiará el archivo .agentic-setup.md automáticamente cuando termine.\n'),
-  missing_claude: t('❌ Could not find claude instruction file at ', '❌ Não foi possível encontrar o arquivo de instrução em ', '❌ No se pudo encontrar el archivo de instrucción en '),
+  missing_claude: t('❌ Could not find instruction file at ', '❌ Não foi possível encontrar o arquivo de instrução em ', '❌ No se pudo encontrar el archivo de instrucción en '),
   cursor_rules_written: t('✅ Default cursor rules written to .cursorrules', '✅ Regras padrão do cursor salvas em .cursorrules', '✅ Reglas por defecto de cursor guardadas en .cursorrules'),
   cursor_setup_written: t('✅ Framework Setup Instructions written to .agentic-pdlc/SETUP_PROMPT.md', '✅ Instruções de Setup do Framework salvas em .agentic-pdlc/SETUP_PROMPT.md', '✅ Instrucciones de Setup del Framework guardadas en .agentic-pdlc/SETUP_PROMPT.md'),
   cursor_done: t('🎉 Done! To start the conversational setup:', '🎉 Pronto! Para iniciar o setup conversacional:', '🎉 ¡Listo! Para iniciar la configuración conversacional:'),
