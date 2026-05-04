@@ -42,13 +42,13 @@ const i18n = {
   ask_org: t('Does this repository belong to a personal User account (e.g., github.com/rafaeltcosta86) or an Organization (e.g., github.com/google-labs)? (user/org): ', 'Esse repositório pertence a um Usuário pessoal (ex: github.com/rafaeltcosta86) ou a uma Organização (ex: github.com/google-labs)? (user/org): ', '¿Este repositorio pertenece a un Usuario personal (ej: github.com/rafaeltcosta86) o a una Organización (ej: github.com/google-labs)? (user/org): '),
   ask_branch: t('What is your main branch name? (default: main): ', 'Qual o nome da sua branch principal? (padrão: main): ', '¿Cuál es el nombre de tu rama principal? (por defecto: main): '),
   starting_setup: t('Starting automated repository setup...', 'Iniciando o setup automatizado do repositório...', 'Iniciando la configuración automatizada del repositorio...'),
-  creating_labels: t('[1/3] Creating repository labels...', '[1/3] Criando labels no repositório...', '[1/3] Creando etiquetas (labels) en el repositorio...'),
+  creating_labels: t('[1/2] Creating repository labels...', '[1/2] Criando labels no repositório...', '[1/2] Creando etiquetas (labels) en el repositorio...'),
   label_ok: t('✅ Label created: ', '✅ Label criada: ', '✅ Etiqueta creada: '),
   label_warn: t('⚠️ Failed to create label (might already exist): ', '⚠️ Falha ao criar label (talvez já exista): ', '⚠️ Fallo al crear etiqueta (quizás ya exista): '),
   applying_protection: t('[2/3] Applying branch protection on ', '[2/3] Aplicando proteção de branch em ', '[2/3] Aplicando protección de rama en '),
   protection_ok: t('✅ Branch protection applied to ', '✅ Proteção de branch aplicada em ', '✅ Protección de rama aplicada a '),
   protection_warn: t('⚠️ Failed to apply branch protection. (Do you have GitHub Pro or is the repo Public?)', '⚠️ Falha ao aplicar proteção de branch. (Você tem GitHub Pro ou o repo é Público?)', '⚠️ Fallo al aplicar protección de rama. (¿Tienes GitHub Pro o el repositorio es Público?)'),
-  creating_project: t('[3/3] Creating Project V2 Board...', '[3/3] Criando Project V2 Board...', '[3/3] Creando Project V2 Board...'),
+  creating_project: t('[2/2] Creating Project V2 Board...', '[2/2] Criando Project V2 Board...', '[2/2] Creando Project V2 Board...'),
   project_ok: t('✅ Project created (ID: ', '✅ Projeto criado (ID: ', '✅ Proyecto creado (ID: '),
   project_err: t('❌ Failed to create project. Error: ', '❌ Falha ao criar o projeto. Erro: ', '❌ Fallo al crear el proyecto. Error: '),
   config_columns: t('Configuring Project Columns...', 'Configurando colunas do Projeto...', 'Configurando columnas del Proyecto...'),
@@ -177,40 +177,6 @@ async function runSetup() {
       console.log(`  ${i18n.label_ok}${label.name}`);
     } catch (err) {
       console.log(`  ${i18n.label_warn}${label.name}`);
-    }
-  }
-
-  // Branch Protection
-  console.log(`\n${cyan}${i18n.applying_protection}'${branchName}'...${reset}`);
-  const protectionPayload = {
-    required_status_checks: { strict: true, checks: [{ context: "Detect Project Board Drift" }] },
-    enforce_admins: false,
-    required_pull_request_reviews: { required_approving_review_count: 1, dismiss_stale_reviews: true },
-    restrictions: null,
-    allow_force_pushes: false,
-    allow_deletions: false
-  };
-
-  try {
-    execFileSync('gh', ['api', `repos/${repo}/branches/${branchName}/protection`, '--method', 'PUT', '--input', '-'], {
-      input: JSON.stringify(protectionPayload),
-      stdio: ['pipe', 'pipe', 'pipe']
-    });
-    console.log(`  ${i18n.protection_ok}${branchName}`);
-  } catch (err) {
-    console.log(`  ${i18n.protection_warn}`);
-    if (err.stderr) {
-      const errMsg = err.stderr.toString().trim().split('\n').pop();
-      console.log(`  ${yellow}Detalhes do GitHub: ${errMsg}${reset}`);
-      
-      // If the error is a 403 (Upgrade required for private repos)
-      if (errMsg.includes('403') || errMsg.toLowerCase().includes('upgrade')) {
-        console.log(`  ${cyan}👉 Dica: Repositórios privados na conta Gratuita não suportam a API de Branch Protection Clássica.${reset}`);
-        console.log(`  ${cyan}   Nota: Essa proteção é opcional (evita commits diretos na main) e não impede o restante do setup!${reset}`);
-        console.log(`  ${cyan}   Se quiser ativar a proteção gratuitamente, você tem duas opções:${reset}`);
-        console.log(`  ${cyan}   1. Mudar o repositório para Público (Settings > Danger Zone).${reset}`);
-        console.log(`  ${cyan}   2. Ou configurar um "Ruleset" manualmente (Settings > Rules > Rulesets), que é a nova funcionalidade grátis do GitHub.${reset}`);
-      }
     }
   }
 
