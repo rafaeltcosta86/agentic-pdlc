@@ -69,8 +69,8 @@ const i18n = {
   cursor_done: t('🎉 Done! To start the conversational setup:', '🎉 Pronto! Para iniciar o setup conversacional:', '🎉 ¡Listo! Para iniciar la configuración conversacional:'),
   cursor_step_1: t('\t1. Open Cursor', '\t1. Abra o Cursor', '\t1. Abre Cursor'),
   cursor_step_2: t('\t2. Open Composer (Cmd+I or Cmd+L) and type: "@.agentic-pdlc/SETUP_PROMPT.md execute Setup Mode"\n', '\t2. Abra o Composer (Cmd+I ou Cmd+L) e digite: "@.agentic-pdlc/SETUP_PROMPT.md execute Setup Mode"\n', '\t2. Abre Composer (Cmd+I o Cmd+L) y escribe: "@.agentic-pdlc/SETUP_PROMPT.md execute Setup Mode"\n'),
-  generic_written: t('✅ Agent generic setup instructions written to .agentic-setup-prompt.md', '✅ Instruções genéricas salvas em .agentic-setup-prompt.md', '✅ Instrucciones genéricas guardadas en .agentic-setup-prompt.md'),
-  generic_done: t('Provide the .agentic-setup-prompt.md file to your AI agent and ask it to execute Setup Mode!\n', 'Forneça o arquivo .agentic-setup-prompt.md para o seu agente e peça para executar o Setup Mode!\n', '¡Proporciona el archivo .agentic-setup-prompt.md a tu agente de IA y pídele que ejecute el Setup Mode!\n')
+  generic_written: t('✅ Agent generic setup instructions written to .agentic-setup.md', '✅ Instruções genéricas salvas em .agentic-setup.md', '✅ Instrucciones genéricas guardadas en .agentic-setup.md'),
+  generic_done: t('Tell your AI agent to read and execute the .agentic-setup.md file!\n', 'Diga ao seu agente para ler e executar o arquivo .agentic-setup.md!\n', '¡Dile a tu agente de IA que lea y ejecute el archivo .agentic-setup.md!\n')
 };
 
 const cyan = '\x1b[36m';
@@ -112,24 +112,45 @@ async function runSetup() {
 
   const agentAnswer = await askQuestion(i18n.ask_agent);
   const agent = agentAnswer.trim().toLowerCase();
-
-  const repoUrlAnswer = await askQuestion(i18n.ask_repo);
-  let repoUrl = repoUrlAnswer.trim();
-  if (repoUrl.endsWith('/')) repoUrl = repoUrl.slice(0, -1);
-  const repoParts = repoUrl.split('/');
-  if (repoParts.length < 2) {
-    console.error(`${red}${i18n.invalid_repo}${reset}`);
-    process.exit(1);
+  if (!['claude', 'cursor', 'copilot'].includes(agent)) {
+    console.log(t(`⚠️ Agent '${agent}' not recognized natively. Will use generic setup.`, `⚠️ Agente '${agent}' não reconhecido nativamente. Usará setup genérico.`, `⚠️ Agente '${agent}' no reconocido nativamente. Usará configuración genérica.`));
   }
-  const repoOwner = repoParts[repoParts.length - 2];
-  const repoName = repoParts[repoParts.length - 1];
-  const repo = `${repoOwner}/${repoName}`;
 
-  const accountTypeAnswer = await askQuestion(i18n.ask_org);
-  const isOrg = accountTypeAnswer.trim().toLowerCase() === 'org' || accountTypeAnswer.trim().toLowerCase() === 'organization';
+  let repoOwner, repoName, repo;
+  while (true) {
+    let repoUrl = (await askQuestion(i18n.ask_repo)).trim();
+    if (repoUrl.endsWith('/')) repoUrl = repoUrl.slice(0, -1);
+    const repoParts = repoUrl.split('/');
+    if (repoParts.length >= 2) {
+      repoOwner = repoParts[repoParts.length - 2];
+      repoName = repoParts[repoParts.length - 1];
+      repo = `${repoOwner}/${repoName}`;
+      break;
+    }
+    console.log(`${red}${i18n.invalid_repo}${reset}`);
+  }
 
-  const branchAnswer = await askQuestion(i18n.ask_branch);
-  const branchName = branchAnswer.trim() || 'main';
+  const askProjectName = t(`What is the project name for the board? (default: ${repoName.toUpperCase()}): `, `Qual o nome do projeto em que o board será configurado? (padrão: ${repoName.toUpperCase()}): `, `¿Cuál es el nombre del proyecto en el que se configurará el board? (por defecto: ${repoName.toUpperCase()}): `);
+  const projectNameAnswer = await askQuestion(askProjectName);
+  const projectName = projectNameAnswer.trim() ? projectNameAnswer.trim().toUpperCase() : repoName.toUpperCase();
+  const boardName = `BOARD - ${projectName}`;
+
+  let isOrg = false;
+  try {
+    const ownerType = execFileSync('gh', ['api', `repos/${repo}`, '--jq', '.owner.type']).toString().trim();
+    isOrg = ownerType === 'Organization';
+  } catch (err) {
+    const accountTypeAnswer = await askQuestion(i18n.ask_org);
+    isOrg = accountTypeAnswer.trim().toLowerCase() === 'org' || accountTypeAnswer.trim().toLowerCase() === 'organization';
+  }
+
+  let branchName = 'main';
+  try {
+    branchName = execFileSync('gh', ['api', `repos/${repo}`, '--jq', '.default_branch']).toString().trim() || 'main';
+  } catch (err) {
+    const branchAnswer = await askQuestion(i18n.ask_branch);
+    if (branchAnswer.trim()) branchName = branchAnswer.trim();
+  }
 
   console.log(`\n${yellow}${i18n.starting_setup}${reset}`);
 
@@ -178,6 +199,12 @@ async function runSetup() {
     console.log(`  ${i18n.protection_ok}${branchName}`);
   } catch (err) {
     console.log(`  ${i18n.protection_warn}`);
+    try {
+      const visibility = execFileSync('gh', ['repo', 'view', repo, '--json', 'visibility', '--jq', '.visibility']).toString().trim();
+      if (visibility.toUpperCase() === 'PRIVATE') {
+        console.log(`  ${yellow}Note: Branch protection on Private repos requires GitHub Pro or GitHub Team.${reset}`);
+      }
+    } catch (e) {}
   }
 
   // Project V2
@@ -192,7 +219,7 @@ async function runSetup() {
       ownerId = userOutput;
     }
 
-    const projectCreateOutput = execFileSync('gh', ['api', 'graphql', '-f', 'query=mutation($owner: ID!, $title: String!) { createProjectV2(input: {ownerId: $owner, title: $title}) { projectV2 { id } } }', '-f', `owner=${ownerId}`, '-f', `title=PDLC - ${repoName}`, '--jq', '.data.createProjectV2.projectV2.id']).toString().trim();
+    const projectCreateOutput = execFileSync('gh', ['api', 'graphql', '-f', 'query=mutation($owner: ID!, $title: String!) { createProjectV2(input: {ownerId: $owner, title: $title}) { projectV2 { id } } }', '-f', `owner=${ownerId}`, '-f', `title=${boardName}`, '--jq', '.data.createProjectV2.projectV2.id']).toString().trim();
     projectId = projectCreateOutput;
 
     console.log(`  ${i18n.project_ok}${projectId})`);
@@ -223,13 +250,15 @@ async function runSetup() {
         ];
 
         const updateFieldQuery = `mutation($projectId: ID!, $fieldId: ID!, $options: [ProjectV2SingleSelectFieldOptionInput!]) {
-          updateProjectV2SingleSelectField(input: {
+          updateProjectV2Field(input: {
             projectId: $projectId,
             fieldId: $fieldId,
-            options: $options
+            singleSelectOptions: $options
           }) { 
-            projectV2SingleSelectField { 
-              options { id name } 
+            projectV2Field { 
+              ... on ProjectV2SingleSelectField {
+                options { id name } 
+              }
             } 
           }
         }`;
@@ -245,7 +274,7 @@ async function runSetup() {
 
         const updateOutput = execFileSync('gh', ['api', 'graphql', '--input', '-'], { input: queryPayload }).toString().trim();
         const jsonResponse = updateOutput ? JSON.parse(updateOutput) : null;
-        const returnedOptions = jsonResponse?.data?.updateProjectV2SingleSelectField?.projectV2SingleSelectField?.options || [];
+        const returnedOptions = jsonResponse?.data?.updateProjectV2Field?.projectV2Field?.options || [];
         
         for (const opt of returnedOptions) {
           optionMap[opt.name] = opt.id;
@@ -337,11 +366,11 @@ async function runSetup() {
     }
   } else {
     // Generic fallback mapping
-    const dest = path.join(targetDir, '.agentic-setup-prompt.md');
+    const dest = path.join(targetDir, '.agentic-setup.md');
     fs.copyFileSync(claudeSetupSrc, dest);
     console.log(`${i18n.generic_written}`);
     console.log(`\n${green}${i18n.cursor_done}${reset}`);
-    console.log(`${cyan}${i18n.generic_done}${reset}`);
+    console.log(`${cyan}>>> ${i18n.generic_done}${reset}`);
   }
 
   rl.close();
