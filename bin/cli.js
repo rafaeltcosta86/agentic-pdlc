@@ -36,19 +36,19 @@ const i18n = {
   gh_ok: t('✅ GitHub CLI is authenticated.', '✅ GitHub CLI está autenticado.', '✅ GitHub CLI está autenticado.'),
   gh_error: t('❌ GitHub CLI (gh) is not installed or not authenticated.', '❌ GitHub CLI (gh) não está instalado ou não autenticado.', '❌ GitHub CLI (gh) no está instalado o no está autenticado.'),
   gh_install: t('Please install it from https://cli.github.com/ and run "gh auth login" before continuing.\n', 'Por favor, instale em https://cli.github.com/ e rode "gh auth login" antes de continuar.\n', 'Por favor, instálalo desde https://cli.github.com/ y ejecuta "gh auth login" antes de continuar.\n'),
-  ask_agent: t('Which AI Agent will you use for the setup? (e.g. claude, cursor, copilot, or other): ', 'Qual Agente de IA você usará para o setup? (ex: claude, cursor, copilot, ou outro): ', '¿Qué Agente de IA usarás para la configuración? (ej: claude, cursor, copilot, u otro): '),
+  ask_agent: t('Which AI Agent will you use for the setup? (e.g. claude, cursor, copilot, antigravity, or other): ', 'Qual Agente de IA você usará para o setup? (ex: claude, cursor, copilot, antigravity, ou outro): ', '¿Qué Agente de IA usarás para la configuración? (ej: claude, cursor, copilot, antigravity, u otro): '),
   ask_repo: t('What is your GitHub repository URL? (e.g., https://github.com/YOUR_USER/repo_name): ', 'Qual é a URL do seu repositório no GitHub? (ex: https://github.com/SEU_USUARIO/repo_name): ', '¿Cuál es la URL de tu repositorio en GitHub? (ej: https://github.com/TU_USUARIO/repo_name): '),
   invalid_repo: t('❌ Invalid repository URL. Expected format: https://github.com/OWNER/REPO', '❌ URL de repositório inválida. Formato esperado: https://github.com/OWNER/REPO', '❌ URL de repositorio inválida. Formato esperado: https://github.com/OWNER/REPO'),
   ask_org: t('Does this repository belong to a personal User account (e.g., github.com/rafaeltcosta86) or an Organization (e.g., github.com/google-labs)? (user/org): ', 'Esse repositório pertence a um Usuário pessoal (ex: github.com/rafaeltcosta86) ou a uma Organização (ex: github.com/google-labs)? (user/org): ', '¿Este repositorio pertenece a un Usuario personal (ej: github.com/rafaeltcosta86) o a una Organización (ej: github.com/google-labs)? (user/org): '),
   ask_branch: t('What is your main branch name? (default: main): ', 'Qual o nome da sua branch principal? (padrão: main): ', '¿Cuál es el nombre de tu rama principal? (por defecto: main): '),
   starting_setup: t('Starting automated repository setup...', 'Iniciando o setup automatizado do repositório...', 'Iniciando la configuración automatizada del repositorio...'),
-  creating_labels: t('[1/3] Creating repository labels...', '[1/3] Criando labels no repositório...', '[1/3] Creando etiquetas (labels) en el repositorio...'),
+  creating_labels: t('[1/2] Creating repository labels...', '[1/2] Criando labels no repositório...', '[1/2] Creando etiquetas (labels) en el repositorio...'),
   label_ok: t('✅ Label created: ', '✅ Label criada: ', '✅ Etiqueta creada: '),
   label_warn: t('⚠️ Failed to create label (might already exist): ', '⚠️ Falha ao criar label (talvez já exista): ', '⚠️ Fallo al crear etiqueta (quizás ya exista): '),
   applying_protection: t('[2/3] Applying branch protection on ', '[2/3] Aplicando proteção de branch em ', '[2/3] Aplicando protección de rama en '),
   protection_ok: t('✅ Branch protection applied to ', '✅ Proteção de branch aplicada em ', '✅ Protección de rama aplicada a '),
   protection_warn: t('⚠️ Failed to apply branch protection. (Do you have GitHub Pro or is the repo Public?)', '⚠️ Falha ao aplicar proteção de branch. (Você tem GitHub Pro ou o repo é Público?)', '⚠️ Fallo al aplicar protección de rama. (¿Tienes GitHub Pro o el repositorio es Público?)'),
-  creating_project: t('[3/3] Creating Project V2 Board...', '[3/3] Criando Project V2 Board...', '[3/3] Creando Project V2 Board...'),
+  creating_project: t('[2/2] Creating Project V2 Board...', '[2/2] Criando Project V2 Board...', '[2/2] Creando Project V2 Board...'),
   project_ok: t('✅ Project created (ID: ', '✅ Projeto criado (ID: ', '✅ Proyecto creado (ID: '),
   project_err: t('❌ Failed to create project. Error: ', '❌ Falha ao criar o projeto. Erro: ', '❌ Fallo al crear el proyecto. Error: '),
   config_columns: t('Configuring Project Columns...', 'Configurando colunas do Projeto...', 'Configurando columnas del Proyecto...'),
@@ -63,14 +63,14 @@ const i18n = {
   step_1: t('1. Open your AI Assistant (Claude, Cursor, Copilot, etc).', '1. Abra o seu Assistente de IA (Claude, Cursor, Copilot, etc).', '1. Abre tu Asistente de IA (Claude, Cursor, Copilot, etc).'),
   step_2: t('2. Ask it to read the .agentic-setup.md and start Setup Mode in any language you prefer. Example 👇', '2. Peça para ele ler o .agentic-setup.md e iniciar o Setup Mode. Exemplo 👇', '2. Pídele que lea .agentic-setup.md e inicie el Setup Mode. Ejemplo 👇'),
   note_cleanup: t('Note: The agent will clean up the .agentic-setup.md file automatically when finished.\n', 'Nota: O agente irá limpar o arquivo .agentic-setup.md automaticamente quando terminar.\n', 'Nota: El agente limpiará el archivo .agentic-setup.md automáticamente cuando termine.\n'),
-  missing_claude: t('❌ Could not find claude instruction file at ', '❌ Não foi possível encontrar o arquivo de instrução em ', '❌ No se pudo encontrar el archivo de instrucción en '),
+  missing_claude: t('❌ Could not find instruction file at ', '❌ Não foi possível encontrar o arquivo de instrução em ', '❌ No se pudo encontrar el archivo de instrucción en '),
   cursor_rules_written: t('✅ Default cursor rules written to .cursorrules', '✅ Regras padrão do cursor salvas em .cursorrules', '✅ Reglas por defecto de cursor guardadas en .cursorrules'),
   cursor_setup_written: t('✅ Framework Setup Instructions written to .agentic-pdlc/SETUP_PROMPT.md', '✅ Instruções de Setup do Framework salvas em .agentic-pdlc/SETUP_PROMPT.md', '✅ Instrucciones de Setup del Framework guardadas en .agentic-pdlc/SETUP_PROMPT.md'),
   cursor_done: t('🎉 Done! To start the conversational setup:', '🎉 Pronto! Para iniciar o setup conversacional:', '🎉 ¡Listo! Para iniciar la configuración conversacional:'),
   cursor_step_1: t('\t1. Open Cursor', '\t1. Abra o Cursor', '\t1. Abre Cursor'),
   cursor_step_2: t('\t2. Open Composer (Cmd+I or Cmd+L) and type: "@.agentic-pdlc/SETUP_PROMPT.md execute Setup Mode"\n', '\t2. Abra o Composer (Cmd+I ou Cmd+L) e digite: "@.agentic-pdlc/SETUP_PROMPT.md execute Setup Mode"\n', '\t2. Abre Composer (Cmd+I o Cmd+L) y escribe: "@.agentic-pdlc/SETUP_PROMPT.md execute Setup Mode"\n'),
-  generic_written: t('✅ Agent generic setup instructions written to .agentic-setup-prompt.md', '✅ Instruções genéricas salvas em .agentic-setup-prompt.md', '✅ Instrucciones genéricas guardadas en .agentic-setup-prompt.md'),
-  generic_done: t('Provide the .agentic-setup-prompt.md file to your AI agent and ask it to execute Setup Mode!\n', 'Forneça o arquivo .agentic-setup-prompt.md para o seu agente e peça para executar o Setup Mode!\n', '¡Proporciona el archivo .agentic-setup-prompt.md a tu agente de IA y pídele que ejecute el Setup Mode!\n')
+  generic_written: t('✅ Agent generic setup instructions written to .agentic-setup.md', '✅ Instruções genéricas salvas em .agentic-setup.md', '✅ Instrucciones genéricas guardadas en .agentic-setup.md'),
+  generic_done: t('Tell your AI agent to read and execute the .agentic-setup.md file!\n', 'Diga ao seu agente para ler e executar o arquivo .agentic-setup.md!\n', '¡Dile a tu agente de IA que lea y ejecute el archivo .agentic-setup.md!\n')
 };
 
 const cyan = '\x1b[36m';
@@ -112,24 +112,46 @@ async function runSetup() {
 
   const agentAnswer = await askQuestion(i18n.ask_agent);
   const agent = agentAnswer.trim().toLowerCase();
-
-  const repoUrlAnswer = await askQuestion(i18n.ask_repo);
-  let repoUrl = repoUrlAnswer.trim();
-  if (repoUrl.endsWith('/')) repoUrl = repoUrl.slice(0, -1);
-  const repoParts = repoUrl.split('/');
-  if (repoParts.length < 2) {
-    console.error(`${red}${i18n.invalid_repo}${reset}`);
-    process.exit(1);
+  if (!['claude', 'cursor', 'copilot'].includes(agent)) {
+    console.log(t(`ℹ️ Generating Universal Setup for '${agent}' (Compatible with any Markdown-reading agent).`, `ℹ️ Gerando Setup Universal para '${agent}' (Compatível com qualquer agente que leia Markdown).`, `ℹ️ Generando Setup Universal para '${agent}' (Compatible con cualquier agente que lea Markdown).`));
   }
-  const repoOwner = repoParts[repoParts.length - 2];
-  const repoName = repoParts[repoParts.length - 1];
-  const repo = `${repoOwner}/${repoName}`;
 
-  const accountTypeAnswer = await askQuestion(i18n.ask_org);
-  const isOrg = accountTypeAnswer.trim().toLowerCase() === 'org' || accountTypeAnswer.trim().toLowerCase() === 'organization';
+  let repoOwner, repoName, repo;
+  while (true) {
+    let repoUrl = (await askQuestion(i18n.ask_repo)).trim();
+    if (repoUrl.endsWith('/')) repoUrl = repoUrl.slice(0, -1);
+    if (repoUrl.endsWith('.git')) repoUrl = repoUrl.slice(0, -4);
+    const repoParts = repoUrl.split('/');
+    if (repoParts.length >= 2) {
+      repoOwner = repoParts[repoParts.length - 2];
+      repoName = repoParts[repoParts.length - 1];
+      repo = `${repoOwner}/${repoName}`;
+      break;
+    }
+    console.log(`${red}${i18n.invalid_repo}${reset}`);
+  }
 
-  const branchAnswer = await askQuestion(i18n.ask_branch);
-  const branchName = branchAnswer.trim() || 'main';
+  const askProjectName = t(`What is the project name for the board? (default: ${repoName.toUpperCase()}): `, `Qual o nome do projeto em que o board será configurado? (padrão: ${repoName.toUpperCase()}): `, `¿Cuál es el nombre del proyecto en el que se configurará el board? (por defecto: ${repoName.toUpperCase()}): `);
+  const projectNameAnswer = await askQuestion(askProjectName);
+  const projectName = projectNameAnswer.trim() ? projectNameAnswer.trim().toUpperCase() : repoName.toUpperCase();
+  const boardName = `BOARD - ${projectName}`;
+
+  let isOrg = false;
+  try {
+    const ownerType = execFileSync('gh', ['api', `repos/${repo}`, '--jq', '.owner.type']).toString().trim();
+    isOrg = ownerType === 'Organization';
+  } catch (err) {
+    const accountTypeAnswer = await askQuestion(i18n.ask_org);
+    isOrg = accountTypeAnswer.trim().toLowerCase() === 'org' || accountTypeAnswer.trim().toLowerCase() === 'organization';
+  }
+
+  let branchName = 'main';
+  try {
+    branchName = execFileSync('gh', ['api', `repos/${repo}`, '--jq', '.default_branch']).toString().trim() || 'main';
+  } catch (err) {
+    const branchAnswer = await askQuestion(i18n.ask_branch);
+    if (branchAnswer.trim()) branchName = branchAnswer.trim();
+  }
 
   console.log(`\n${yellow}${i18n.starting_setup}${reset}`);
 
@@ -159,27 +181,6 @@ async function runSetup() {
     }
   }
 
-  // Branch Protection
-  console.log(`\n${cyan}${i18n.applying_protection}'${branchName}'...${reset}`);
-  const protectionPayload = {
-    required_status_checks: { strict: true, checks: [{ context: "Detect Project Board Drift" }] },
-    enforce_admins: false,
-    required_pull_request_reviews: { required_approving_review_count: 1, dismiss_stale_reviews: true },
-    restrictions: null,
-    allow_force_pushes: false,
-    allow_deletions: false
-  };
-
-  try {
-    execFileSync('gh', ['api', `repos/${repo}/branches/${branchName}/protection`, '--method', 'PUT', '--input', '-'], {
-      input: JSON.stringify(protectionPayload),
-      stdio: 'ignore'
-    });
-    console.log(`  ${i18n.protection_ok}${branchName}`);
-  } catch (err) {
-    console.log(`  ${i18n.protection_warn}`);
-  }
-
   // Project V2
   console.log(`\n${cyan}${i18n.creating_project}${reset}`);
   let ownerId, projectId;
@@ -192,7 +193,7 @@ async function runSetup() {
       ownerId = userOutput;
     }
 
-    const projectCreateOutput = execFileSync('gh', ['api', 'graphql', '-f', 'query=mutation($owner: ID!, $title: String!) { createProjectV2(input: {ownerId: $owner, title: $title}) { projectV2 { id } } }', '-f', `owner=${ownerId}`, '-f', `title=PDLC - ${repoName}`, '--jq', '.data.createProjectV2.projectV2.id']).toString().trim();
+    const projectCreateOutput = execFileSync('gh', ['api', 'graphql', '-f', 'query=mutation($owner: ID!, $title: String!) { createProjectV2(input: {ownerId: $owner, title: $title}) { projectV2 { id } } }', '-f', `owner=${ownerId}`, '-f', `title=${boardName}`, '--jq', '.data.createProjectV2.projectV2.id']).toString().trim();
     projectId = projectCreateOutput;
 
     console.log(`  ${i18n.project_ok}${projectId})`);
@@ -223,13 +224,15 @@ async function runSetup() {
         ];
 
         const updateFieldQuery = `mutation($projectId: ID!, $fieldId: ID!, $options: [ProjectV2SingleSelectFieldOptionInput!]) {
-          updateProjectV2SingleSelectField(input: {
+          updateProjectV2Field(input: {
             projectId: $projectId,
             fieldId: $fieldId,
-            options: $options
+            singleSelectOptions: $options
           }) { 
-            projectV2SingleSelectField { 
-              options { id name } 
+            projectV2Field { 
+              ... on ProjectV2SingleSelectField {
+                options { id name } 
+              }
             } 
           }
         }`;
@@ -245,7 +248,7 @@ async function runSetup() {
 
         const updateOutput = execFileSync('gh', ['api', 'graphql', '--input', '-'], { input: queryPayload }).toString().trim();
         const jsonResponse = updateOutput ? JSON.parse(updateOutput) : null;
-        const returnedOptions = jsonResponse?.data?.updateProjectV2SingleSelectField?.projectV2SingleSelectField?.options || [];
+        const returnedOptions = jsonResponse?.data?.updateProjectV2Field?.projectV2Field?.options || [];
         
         for (const opt of returnedOptions) {
           optionMap[opt.name] = opt.id;
@@ -273,10 +276,10 @@ async function runSetup() {
     if (fs.existsSync(pdlcDest)) {
       let pdlcContent = fs.readFileSync(pdlcDest, 'utf8');
       
-      if (projectId) pdlcContent = pdlcContent.replace(/\{\{PROJECT_ID\}\}/g, projectId);
-      if (statusFieldId) pdlcContent = pdlcContent.replace(/\{\{STATUS_FIELD_ID\}\}/g, statusFieldId);
-      pdlcContent = pdlcContent.replace(/\{\{REPO_OWNER\}\}/g, repoOwner);
-      pdlcContent = pdlcContent.replace(/\{\{REPO_NAME\}\}/g, repoName);
+      if (projectId) pdlcContent = pdlcContent.replace(/\\{\\{PROJECT_ID\\}\\}/g, () => projectId);
+      if (statusFieldId) pdlcContent = pdlcContent.replace(/\\{\\{STATUS_FIELD_ID\\}\\}/g, () => statusFieldId);
+      pdlcContent = pdlcContent.replace(/\\{\\{REPO_OWNER\\}\\}/g, () => repoOwner);
+      pdlcContent = pdlcContent.replace(/\\{\\{REPO_NAME\\}\\}/g, () => repoName);
 
       if (Object.keys(optionMap).length > 0) {
         pdlcContent = pdlcContent.replace(/\{\{ID_IDEA\}\}/g, optionMap["💡 Idea"] || 'MISSING_ID');
@@ -337,11 +340,11 @@ async function runSetup() {
     }
   } else {
     // Generic fallback mapping
-    const dest = path.join(targetDir, '.agentic-setup-prompt.md');
+    const dest = path.join(targetDir, '.agentic-setup.md');
     fs.copyFileSync(claudeSetupSrc, dest);
     console.log(`${i18n.generic_written}`);
     console.log(`\n${green}${i18n.cursor_done}${reset}`);
-    console.log(`${cyan}${i18n.generic_done}${reset}`);
+    console.log(`${cyan}>>> ${i18n.generic_done}${reset}`);
   }
 
   rl.close();
