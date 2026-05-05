@@ -11,12 +11,17 @@ echo -e "${YELLOW}Resetting agentic-pdlc artifacts in: $(pwd)${NC}\n"
 
 remove() {
   local target="$1"
-  if [ -e "$target" ] || [ -L "$target" ]; then
-    rm -rf "$target"
-    echo -e "  ${GREEN}removed${NC}  $target"
-  else
+  if [ ! -e "$target" ] && [ ! -L "$target" ]; then
     echo -e "           skipped  $target (not found)"
+    return
   fi
+  # Skip files/dirs tracked by git — they predate the setup run
+  if git ls-files --error-unmatch "$target" &>/dev/null 2>&1; then
+    echo -e "  ${YELLOW}protected${NC} $target (tracked by git — skipping)"
+    return
+  fi
+  rm -rf "$target"
+  echo -e "  ${GREEN}removed${NC}  $target"
 }
 
 # --- CLI phase ---
