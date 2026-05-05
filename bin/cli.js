@@ -72,7 +72,9 @@ const i18n = {
   cursor_step_1: t('\t1. Open Cursor', '\t1. Abra o Cursor', '\t1. Abre Cursor'),
   cursor_step_2: t('\t2. Open Composer (Cmd+I or Cmd+L) and type: "@.agentic-pdlc/SETUP_PROMPT.md execute Setup Mode"\n', '\t2. Abra o Composer (Cmd+I ou Cmd+L) e digite: "@.agentic-pdlc/SETUP_PROMPT.md execute Setup Mode"\n', '\t2. Abre Composer (Cmd+I o Cmd+L) y escribe: "@.agentic-pdlc/SETUP_PROMPT.md execute Setup Mode"\n'),
   generic_written: t('✅ Agent generic setup instructions written to .agentic-setup.md', '✅ Instruções genéricas salvas em .agentic-setup.md', '✅ Instrucciones genéricas guardadas en .agentic-setup.md'),
-  generic_done: t('Tell your AI agent to read and execute the .agentic-setup.md file!\n', 'Diga ao seu agente para ler e executar o arquivo .agentic-setup.md!\n', '¡Dile a tu agente de IA que lea y ejecute el archivo .agentic-setup.md!\n')
+  generic_done: t('Tell your AI agent to read and execute the .agentic-setup.md file!\n', 'Diga ao seu agente para ler e executar o arquivo .agentic-setup.md!\n', '¡Dile a tu agente de IA que lea y ejecute el archivo .agentic-setup.md!\n'),
+  setup_done: t('🎉 All set! Continue the setup with your agent:', '🎉 Aqui tá pronto! Continue o setup com o seu agente:', '🎉 ¡Listo! Continúa el setup con tu agente:'),
+  setup_done_hint: t('>>> Tell it to read and execute the .agentic-setup.md file!', '>>> Diga a ele para ler e executar o arquivo .agentic-setup.md!', '>>> Dile que lea y ejecute el archivo .agentic-setup.md!')
 };
 
 const cyan = '\x1b[36m';
@@ -99,6 +101,11 @@ function copyDirSync(src, dest) {
       fs.copyFileSync(srcPath, destPath);
     }
   }
+}
+
+function printSetupDone() {
+  console.log(`\n${green}${i18n.setup_done}${reset}`);
+  console.log(`${cyan}${i18n.setup_done_hint}${reset}\n`);
 }
 
 async function runSetup() {
@@ -185,7 +192,7 @@ async function runSetup() {
 
   // Project V2
   console.log(`\n${cyan}${i18n.creating_project}${reset}`);
-  let ownerId, projectId, projectUrl;
+  let ownerId, projectId;
   try {
     if (isOrg) {
       const orgOutput = execFileSync('gh', ['api', 'graphql', '-f', 'query=query($login: String!) { organization(login: $login) { id } }', '-f', `login=${repoOwner}`, '--jq', '.data.organization.id']).toString().trim();
@@ -208,13 +215,6 @@ async function runSetup() {
       console.log(`  ${i18n.link_project_warn}`);
     }
 
-    try {
-      const projectNumber = execFileSync('gh', ['api', 'graphql', '-f', `query=query($projectId: ID!) { node(id: $projectId) { ... on ProjectV2 { number } } }`, '-f', `projectId=${projectId}`, '--jq', '.data.node.number'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
-      const ownerSegment = isOrg ? `orgs/${repoOwner}` : `users/${repoOwner}`;
-      projectUrl = `https://github.com/${ownerSegment}/projects/${projectNumber}/views/1?layout=board`;
-    } catch (err) {
-      // URL is optional — main flow continues
-    }
   } catch (err) {
     console.log(`  ${i18n.project_err}${err.message}`);
   }
@@ -323,20 +323,7 @@ async function runSetup() {
       const dest = path.join(targetDir, '.agentic-setup.md');
       fs.copyFileSync(claudeSetupSrc, dest);
       console.log(`${i18n.setup_written}`);
-      const boardMsg = projectUrl
-        ? t(`🎉 Board created, check it out: ${projectUrl}`, `🎉 Board criado, dá uma olhada: ${projectUrl}`, `🎉 Board creado, échale un vistazo: ${projectUrl}`)
-        : i18n.framework_scaffolded;
-      const sep = '='.repeat(boardMsg.length);
-      console.log(`${green}${sep}${reset}`);
-      console.log(`${green}${boardMsg}${reset}`);
-      console.log(`${green}${sep}${reset}\n`);
-      console.log(`${yellow}${i18n.next_steps}${reset}`);
-      console.log(`${cyan}${i18n.step_1}${reset}`);
-      console.log(`${cyan}${i18n.step_2}${reset}`);
-      console.log(`${cyan}>>> English: "Read .agentic-setup.md and guide me through the setup."${reset}`);
-      console.log(`${cyan}>>> Español: "Lea el archivo .agentic-setup.md e inicie el Setup Mode"${reset}`);
-      console.log(`${cyan}>>> Português: "Leia o arquivo .agentic-setup.md e inicie o Setup Mode."${reset}\n`);
-      console.log(`${i18n.note_cleanup}`);
+      printSetupDone();
     } else {
       console.error(`${i18n.missing_claude}${claudeSetupSrc}`);
     }
@@ -352,9 +339,7 @@ async function runSetup() {
 
       console.log(`${i18n.cursor_rules_written}`);
       console.log(`${i18n.cursor_setup_written}`);
-      console.log(`\n${green}${i18n.cursor_done}${reset}`);
-      console.log(`${cyan}${i18n.cursor_step_1}${reset}`);
-      console.log(`${cyan}${i18n.cursor_step_2}${reset}`);
+      printSetupDone();
     } else {
       console.error(`${i18n.missing_claude}${cursorSetupSrc}`);
     }
@@ -363,8 +348,7 @@ async function runSetup() {
     const dest = path.join(targetDir, '.agentic-setup.md');
     fs.copyFileSync(claudeSetupSrc, dest);
     console.log(`${i18n.generic_written}`);
-    console.log(`\n${green}${i18n.cursor_done}${reset}`);
-    console.log(`${cyan}>>> ${i18n.generic_done}${reset}`);
+    printSetupDone();
   }
 
   rl.close();
