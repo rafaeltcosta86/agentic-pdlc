@@ -12,11 +12,11 @@
 | ⚙️ Development | AI implementing the spec | Label `stage:development` |
 | 🧪 Testing | CI pipeline running | GitHub Actions |
 | 👁 Code Review / PR | PR opened, awaiting human review | GitHub Actions |
-| 🚀 Production | Merged | GitHub Actions |
+| 🚀 Ready for Production | Merged | GitHub Actions |
 
 <!--
 Adapt columns as needed. The functional baseline is:
-💡 Idea → ⚙️ Development → 👁 Code Review / PR → 🚀 Production
+💡 Idea → ⚙️ Development → 👁 Code Review / PR → 🚀 Ready for Production
 -->
 
 ## Board Identifiers (GitHub Projects)
@@ -39,7 +39,7 @@ REPO         = {{REPO_OWNER}}/{{REPO_NAME}}
 | ⚙️ Development | `{{ID_DEVELOPMENT}}` |
 | 🧪 Testing | `{{ID_TESTING}}` |
 | 👁 Code Review / PR | `{{ID_CODE_REVIEW_PR}}` |
-| 🚀 Production | `{{ID_PRODUCTION}}` |
+| 🚀 Ready for Production | `{{ID_READY_FOR_PRODUCTION}}` |
 
 ## Agent × Phase Mapping
 
