@@ -27,10 +27,10 @@ If any of these files are missing, you are in **Setup Mode**. Do not proceed wit
    - `.agentic-pdlc/templates/docs/pdlc.md` — the CLI pre-fills PROJECT_ID, STATUS_FIELD_ID, REPO_OWNER, REPO_NAME, and all 9 column option IDs. If none of the values still contain `{{...}}` placeholders, skip the entire Board IDs question group.
 4. Interactively ask the user only for the **missing values**, **one group at a time**:
    - **Project basics:** Project Name (skip if present in `cli-context.json`), Description, Technical Stack/Structure. **Do not ask for GitHub Username** — use `repoOwner` from `cli-context.json` directly for CODEOWNERS.
-   - **Commands:** Ask each with a clear description and concrete examples:
-     - *"Qual comando roda os testes automatizados do projeto? (ex: `npm test`, `pytest`, `go test ./...`, `./gradlew test`) — 'nenhum' se não aplicável."*
-     - *"Qual comando verifica a qualidade do código (linter)? (ex: `npm run lint`, `ruff check .`, `eslint .`, `golangci-lint run`) — 'nenhum' se não aplicável."*
-     - *"Qual comando faz o build/compilação? (ex: `npm run build`, `tsc`, `go build ./...`, `./gradlew build`) — 'nenhum' se não aplicável."*
+   - **Commands:** In the user's detected language, ask for each command with its purpose and concrete examples:
+     - **Test command** — the command that runs automated tests (e.g. `npm test`, `pytest`, `go test ./...`, `./gradlew test`) — reply "none" if not applicable.
+     - **Lint command** — the command that checks code quality/style (e.g. `npm run lint`, `ruff check .`, `eslint .`, `golangci-lint run`) — reply "none" if not applicable.
+     - **Build command** — the command that compiles or bundles the project (e.g. `npm run build`, `tsc`, `go build ./...`, `./gradlew build`) — reply "none" if not applicable.
    - **Invariants:** Critical business rules agents must never violate (e.g. Human-in-the-loop).
    - **Board IDs:** Skip entirely if `.agentic-pdlc/templates/docs/pdlc.md` is already pre-filled (no `{{...}}` placeholders). Only ask if placeholders remain.
    - **Auditoria de Arquitetura (CI):** Pergunta: *"Seu projeto usa auditoria automatizada de arquitetura (CI job que cria issues com a label `architecture-violation`)?"* Apresente as opções:
@@ -47,8 +47,8 @@ If any of these files are missing, you are in **Setup Mode**. Do not proceed wit
      - c) **Outro** — *Digite o handle do agente.*
 5. Generate and write the missing files replacing the `{{SCREAMING_SNAKE_CASE}}` placeholders using the templates in `.agentic-pdlc/templates/`.
 6. Offer to run the `gh` commands for labels (`spec:approved`, `pr:in-review`, `pr:approved`, `architecture-violation`).
-7. Commit everything with the message: `chore: setup agentic-pdlc framework`.
-8. **IMPORTANTE:** Delete this setup prompt file (`.agentic-setup.md`, `.agentic-setup-prompt.md`, or `.agentic-pdlc/SETUP_PROMPT.md`) using only `rm <arquivo>` — **do NOT run `git add` or any other git command**. This file was never committed and does not exist in the git index.
+7. **IMPORTANTE:** Delete this setup prompt file (`.agentic-setup.md`, `.agentic-setup-prompt.md`, or `.agentic-pdlc/SETUP_PROMPT.md`) using only `rm <arquivo>` — **do NOT run `git add` or any other git command**. This file was never committed and does not exist in the git index. Delete it **before** the commit step so it is never accidentally included in the repository history.
+8. Commit everything with the message: `chore: setup agentic-pdlc framework`.
 9. Conclude Setup Mode.
 
 ---

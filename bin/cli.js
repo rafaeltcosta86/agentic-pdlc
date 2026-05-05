@@ -297,10 +297,10 @@ async function runSetup() {
     if (fs.existsSync(pdlcDest)) {
       let pdlcContent = fs.readFileSync(pdlcDest, 'utf8');
 
-      if (projectId) pdlcContent = pdlcContent.replace(/\\{\\{PROJECT_ID\\}\\}/g, () => projectId);
-      if (statusFieldId) pdlcContent = pdlcContent.replace(/\\{\\{STATUS_FIELD_ID\\}\\}/g, () => statusFieldId);
-      pdlcContent = pdlcContent.replace(/\\{\\{REPO_OWNER\\}\\}/g, () => repoOwner);
-      pdlcContent = pdlcContent.replace(/\\{\\{REPO_NAME\\}\\}/g, () => repoName);
+      if (projectId) pdlcContent = pdlcContent.replace(/\{\{PROJECT_ID\}\}/g, () => projectId);
+      if (statusFieldId) pdlcContent = pdlcContent.replace(/\{\{STATUS_FIELD_ID\}\}/g, () => statusFieldId);
+      pdlcContent = pdlcContent.replace(/\{\{REPO_OWNER\}\}/g, () => repoOwner);
+      pdlcContent = pdlcContent.replace(/\{\{REPO_NAME\}\}/g, () => repoName);
 
       if (Object.keys(optionMap).length > 0) {
         pdlcContent = pdlcContent.replace(/\{\{ID_IDEA\}\}/g, optionMap["💡 Idea"] || 'MISSING_ID');
