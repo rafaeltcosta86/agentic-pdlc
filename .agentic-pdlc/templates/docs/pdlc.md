@@ -1,23 +1,28 @@
-# PDLC — agentic-pdlc
+# PDLC — {{PROJECT_NAME}}
 
 ## Board Columns
 
 | Column | Meaning | Who moves the card |
 |---|---|---|
 | 💡 Idea | Backlog — every new issue lands here | Manual |
-| 🔍 Exploration | AI is analyzing code and context | Label `stage:exploration` |
-| 🧠 Brainstorming | AI proposed approaches and trade-offs | Label `stage:brainstorming` |
-| 📐 Detail Solution | AI is writing the technical spec | Label `stage:detailing` |
-| ✅ Approval | Your turn, awaiting `spec:approved` label | Label `spec:approved` |
-| ⚙️ Development | AI implementing the spec | Label `stage:development` |
-| 🧪 Testing | CI pipeline running | GitHub Actions |
-| 👁 Code Review / PR | PR opened, awaiting human review | GitHub Actions |
+| 🔍 Exploration | Claude is analyzing code and context | Label `stage:exploration` |
+| 🧠 Brainstorming | Claude proposed approaches, awaiting PM gate | Label `stage:brainstorming` |
+| 📐 Detail Solution | Claude is writing the technical spec | Label `stage:detailing` |
+| ✅ Approval | Spec ready, awaiting `spec:approved` label | Label `spec:approved` |
+| ⚙️ Development | Agent implementing the spec | Label `stage:development` |
+| 🧪 Testing | CI pipeline or AI QA Agent running (Variant B) | GitHub Actions / QA Agent |
+| 👁 Code Review / PR | PR opened (Variant A) or QA passed (Variant B) | GitHub Actions |
 | 🚀 Ready for Production | Merged | GitHub Actions |
 
 <!--
 Adapt columns as needed. The functional baseline is:
 💡 Idea → ⚙️ Development → 👁 Code Review / PR → 🚀 Ready for Production
 -->
+
+## Workflow Variants (QA Agent)
+
+- **Variant A (Default):** PRs bypass the `Testing` column and land directly in `Code Review / PR`.
+- **Variant B (QA Agent Enabled):** PRs land in the `Testing` column first. An AI QA agent verifies the PR, adding `qa:pass` or `qa:fail`. Only after a `qa:pass` is the issue moved to `Code Review / PR`.
 
 ## Board Identifiers (GitHub Projects)
 
@@ -31,15 +36,15 @@ REPO         = {{REPO_OWNER}}/{{REPO_NAME}}
 
 | Column | Option ID |
 |---|---|
-| 💡 Idea | `{{ID_IDEA}}` |
-| 🔍 Exploration | `{{ID_EXPLORATION}}` |
-| 🧠 Brainstorming | `{{ID_BRAINSTORMING}}` |
-| 📐 Detail Solution | `{{ID_DETAIL}}` |
-| ✅ Approval | `{{ID_APPROVAL}}` |
-| ⚙️ Development | `{{ID_DEVELOPMENT}}` |
-| 🧪 Testing | `{{ID_TESTING}}` |
-| 👁 Code Review / PR | `{{ID_CODE_REVIEW_PR}}` |
-| 🚀 Ready for Production | `{{ID_READY_FOR_PRODUCTION}}` |
+| 💡 Idea | `8fcb0400` |
+| 🔍 Exploration | `41a8303c` |
+| 🧠 Brainstorming | `621c5910` |
+| 📐 Detail Solution | `e1db01e8` |
+| ✅ Approval | `4568409b` |
+| ⚙️ Development | `e8be1b7d` |
+| 🧪 Testing | `8d521907` |
+| 👁 Code Review / PR | `eb6bb6e4` |
+| 🚀 Ready for Production | `d51f149d` |
 
 ## Agent × Phase Mapping
 
@@ -94,7 +99,7 @@ This triggers the implementation agent via `agent-trigger.yml`.
 
 An issue is truly done when:
 - [ ] All Acceptance Criteria described in the body are implemented
-- [ ] Tests passing: `echo "No tests/build needed."`
+- [ ] Tests passing: `{{TEST_COMMAND}}`
 - [ ] No invariant violations (CI green)
 - [ ] Associated PR explicitly contains `Closes #N`
 - [ ] Basic manual smoke test executed after deploy (when applicable)

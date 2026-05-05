@@ -12,11 +12,11 @@
 | ⚙️ Development | Agent implementing the spec | Label `stage:development` |
 | 🧪 Testing | CI pipeline or AI QA Agent running (Variant B) | GitHub Actions / QA Agent |
 | 👁 Code Review / PR | PR opened (Variant A) or QA passed (Variant B) | GitHub Actions |
-| 🚀 Production | Merged | GitHub Actions |
+| 🚀 Ready for Production | Merged | GitHub Actions |
 
 <!--
 Adapt columns as needed. The functional baseline is:
-💡 Idea → ⚙️ Development → 👁 Code Review / PR → 🚀 Production
+💡 Idea → ⚙️ Development → 👁 Code Review / PR → 🚀 Ready for Production
 -->
 
 ## Workflow Variants (QA Agent)
@@ -44,7 +44,7 @@ REPO         = {{REPO_OWNER}}/{{REPO_NAME}}
 | ⚙️ Development | `{{ID_DEVELOPMENT}}` |
 | 🧪 Testing | `{{ID_TESTING}}` |
 | 👁 Code Review / PR | `{{ID_CODE_REVIEW_PR}}` |
-| 🚀 Production | `{{ID_PRODUCTION}}` |
+| 🚀 Ready for Production | `{{ID_READY_FOR_PRODUCTION}}` |
 
 ## Agent × Phase Mapping
 

@@ -212,15 +212,15 @@ async function runSetup() {
 
       if (statusFieldId) {
         const columns = [
-          { name: "💡 Idea", description: "Backlog", color: "GRAY" },
-          { name: "🔍 Exploration", description: "Claude is analyzing", color: "PURPLE" },
-          { name: "🧠 Brainstorming", description: "Awaiting PM gate", color: "PINK" },
-          { name: "📐 Detail Solution", description: "Technical spec", color: "BLUE" },
-          { name: "✅ Approval", description: "Spec ready", color: "GREEN" },
-          { name: "⚙️ Development", description: "Agent implementing", color: "ORANGE" },
-          { name: "🧪 Testing", description: "QA testing", color: "RED" },
-          { name: "👁 Code Review / PR", description: "PR opened", color: "YELLOW" },
-          { name: "🚀 Production", description: "Merged", color: "GREEN" }
+          { name: "💡 Idea", description: "Backlog — every new issue lands here", color: "GRAY" },
+          { name: "🔍 Exploration", description: "AI is analyzing code and context", color: "PURPLE" },
+          { name: "🧠 Brainstorming", description: "AI proposed approaches and trade-offs", color: "PINK" },
+          { name: "📐 Detail Solution", description: "AI is writing the technical spec", color: "BLUE" },
+          { name: "✅ Approval", description: "Spec ready, awaiting `spec:approved` label", color: "GREEN" },
+          { name: "⚙️ Development", description: "AI implementing the spec", color: "ORANGE" },
+          { name: "🧪 Testing", description: "QA testing and CI pipeline checks", color: "RED" },
+          { name: "👁 Code Review / PR", description: "PR opened, awaiting your review", color: "YELLOW" },
+          { name: "🚀 Ready for Production", description: "Merged and ready for production", color: "GREEN" }
         ];
 
         const updateFieldQuery = `mutation($fieldId: ID!, $options: [ProjectV2SingleSelectFieldOptionInput!]) {
@@ -247,7 +247,7 @@ async function runSetup() {
         const updateOutput = execFileSync('gh', ['api', 'graphql', '--input', '-'], { input: queryPayload }).toString().trim();
         const jsonResponse = updateOutput ? JSON.parse(updateOutput) : null;
         const returnedOptions = jsonResponse?.data?.updateProjectV2Field?.projectV2Field?.options || [];
-        
+
         for (const opt of returnedOptions) {
           optionMap[opt.name] = opt.id;
         }
@@ -264,7 +264,7 @@ async function runSetup() {
   // We copy the templates folder so the agent has the real text logic to replace and rename
   const sourceTemplates = path.join(sourceDir, 'templates');
   const targetTemplates = path.join(targetDir, '.agentic-pdlc', 'templates');
-  
+
   if (fs.existsSync(sourceTemplates)) {
     copyDirSync(sourceTemplates, targetTemplates);
     console.log(`${i18n.templates_copied}`);
@@ -273,7 +273,7 @@ async function runSetup() {
     const pdlcDest = path.join(targetTemplates, 'docs', 'pdlc.md');
     if (fs.existsSync(pdlcDest)) {
       let pdlcContent = fs.readFileSync(pdlcDest, 'utf8');
-      
+
       if (projectId) pdlcContent = pdlcContent.replace(/\\{\\{PROJECT_ID\\}\\}/g, () => projectId);
       if (statusFieldId) pdlcContent = pdlcContent.replace(/\\{\\{STATUS_FIELD_ID\\}\\}/g, () => statusFieldId);
       pdlcContent = pdlcContent.replace(/\\{\\{REPO_OWNER\\}\\}/g, () => repoOwner);
@@ -288,7 +288,7 @@ async function runSetup() {
         pdlcContent = pdlcContent.replace(/\{\{ID_DEVELOPMENT\}\}/g, optionMap["⚙️ Development"] || 'MISSING_ID');
         pdlcContent = pdlcContent.replace(/\{\{ID_TESTING\}\}/g, optionMap["🧪 Testing"] || 'MISSING_ID');
         pdlcContent = pdlcContent.replace(/\{\{ID_CODE_REVIEW_PR\}\}/g, optionMap["👁 Code Review / PR"] || 'MISSING_ID');
-        pdlcContent = pdlcContent.replace(/\{\{ID_PRODUCTION\}\}/g, optionMap["🚀 Production"] || 'MISSING_ID');
+        pdlcContent = pdlcContent.replace(/\{\{ID_READY_FOR_PRODUCTION\}\}/g, optionMap["🚀 Ready for Production"] || 'MISSING_ID');
       }
 
       fs.writeFileSync(pdlcDest, pdlcContent);
@@ -323,7 +323,7 @@ async function runSetup() {
       // Create .cursorrules which has the general invariants
       const dest = path.join(targetDir, '.cursorrules');
       fs.copyFileSync(cursorSetupSrc, dest);
-      
+
       // Also copy skill.md as a setup prompt for cursor composer
       const setupPromptDest = path.join(targetDir, '.agentic-pdlc', 'SETUP_PROMPT.md');
       if (fs.existsSync(claudeSetupSrc)) fs.copyFileSync(claudeSetupSrc, setupPromptDest);
