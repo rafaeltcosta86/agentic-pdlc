@@ -19,21 +19,37 @@ Specifically, check for:
 - `.github/workflows/pdlc-health-check.yml`
 
 If any of these files are missing, you are in **Setup Mode**. Do not proceed with feature requests until setup is complete.
+
 1. **Language Detection:** Analyze the user's previous prompts and preferred language. Conduct this entire Setup Mode and ask all your interactive questions in that same language.
 2. Acknowledge that the framework is not yet set up.
-3. Interactively ask the user for required values **one group at a time**:
-   - **Project basics:** Project Name, Description, Technical Stack (Structure), and GitHub Username (for CODEOWNERS security).
-   - **Commands:** Test command, Lint command, Build command.
+3. **Pre-filled Context:** Before asking any questions, read the following files if they exist:
+   - `.agentic-pdlc/cli-context.json` — written by the CLI. Contains `projectName`, `repoOwner`, `repoName`. Use these values directly and skip the corresponding questions.
+   - `.agentic-pdlc/templates/docs/pdlc.md` — the CLI pre-fills PROJECT_ID, STATUS_FIELD_ID, REPO_OWNER, REPO_NAME, and all 9 column option IDs. If none of the values still contain `{{...}}` placeholders, skip the entire Board IDs question group.
+4. Interactively ask the user only for the **missing values**, **one group at a time**:
+   - **Project basics:** Project Name (skip if present in `cli-context.json`), Description, Technical Stack/Structure. **Do not ask for GitHub Username** — use `repoOwner` from `cli-context.json` directly for CODEOWNERS.
+   - **Commands:** Ask each with a clear description and concrete examples:
+     - *"Qual comando roda os testes automatizados do projeto? (ex: `npm test`, `pytest`, `go test ./...`, `./gradlew test`) — 'nenhum' se não aplicável."*
+     - *"Qual comando verifica a qualidade do código (linter)? (ex: `npm run lint`, `ruff check .`, `eslint .`, `golangci-lint run`) — 'nenhum' se não aplicável."*
+     - *"Qual comando faz o build/compilação? (ex: `npm run build`, `tsc`, `go build ./...`, `./gradlew build`) — 'nenhum' se não aplicável."*
    - **Invariants:** Critical business rules agents must never violate (e.g. Human-in-the-loop).
-   - **Board IDs:** PROJECT_ID, STATUS_FIELD_ID, column option IDs (provide standard PDLC options: Idea, Exploration, Brainstorming, Detail Solution, Approval, Development, Testing, Code Review / PR, Production). Allow user to answer "skip", which means you leave the placeholders intact.
-   - **Architecture Violation:** Ask "Does your project use an automated architecture auditing tool (e.g., a CI job that creates issues with an `architecture-violation` label)?". If yes, uncomment the `move-violation-to-board` job inside `project-automation.yml`. If no, ask if they would like help implementing one, reminding them that it significantly improves their agentic development process. If they decline, you can leave the job commented out.
-   - **QA Agent (Variant B):** Ask "Do you plan to use an AI QA Agent (e.g. QAWolf or a secondary script) to verify your PRs before Code Review?". If yes, explain you will adopt Variant B: you will change `STATUS_CODE_REVIEW_PR` to `STATUS_TESTING` inside the `move-card-on-pr-open` job in `project-automation.yml` and uncomment the `move-card-on-qa-pass` job. If no, leave the workflow as Variant A (default) and delete the optional `.github/workflows/qa-agent.yml` template.
-   - **Implementation agent handle:** e.g., `@google-labs-jules`, or "none".
-3. Generate and write the missing files replacing the `{{SCREAMING_SNAKE_CASE}}` placeholders using the templates logic you know (usually they reside in standard Agentic PDLC templates).
-4. Offer to run the `gh` commands for labels (`spec:approved`, `pr:in-review`, `pr:approved`, `architecture-violation`).
-5. Commit everything with the message: `chore: setup agentic-pdlc framework`.
-6. **IMPORTANT:** Delete this setup prompt file (e.g., `.agentic-setup.md`, `.agentic-setup-prompt.md`, or `.agentic-pdlc/SETUP_PROMPT.md`) from the root or `.agentic-pdlc/` directory to clean up the workspace.
-7. Conclude Setup Mode.
+   - **Board IDs:** Skip entirely if `.agentic-pdlc/templates/docs/pdlc.md` is already pre-filled (no `{{...}}` placeholders). Only ask if placeholders remain.
+   - **Auditoria de Arquitetura (CI):** Pergunta: *"Seu projeto usa auditoria automatizada de arquitetura (CI job que cria issues com a label `architecture-violation`)?"* Apresente as opções:
+     - a) **Não uso, mas quero configurar** — *Deixa o pipeline CI/CD mais robusto via Gemini Code Assist.* → Guia o usuário na configuração.
+     - b) **Não agora** — *Deixa comentado para ativar em outro momento.* → Job permanece comentado no `project-automation.yml`.
+     - c) **Sim, ativar** — *Descomenta o job `move-violation-to-board` no `project-automation.yml`.* → Ativa imediatamente.
+   - **QA Agent:** Pergunta: *"Quer usar um agente de QA para verificar os PRs automaticamente antes do Code Review?"* Apresente as opções:
+     - a) **Não (Variant A)** — *PRs vão direto para Code Review. Padrão e mais simples.*
+     - b) **Sim (Variant B), mas preciso de ajuda pra configurar** — *PRs passam por um Agente de QA antes de serem revisados. Requer um QA Agent (ex: QAWolf).* → Guia o usuário na configuração.
+     - c) **Sim (Variant B), já tenho configurado** — *PRs passam por um Agente de QA antes de serem revisados.* → Ativa Variant B imediatamente: muda `STATUS_CODE_REVIEW_PR` para `STATUS_TESTING` no job `move-card-on-pr-open` e descomenta o job `move-card-on-qa-pass` no `project-automation.yml`.
+   - **Agente de implementação:** Pergunta: *"Usa um agente de implementação autônomo? (Ele implementa as features que você aprova para desenvolvimento)"* Apresente as opções:
+     - a) **Não** — *Sem agente de implementação autônomo.*
+     - b) **@google-labs-jules** — *Jules (recomendado caso não tenha nenhum).*
+     - c) **Outro** — *Digite o handle do agente.*
+5. Generate and write the missing files replacing the `{{SCREAMING_SNAKE_CASE}}` placeholders using the templates in `.agentic-pdlc/templates/`.
+6. Offer to run the `gh` commands for labels (`spec:approved`, `pr:in-review`, `pr:approved`, `architecture-violation`).
+7. Commit everything with the message: `chore: setup agentic-pdlc framework`.
+8. **IMPORTANTE:** Delete this setup prompt file (`.agentic-setup.md`, `.agentic-setup-prompt.md`, or `.agentic-pdlc/SETUP_PROMPT.md`) using only `rm <arquivo>` — **do NOT run `git add` or any other git command**. This file was never committed and does not exist in the git index.
+9. Conclude Setup Mode.
 
 ---
 

@@ -319,6 +319,14 @@ async function runSetup() {
     }
   }
 
+  // Write CLI context for the agent to consume in Setup Mode
+  try {
+    const cliContextPath = path.join(targetDir, '.agentic-pdlc', 'cli-context.json');
+    fs.writeFileSync(cliContextPath, JSON.stringify({ projectName, repoOwner, repoName }, null, 2));
+  } catch (err) {
+    // Non-fatal — agent will ask for the values instead
+  }
+
   // Handle the specific setup instructions target
   const claudeSetupSrc = path.join(sourceDir, 'adapters', 'claude-code', 'skill.md');
   const cursorSetupSrc = path.join(sourceDir, 'adapters', 'cursor', 'rules.md');
