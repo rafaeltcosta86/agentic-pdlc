@@ -36,15 +36,15 @@ REPO         = {{REPO_OWNER}}/{{REPO_NAME}}
 
 | Column | Option ID |
 |---|---|
-| 💡 Idea | `8fcb0400` |
-| 🔍 Exploration | `41a8303c` |
-| 🧠 Brainstorming | `621c5910` |
-| 📐 Detail Solution | `e1db01e8` |
-| ✅ Approval | `4568409b` |
-| ⚙️ Development | `e8be1b7d` |
-| 🧪 Testing | `8d521907` |
-| 👁 Code Review / PR | `eb6bb6e4` |
-| 🚀 Ready for Production | `d51f149d` |
+| 💡 Idea | `{{ID_IDEA}}` |
+| 🔍 Exploration | `{{ID_EXPLORATION}}` |
+| 🧠 Brainstorming | `{{ID_BRAINSTORMING}}` |
+| 📐 Detail Solution | `{{ID_DETAIL}}` |
+| ✅ Approval | `{{ID_APPROVAL}}` |
+| ⚙️ Development | `{{ID_DEVELOPMENT}}` |
+| 🧪 Testing | `{{ID_TESTING}}` |
+| 👁 Code Review / PR | `{{ID_CODE_REVIEW_PR}}` |
+| 🚀 Ready for Production | `{{ID_READY_FOR_PRODUCTION}}` |
 
 ## Agent × Phase Mapping
 
