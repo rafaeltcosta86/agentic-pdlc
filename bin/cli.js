@@ -185,7 +185,7 @@ async function runSetup() {
 
   // Project V2
   console.log(`\n${cyan}${i18n.creating_project}${reset}`);
-  let ownerId, projectId;
+  let ownerId, projectId, projectUrl;
   try {
     if (isOrg) {
       const orgOutput = execFileSync('gh', ['api', 'graphql', '-f', 'query=query($login: String!) { organization(login: $login) { id } }', '-f', `login=${repoOwner}`, '--jq', '.data.organization.id']).toString().trim();
@@ -206,6 +206,14 @@ async function runSetup() {
       console.log(`  ${i18n.link_project_ok}`);
     } catch (err) {
       console.log(`  ${i18n.link_project_warn}`);
+    }
+
+    try {
+      const projectNumber = execFileSync('gh', ['api', 'graphql', '-f', `query=query($projectId: ID!) { node(id: $projectId) { ... on ProjectV2 { number } } }`, '-f', `projectId=${projectId}`, '--jq', '.data.node.number'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+      const ownerSegment = isOrg ? `orgs/${repoOwner}` : `users/${repoOwner}`;
+      projectUrl = `https://github.com/${ownerSegment}/projects/${projectNumber}/views/1?layout=board`;
+    } catch (err) {
+      // URL is optional — main flow continues
     }
   } catch (err) {
     console.log(`  ${i18n.project_err}${err.message}`);
@@ -315,9 +323,13 @@ async function runSetup() {
       const dest = path.join(targetDir, '.agentic-setup.md');
       fs.copyFileSync(claudeSetupSrc, dest);
       console.log(`${i18n.setup_written}`);
-      console.log(`${green}============================================================${reset}`);
-      console.log(`${green}${i18n.framework_scaffolded}${reset}`);
-      console.log(`${green}============================================================${reset}\n`);
+      const boardMsg = projectUrl
+        ? t(`🎉 Board created, check it out: ${projectUrl}`, `🎉 Board criado, dá uma olhada: ${projectUrl}`, `🎉 Board creado, échale un vistazo: ${projectUrl}`)
+        : i18n.framework_scaffolded;
+      const sep = '='.repeat(boardMsg.length);
+      console.log(`${green}${sep}${reset}`);
+      console.log(`${green}${boardMsg}${reset}`);
+      console.log(`${green}${sep}${reset}\n`);
       console.log(`${yellow}${i18n.next_steps}${reset}`);
       console.log(`${cyan}${i18n.step_1}${reset}`);
       console.log(`${cyan}${i18n.step_2}${reset}`);
