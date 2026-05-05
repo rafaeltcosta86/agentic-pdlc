@@ -51,6 +51,8 @@ const i18n = {
   creating_project: t('[2/2] Creating Project V2 Board...', '[2/2] Criando Project V2 Board...', '[2/2] Creando Project V2 Board...'),
   project_ok: t('✅ Project created (ID: ', '✅ Projeto criado (ID: ', '✅ Proyecto creado (ID: '),
   project_err: t('❌ Failed to create project. Error: ', '❌ Falha ao criar o projeto. Erro: ', '❌ Fallo al crear el proyecto. Error: '),
+  link_project_ok: t('✅ Project linked to repository.', '✅ Projeto vinculado ao repositório.', '✅ Proyecto vinculado al repositorio.'),
+  link_project_warn: t('⚠️ Failed to link project to repository. Link it manually in GitHub Projects settings.', '⚠️ Falha ao vincular projeto ao repositório. Faça isso manualmente nas configurações do GitHub Projects.', '⚠️ Fallo al vincular el proyecto al repositorio. Hazlo manualmente en la configuración de GitHub Projects.'),
   config_columns: t('Configuring Project Columns...', 'Configurando colunas do Projeto...', 'Configurando columnas del Proyecto...'),
   columns_ok: t('✅ Project columns configured successfully.', '✅ Colunas do projeto configuradas com sucesso.', '✅ Columnas del proyecto configuradas con éxito.'),
   columns_warn: t('⚠️ Failed to configure project columns. You may need to add them manually.', '⚠️ Falha ao configurar colunas. Você pode precisar adicioná-las manualmente.', '⚠️ Fallo al configurar columnas. Es posible que debas agregarlas manualmente.'),
@@ -197,6 +199,14 @@ async function runSetup() {
     projectId = projectCreateOutput;
 
     console.log(`  ${i18n.project_ok}${projectId})`);
+
+    try {
+      const repoNodeId = execFileSync('gh', ['api', `repos/${repo}`, '--jq', '.node_id'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+      execFileSync('gh', ['api', 'graphql', '-f', `query=mutation($projectId: ID!, $repositoryId: ID!) { linkProjectV2ToRepository(input: {projectId: $projectId, repositoryId: $repositoryId}) { repository { name } } }`, '-f', `projectId=${projectId}`, '-f', `repositoryId=${repoNodeId}`], { stdio: 'ignore' });
+      console.log(`  ${i18n.link_project_ok}`);
+    } catch (err) {
+      console.log(`  ${i18n.link_project_warn}`);
+    }
   } catch (err) {
     console.log(`  ${i18n.project_err}${err.message}`);
   }
