@@ -51,6 +51,8 @@ const i18n = {
   creating_project: t('[2/2] Creating Project V2 Board...', '[2/2] Criando Project V2 Board...', '[2/2] Creando Project V2 Board...'),
   project_ok: t('✅ Project created (ID: ', '✅ Projeto criado (ID: ', '✅ Proyecto creado (ID: '),
   project_err: t('❌ Failed to create project. Error: ', '❌ Falha ao criar o projeto. Erro: ', '❌ Fallo al crear el proyecto. Error: '),
+  link_project_ok: t('✅ Project linked to repository.', '✅ Projeto vinculado ao repositório.', '✅ Proyecto vinculado al repositorio.'),
+  link_project_warn: t('⚠️ Failed to link project to repository. Link it manually in GitHub Projects settings.', '⚠️ Falha ao vincular projeto ao repositório. Faça isso manualmente nas configurações do GitHub Projects.', '⚠️ Fallo al vincular el proyecto al repositorio. Hazlo manualmente en la configuración de GitHub Projects.'),
   config_columns: t('Configuring Project Columns...', 'Configurando colunas do Projeto...', 'Configurando columnas del Proyecto...'),
   columns_ok: t('✅ Project columns configured successfully.', '✅ Colunas do projeto configuradas com sucesso.', '✅ Columnas del proyecto configuradas con éxito.'),
   columns_warn: t('⚠️ Failed to configure project columns. You may need to add them manually.', '⚠️ Falha ao configurar colunas. Você pode precisar adicioná-las manualmente.', '⚠️ Fallo al configurar columnas. Es posible que debas agregarlas manualmente.'),
@@ -70,7 +72,9 @@ const i18n = {
   cursor_step_1: t('\t1. Open Cursor', '\t1. Abra o Cursor', '\t1. Abre Cursor'),
   cursor_step_2: t('\t2. Open Composer (Cmd+I or Cmd+L) and type: "@.agentic-pdlc/SETUP_PROMPT.md execute Setup Mode"\n', '\t2. Abra o Composer (Cmd+I ou Cmd+L) e digite: "@.agentic-pdlc/SETUP_PROMPT.md execute Setup Mode"\n', '\t2. Abre Composer (Cmd+I o Cmd+L) y escribe: "@.agentic-pdlc/SETUP_PROMPT.md execute Setup Mode"\n'),
   generic_written: t('✅ Agent generic setup instructions written to .agentic-setup.md', '✅ Instruções genéricas salvas em .agentic-setup.md', '✅ Instrucciones genéricas guardadas en .agentic-setup.md'),
-  generic_done: t('Tell your AI agent to read and execute the .agentic-setup.md file!\n', 'Diga ao seu agente para ler e executar o arquivo .agentic-setup.md!\n', '¡Dile a tu agente de IA que lea y ejecute el archivo .agentic-setup.md!\n')
+  generic_done: t('Tell your AI agent to read and execute the .agentic-setup.md file!\n', 'Diga ao seu agente para ler e executar o arquivo .agentic-setup.md!\n', '¡Dile a tu agente de IA que lea y ejecute el archivo .agentic-setup.md!\n'),
+  setup_done: t('🎉 All set! Continue the setup with your agent:', '🎉 Aqui tá pronto! Continue o setup com o seu agente:', '🎉 ¡Listo! Continúa el setup con tu agente:'),
+  setup_done_hint: t('>>> Tell it to read and execute the .agentic-setup.md file!', '>>> Diga a ele para ler e executar o arquivo .agentic-setup.md!', '>>> Dile que lea y ejecute el archivo .agentic-setup.md!')
 };
 
 const cyan = '\x1b[36m';
@@ -97,6 +101,16 @@ function copyDirSync(src, dest) {
       fs.copyFileSync(srcPath, destPath);
     }
   }
+}
+
+function printSetupDone() {
+  const line1 = i18n.setup_done;
+  const line2 = i18n.setup_done_hint;
+  const sep = '='.repeat(Math.max(line1.length, line2.length));
+  console.log(`\n${green}${sep}${reset}`);
+  console.log(`${green}${line1}${reset}`);
+  console.log(`${cyan}${line2}${reset}`);
+  console.log(`${green}${sep}${reset}\n`);
 }
 
 async function runSetup() {
@@ -197,6 +211,15 @@ async function runSetup() {
     projectId = projectCreateOutput;
 
     console.log(`  ${i18n.project_ok}${projectId})`);
+
+    try {
+      const repoNodeId = execFileSync('gh', ['api', `repos/${repo}`, '--jq', '.node_id'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+      execFileSync('gh', ['api', 'graphql', '-f', `query=mutation($projectId: ID!, $repositoryId: ID!) { linkProjectV2ToRepository(input: {projectId: $projectId, repositoryId: $repositoryId}) { repository { name } } }`, '-f', `projectId=${projectId}`, '-f', `repositoryId=${repoNodeId}`], { stdio: 'ignore' });
+      console.log(`  ${i18n.link_project_ok}`);
+    } catch (err) {
+      console.log(`  ${i18n.link_project_warn}`);
+    }
+
   } catch (err) {
     console.log(`  ${i18n.project_err}${err.message}`);
   }
@@ -305,16 +328,7 @@ async function runSetup() {
       const dest = path.join(targetDir, '.agentic-setup.md');
       fs.copyFileSync(claudeSetupSrc, dest);
       console.log(`${i18n.setup_written}`);
-      console.log(`${green}============================================================${reset}`);
-      console.log(`${green}${i18n.framework_scaffolded}${reset}`);
-      console.log(`${green}============================================================${reset}\n`);
-      console.log(`${yellow}${i18n.next_steps}${reset}`);
-      console.log(`${cyan}${i18n.step_1}${reset}`);
-      console.log(`${cyan}${i18n.step_2}${reset}`);
-      console.log(`${cyan}>>> English: "Read .agentic-setup.md and guide me through the setup."${reset}`);
-      console.log(`${cyan}>>> Español: "Lea el archivo .agentic-setup.md e inicie el Setup Mode"${reset}`);
-      console.log(`${cyan}>>> Português: "Leia o arquivo .agentic-setup.md e inicie o Setup Mode."${reset}\n`);
-      console.log(`${i18n.note_cleanup}`);
+      printSetupDone();
     } else {
       console.error(`${i18n.missing_claude}${claudeSetupSrc}`);
     }
@@ -330,9 +344,7 @@ async function runSetup() {
 
       console.log(`${i18n.cursor_rules_written}`);
       console.log(`${i18n.cursor_setup_written}`);
-      console.log(`\n${green}${i18n.cursor_done}${reset}`);
-      console.log(`${cyan}${i18n.cursor_step_1}${reset}`);
-      console.log(`${cyan}${i18n.cursor_step_2}${reset}`);
+      printSetupDone();
     } else {
       console.error(`${i18n.missing_claude}${cursorSetupSrc}`);
     }
@@ -341,8 +353,7 @@ async function runSetup() {
     const dest = path.join(targetDir, '.agentic-setup.md');
     fs.copyFileSync(claudeSetupSrc, dest);
     console.log(`${i18n.generic_written}`);
-    console.log(`\n${green}${i18n.cursor_done}${reset}`);
-    console.log(`${cyan}>>> ${i18n.generic_done}${reset}`);
+    printSetupDone();
   }
 
   rl.close();
