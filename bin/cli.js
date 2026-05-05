@@ -104,8 +104,13 @@ function copyDirSync(src, dest) {
 }
 
 function printSetupDone() {
-  console.log(`\n${green}${i18n.setup_done}${reset}`);
-  console.log(`${cyan}${i18n.setup_done_hint}${reset}\n`);
+  const line1 = i18n.setup_done;
+  const line2 = i18n.setup_done_hint;
+  const sep = '='.repeat(Math.max(line1.length, line2.length));
+  console.log(`\n${green}${sep}${reset}`);
+  console.log(`${green}${line1}${reset}`);
+  console.log(`${cyan}${line2}${reset}`);
+  console.log(`${green}${sep}${reset}\n`);
 }
 
 async function runSetup() {
