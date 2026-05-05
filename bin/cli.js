@@ -138,7 +138,7 @@ async function runSetup() {
 
   let isOrg = false;
   try {
-    const ownerType = execFileSync('gh', ['api', `repos/${repo}`, '--jq', '.owner.type']).toString().trim();
+    const ownerType = execFileSync('gh', ['api', `repos/${repo}`, '--jq', '.owner.type'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
     isOrg = ownerType === 'Organization';
   } catch (err) {
     const accountTypeAnswer = await askQuestion(i18n.ask_org);
@@ -147,7 +147,7 @@ async function runSetup() {
 
   let branchName = 'main';
   try {
-    branchName = execFileSync('gh', ['api', `repos/${repo}`, '--jq', '.default_branch']).toString().trim() || 'main';
+    branchName = execFileSync('gh', ['api', `repos/${repo}`, '--jq', '.default_branch'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || 'main';
   } catch (err) {
     const branchAnswer = await askQuestion(i18n.ask_branch);
     if (branchAnswer.trim()) branchName = branchAnswer.trim();
