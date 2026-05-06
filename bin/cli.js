@@ -197,7 +197,7 @@ async function runSetup() {
 
   // Project V2
   console.log(`\n${cyan}${i18n.creating_project}${reset}`);
-  let ownerId, projectId;
+  let ownerId, projectId, projectNumber;
   try {
     if (isOrg) {
       const orgOutput = execFileSync('gh', ['api', 'graphql', '-f', 'query=query($login: String!) { organization(login: $login) { id } }', '-f', `login=${repoOwner}`, '--jq', '.data.organization.id']).toString().trim();
@@ -207,8 +207,10 @@ async function runSetup() {
       ownerId = userOutput;
     }
 
-    const projectCreateOutput = execFileSync('gh', ['api', 'graphql', '-f', 'query=mutation($owner: ID!, $title: String!) { createProjectV2(input: {ownerId: $owner, title: $title}) { projectV2 { id } } }', '-f', `owner=${ownerId}`, '-f', `title=${boardName}`, '--jq', '.data.createProjectV2.projectV2.id']).toString().trim();
-    projectId = projectCreateOutput;
+    const projectCreateRaw = execFileSync('gh', ['api', 'graphql', '-f', 'query=mutation($owner: ID!, $title: String!) { createProjectV2(input: {ownerId: $owner, title: $title}) { projectV2 { id number } } }', '-f', `owner=${ownerId}`, '-f', `title=${boardName}`]).toString().trim();
+    const projectCreateData = JSON.parse(projectCreateRaw).data.createProjectV2.projectV2;
+    projectId = projectCreateData.id;
+    projectNumber = projectCreateData.number;
 
     console.log(`  ${i18n.project_ok}${projectId})`);
 
@@ -317,12 +319,32 @@ async function runSetup() {
       fs.writeFileSync(pdlcDest, pdlcContent);
       console.log(`${i18n.pdlc_prefilled}`);
     }
+
+    // Pre-fill project-automation.yml with the same IDs so the agent doesn't need to map them
+    const workflowAutomationPath = path.join(targetTemplates, '.github', 'workflows', 'project-automation.yml');
+    if (fs.existsSync(workflowAutomationPath)) {
+      let wfContent = fs.readFileSync(workflowAutomationPath, 'utf8');
+      if (projectId) wfContent = wfContent.replace(/\{\{PROJECT_ID\}\}/g, () => projectId);
+      if (statusFieldId) wfContent = wfContent.replace(/\{\{STATUS_FIELD_ID\}\}/g, () => statusFieldId);
+      if (Object.keys(optionMap).length > 0) {
+        wfContent = wfContent.replace(/\{\{ID_IDEA\}\}/g, optionMap["💡 Idea"] || 'MISSING_ID');
+        wfContent = wfContent.replace(/\{\{ID_EXPLORATION\}\}/g, optionMap["🔍 Exploration"] || 'MISSING_ID');
+        wfContent = wfContent.replace(/\{\{ID_BRAINSTORMING\}\}/g, optionMap["🧠 Brainstorming"] || 'MISSING_ID');
+        wfContent = wfContent.replace(/\{\{ID_DETAILING\}\}/g, optionMap["📐 Detail Solution"] || 'MISSING_ID');
+        wfContent = wfContent.replace(/\{\{ID_APPROVAL\}\}/g, optionMap["✅ Approval"] || 'MISSING_ID');
+        wfContent = wfContent.replace(/\{\{ID_DEVELOPMENT\}\}/g, optionMap["⚙️ Development"] || 'MISSING_ID');
+        wfContent = wfContent.replace(/\{\{ID_TESTING\}\}/g, optionMap["🧪 Testing"] || 'MISSING_ID');
+        wfContent = wfContent.replace(/\{\{ID_CODE_REVIEW_PR\}\}/g, optionMap["👁 Code Review / PR"] || 'MISSING_ID');
+        wfContent = wfContent.replace(/\{\{ID_PRODUCTION\}\}/g, optionMap["🚀 Ready for Production"] || 'MISSING_ID');
+      }
+      fs.writeFileSync(workflowAutomationPath, wfContent);
+    }
   }
 
   // Write CLI context for the agent to consume in Setup Mode
   try {
     const cliContextPath = path.join(targetDir, '.agentic-pdlc', 'cli-context.json');
-    fs.writeFileSync(cliContextPath, JSON.stringify({ projectName, repoOwner, repoName }, null, 2));
+    fs.writeFileSync(cliContextPath, JSON.stringify({ projectName, repoOwner, repoName, projectNumber }, null, 2));
   } catch (err) {
     // Non-fatal — agent will ask for the values instead
   }
