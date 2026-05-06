@@ -33,21 +33,21 @@ If any of these files are missing, you are in **Setup Mode**. Do not proceed wit
      - **Build command** — the command that compiles or bundles the project (e.g. `npm run build`, `tsc`, `go build ./...`, `./gradlew build`) — reply "none" if not applicable.
    - **Invariants:** Critical business rules agents must never violate (e.g. Human-in-the-loop).
    - **Board IDs:** Skip entirely if `.agentic-pdlc/templates/docs/pdlc.md` is already pre-filled (no `{{...}}` placeholders). Only ask if placeholders remain.
-   - **Auditoria de Arquitetura (CI):** Pergunta: *"Seu projeto usa auditoria automatizada de arquitetura (CI job que cria issues com a label `architecture-violation`)?"* Apresente as opções:
-     - a) **Não uso, mas quero configurar** — *Deixa o pipeline CI/CD mais robusto via Gemini Code Assist.* → Guia o usuário na configuração.
-     - b) **Não agora** — *Deixa comentado para ativar em outro momento.* → Job permanece comentado no `project-automation.yml`.
-     - c) **Sim, ativar** — *Descomenta o job `move-violation-to-board` no `project-automation.yml`.* → Ativa imediatamente.
-   - **QA Agent:** Pergunta: *"Quer usar um agente de QA para verificar os PRs automaticamente antes do Code Review?"* Apresente as opções:
-     - a) **Não (Variant A)** — *PRs vão direto para Code Review. Padrão e mais simples.*
-     - b) **Sim (Variant B), mas preciso de ajuda pra configurar** — *PRs passam por um Agente de QA antes de serem revisados. Requer um QA Agent (ex: QAWolf).* → Guia o usuário na configuração.
-     - c) **Sim (Variant B), já tenho configurado** — *PRs passam por um Agente de QA antes de serem revisados.* → Ativa Variant B imediatamente: muda `STATUS_CODE_REVIEW_PR` para `STATUS_TESTING` no job `move-card-on-pr-open` e descomenta o job `move-card-on-qa-pass` no `project-automation.yml`.
-   - **Agente de implementação:** Pergunta: *"Usa um agente de implementação autônomo? (Ele implementa as features que você aprova para desenvolvimento)"* Apresente as opções:
-     - a) **Não** — *Sem agente de implementação autônomo.*
-     - b) **@google-labs-jules** — *Jules (recomendado caso não tenha nenhum).*
-     - c) **Outro** — *Digite o handle do agente.*
+   - **Architecture Audit (CI):** Ask: *"Does your project use automated architecture auditing (a CI job that creates issues with the `architecture-violation` label)?"* Present the options:
+     - a) **I don't use it, but I want to configure it** — *Makes the CI/CD pipeline more robust via Gemini Code Assist.* → Guide the user through configuration.
+     - b) **Not now** — *Leave it commented to activate later.* → Job remains commented in `project-automation.yml`.
+     - c) **Yes, activate** — *Uncomment the `move-violation-to-board` job in `project-automation.yml`.* → Activate immediately.
+   - **QA Agent:** Ask: *"Do you want to use a QA agent to verify PRs automatically before Code Review?"* Present the options:
+     - a) **No (Variant A)** — *PRs go straight to Code Review. Standard and simpler.*
+     - b) **Yes (Variant B), but I need help configuring it** — *PRs pass through a QA Agent before being reviewed. Requires a QA Agent (e.g., QAWolf).* → Guide the user through configuration.
+     - c) **Yes (Variant B), I already have it configured** — *PRs pass through a QA Agent before being reviewed.* → Activate Variant B immediately: change `STATUS_CODE_REVIEW_PR` to `STATUS_TESTING` in the `move-card-on-pr-open` job and uncomment the `move-card-on-qa-pass` job in `project-automation.yml`.
+   - **Implementation Agent:** Ask: *"Do you use an autonomous implementation agent? (It implements the features you approve for development)"* Present the options:
+     - a) **No** — *No autonomous implementation agent.*
+     - b) **@google-labs-jules** — *Jules (recommended if you don't have one).*
+     - c) **Other** — *Enter the agent's handle.*
 5. Generate and write the missing files replacing the `{{SCREAMING_SNAKE_CASE}}` placeholders using the templates in `.agentic-pdlc/templates/`.
 6. Offer to run the `gh` commands for labels (`spec:approved`, `pr:in-review`, `pr:approved`, `architecture-violation`).
-7. **IMPORTANTE:** Delete this setup prompt file (`.agentic-setup.md`, `.agentic-setup-prompt.md`, or `.agentic-pdlc/SETUP_PROMPT.md`) using only `rm <arquivo>` — **do NOT run `git add` or any other git command**. This file was never committed and does not exist in the git index. Delete it **before** the commit step so it is never accidentally included in the repository history.
+7. **IMPORTANT:** Delete this setup prompt file (`.agentic-setup.md`, `.agentic-setup-prompt.md`, or `.agentic-pdlc/SETUP_PROMPT.md`) using only `rm <file>` — **do NOT run `git add` or any other git command**. This file was never committed and does not exist in the git index. Delete it **before** the commit step so it is never accidentally included in the repository history.
 8. Commit everything with the message: `chore: setup agentic-pdlc framework`.
 9. Conclude Setup Mode.
 
