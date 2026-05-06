@@ -28,13 +28,13 @@ jobs:
     if: github.event_name == 'issues' && github.event.action == 'labeled'
     runs-on: ubuntu-latest
     env:
-      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+      PROJECT_PAT: ${{ secrets.PROJECT_PAT }}
     steps:
       - name: Detect Label and Move Issue
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
+        if: ${{ env.PROJECT_PAT != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
         uses: actions/github-script@v7
         with:
-          github-token: ${{ env.PROJECT_TOKEN }}
+          github-token: ${{ env.PROJECT_PAT }}
           script: |
             const labelName = context.payload.label.name;
             let targetStatusId = null;
@@ -94,10 +94,10 @@ jobs:
   #   runs-on: ubuntu-latest
   #   steps:
   #     - name: Move issue to Idea
-  #       if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
+  #       if: ${{ env.PROJECT_PAT != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
   #       uses: actions/github-script@v7
   #       with:
-  #         github-token: ${{ env.PROJECT_TOKEN }}
+  #         github-token: ${{ env.PROJECT_PAT }}
   #         script: |
   #           const { issue: { number, node_id } } = context.payload;
   #           const { addProjectV2ItemById: { item } } = await github.graphql(`
@@ -122,13 +122,13 @@ jobs:
     if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'reopened')
     runs-on: ubuntu-latest
     env:
-      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+      PROJECT_PAT: ${{ secrets.PROJECT_PAT }}
     steps:
       - name: Move linked issue to Code Review / PR
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
+        if: ${{ env.PROJECT_PAT != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
         uses: actions/github-script@v7
         with:
-          github-token: ${{ env.PROJECT_TOKEN }}
+          github-token: ${{ env.PROJECT_PAT }}
           script: |
             const prNumber = context.payload.pull_request.number;
             const { owner, repo } = context.repo;
@@ -176,13 +176,13 @@ jobs:
     if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
     runs-on: ubuntu-latest
     env:
-      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+      PROJECT_PAT: ${{ secrets.PROJECT_PAT }}
     steps:
       - name: Swap PR labels
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
+        if: ${{ env.PROJECT_PAT != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
         uses: actions/github-script@v7
         with:
-          github-token: ${{ env.PROJECT_TOKEN }}
+          github-token: ${{ env.PROJECT_PAT }}
           script: |
             const prNumber = context.payload.pull_request.number;
             const { owner, repo } = context.repo;
@@ -195,13 +195,13 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     env:
-      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+      PROJECT_PAT: ${{ secrets.PROJECT_PAT }}
     steps:
       - name: Move issue to Production
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
+        if: ${{ env.PROJECT_PAT != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
         uses: actions/github-script@v7
         with:
-          github-token: ${{ env.PROJECT_TOKEN }}
+          github-token: ${{ env.PROJECT_PAT }}
           script: |
             const prNumber = context.payload.pull_request.number;
             const { owner, repo } = context.repo;

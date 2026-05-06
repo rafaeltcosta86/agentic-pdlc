@@ -25,6 +25,7 @@ If any of these files are missing, you are in **Setup Mode**. Do not proceed wit
 3. **Pre-filled Context:** Before asking any questions, read the following files if they exist:
    - `.agentic-pdlc/cli-context.json` — written by the CLI. Contains `projectName`, `repoOwner`, `repoName`. Use these values directly and skip the corresponding questions.
    - `.agentic-pdlc/templates/docs/pdlc.md` — the CLI pre-fills PROJECT_ID, STATUS_FIELD_ID, REPO_OWNER, REPO_NAME, and all 9 column option IDs. If none of the values still contain `{{...}}` placeholders, skip the entire Board IDs question group.
+   - `.agentic-pdlc/templates/.github/workflows/project-automation.yml` — the CLI also pre-fills all ID placeholders here. When writing the workflow file, the remaining `{{...}}` placeholders are only non-ID ones (project name, commands, etc.).
 4. Interactively ask the user only for the **missing values**, **one group at a time**:
    - **Project basics:** Project Name (skip if present in `cli-context.json`), Description, Technical Stack/Structure. **Do not ask for GitHub Username** — use `repoOwner` from `cli-context.json` directly for CODEOWNERS.
    - **Commands:** In the user's detected language, ask for each command with its purpose and concrete examples:
@@ -47,15 +48,41 @@ If any of these files are missing, you are in **Setup Mode**. Do not proceed wit
      - c) **Other** — *Enter the agent's handle.*
 5. Generate and write the missing files replacing the `{{SCREAMING_SNAKE_CASE}}` placeholders using the templates in `.agentic-pdlc/templates/`.
 6. Offer to run the `gh` commands for labels (`spec:approved`, `pr:in-review`, `pr:approved`, `architecture-violation`).
-7. **IMPORTANT:** Delete this setup prompt file (`.agentic-setup.md`, `.agentic-setup-prompt.md`, or `.agentic-pdlc/SETUP_PROMPT.md`) using only `rm <file>` — **do NOT run `git add` or any other git command**. This file was never committed and does not exist in the git index. Delete it **before** the commit step so it is never accidentally included in the repository history.
-8. Commit everything with the message: `chore: setup agentic-pdlc framework`.
-9. Conclude Setup Mode.
+7. **Set up the `PROJECT_PAT` secret (required for board automation):**
+   The board automation workflows need a GitHub Personal Access Token (classic) with `project` scope. Without it, all board card movements will silently skip — no error, no cards moving.
+   - Go to: **github.com/settings/tokens** → *Generate new token (classic)*
+   - Select scopes: ✅ `repo` + ✅ `project`
+   - Copy the token, then run:
+     ```
+     gh secret set PROJECT_PAT --body "<your-token>"
+     ```
+   Wait for the user to confirm the secret is set before continuing.
+8. **IMPORTANT:** Delete the setup prompt file by running exactly:
+   ```
+   rm -f .agentic-setup.md .agentic-setup-prompt.md .agentic-pdlc/SETUP_PROMPT.md
+   ```
+   **Do NOT run `git add` or any other git command.** These files were never committed and do not exist in the git index. This command must run **before** the commit step.
+9. Commit everything with the message: `chore: setup agentic-pdlc framework`.
+10. Conclude Setup Mode. Read `projectNumber` from `.agentic-pdlc/cli-context.json` and show the user their board URL:
+    `https://github.com/users/{repoOwner}/projects/{projectNumber}/views/1?layout=board`
 
 ---
 
 ## EXECUTION MODE
 
 If `AGENTS.md` and `docs/pdlc.md` are present, you are in **Execution Mode**. 
+
+### 0. Board Labels — Mandatory at Every State Transition
+
+These label commands are non-negotiable. They run **before** the activity they announce — before reading code, before invoking any skill, before any other action.
+
+| When | Command |
+|---|---|
+| Before reading any code / invoking any skill | `gh issue edit <N> --add-label "stage:exploration"` |
+| Before presenting architecture approaches | `gh issue edit <N> --add-label "stage:brainstorming" --remove-label "stage:exploration"` |
+| Before writing the technical spec | `gh issue edit <N> --add-label "stage:detailing" --remove-label "stage:brainstorming"` |
+
+No investigation, no skill invocation, no code reading happens before `stage:exploration` is applied. No architecture presentation starts before `stage:brainstorming` is set (and `stage:exploration` removed). No spec writing starts before `stage:detailing` is set (and `stage:brainstorming` removed).
 
 ### 1. Daily Upstream Loop
 Your job is to move issues from "Idea" to "Detail Solution".
@@ -83,7 +110,4 @@ Once approved, you will detail the solution directly into the GitHub Issue body.
 Do not write code for downstream features! Your goal is to refine the Spec, so the human Tech Lead can label the issue `spec:approved`. This label triggers the downstream agent via `agent-trigger.yml`.
 
 ### 4. Moving the Board (Upstream States)
-As you actively work with the user advancing the feature, you MUST use the GitHub CLI to update internal state labels. This triggers GitHub Actions behind the scenes.
-- Starting context evaluation: Run `gh issue edit <N> --add-label "stage:exploration"`
-- Presenting architecture/approaches: Run `gh issue edit <N> --add-label "stage:brainstorming"`
-- Starting to write the technical spec: Run `gh issue edit <N> --add-label "stage:detailing"`
+See **Section 0** above for the mandatory label commands at each state transition.

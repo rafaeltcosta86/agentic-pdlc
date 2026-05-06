@@ -16,14 +16,12 @@ jobs:
       issues: write
       pull-requests: write
       contents: read
-    env:
-      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
       - name: Update Labels
-        if: ${{ env.PROJECT_TOKEN != '' && !contains('{{IMPLEMENTATION_AGENT_LABEL}}', '{{') }}
+        if: ${{ !contains('{{IMPLEMENTATION_AGENT_LABEL}}', '{{') }}
         uses: actions/github-script@v7
         with:
-          github-token: ${{ env.PROJECT_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const { owner, repo } = context.repo;
             const issue_number = context.payload.issue.number;
