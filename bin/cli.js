@@ -40,14 +40,10 @@ const i18n = {
   ask_repo: t('What is your GitHub repository URL? (e.g., https://github.com/YOUR_USER/repo_name): ', 'Qual é a URL do seu repositório no GitHub? (ex: https://github.com/SEU_USUARIO/repo_name): ', '¿Cuál es la URL de tu repositorio en GitHub? (ej: https://github.com/TU_USUARIO/repo_name): '),
   invalid_repo: t('❌ Invalid repository URL. Expected format: https://github.com/OWNER/REPO', '❌ URL de repositório inválida. Formato esperado: https://github.com/OWNER/REPO', '❌ URL de repositorio inválida. Formato esperado: https://github.com/OWNER/REPO'),
   ask_org: t('Does this repository belong to a personal User account (e.g., github.com/rafaeltcosta86) or an Organization (e.g., github.com/google-labs)? (user/org): ', 'Esse repositório pertence a um Usuário pessoal (ex: github.com/rafaeltcosta86) ou a uma Organização (ex: github.com/google-labs)? (user/org): ', '¿Este repositorio pertenece a un Usuario personal (ej: github.com/rafaeltcosta86) o a una Organización (ej: github.com/google-labs)? (user/org): '),
-  ask_branch: t('What is your main branch name? (default: main): ', 'Qual o nome da sua branch principal? (padrão: main): ', '¿Cuál es el nombre de tu rama principal? (por defecto: main): '),
   starting_setup: t('Starting automated repository setup...', 'Iniciando o setup automatizado do repositório...', 'Iniciando la configuración automatizada del repositorio...'),
   creating_labels: t('[1/2] Creating repository labels...', '[1/2] Criando labels no repositório...', '[1/2] Creando etiquetas (labels) en el repositorio...'),
   label_ok: t('✅ Label created: ', '✅ Label criada: ', '✅ Etiqueta creada: '),
   label_warn: t('⚠️ Failed to create label (might already exist): ', '⚠️ Falha ao criar label (talvez já exista): ', '⚠️ Fallo al crear etiqueta (quizás ya exista): '),
-  applying_protection: t('[2/3] Applying branch protection on ', '[2/3] Aplicando proteção de branch em ', '[2/3] Aplicando protección de rama en '),
-  protection_ok: t('✅ Branch protection applied to ', '✅ Proteção de branch aplicada em ', '✅ Protección de rama aplicada a '),
-  protection_warn: t('⚠️ Failed to apply branch protection. (Do you have GitHub Pro or is the repo Public?)', '⚠️ Falha ao aplicar proteção de branch. (Você tem GitHub Pro ou o repo é Público?)', '⚠️ Fallo al aplicar protección de rama. (¿Tienes GitHub Pro o el repositorio es Público?)'),
   creating_project: t('[2/2] Creating Project V2 Board...', '[2/2] Criando Project V2 Board...', '[2/2] Creando Project V2 Board...'),
   project_ok: t('✅ Project created (ID: ', '✅ Projeto criado (ID: ', '✅ Proyecto creado (ID: '),
   project_err: t('❌ Failed to create project. Error: ', '❌ Falha ao criar o projeto. Erro: ', '❌ Fallo al crear el proyecto. Error: '),
@@ -60,19 +56,8 @@ const i18n = {
   templates_copied: t('✅ Templates copied to .agentic-pdlc/templates/', '✅ Templates copiados para .agentic-pdlc/templates/', '✅ Plantillas copiadas a .agentic-pdlc/templates/'),
   pdlc_prefilled: t('✅ Pre-filled pdlc.md with Project ID, Status Field ID, and Column Option IDs.', '✅ pdlc.md preenchido com Project ID, Status Field ID, e Column Option IDs.', '✅ pdlc.md completado con Project ID, Status Field ID y Column Option IDs.'),
   setup_written: t('✅ Setup agent profile written to .agentic-setup.md\n', '✅ Perfil de setup do agente salvo em .agentic-setup.md\n', '✅ Perfil de configuración del agente guardado en .agentic-setup.md\n'),
-  framework_scaffolded: t('🎉 Framework files scaffolded to .agentic-pdlc/templates/', '🎉 Arquivos do framework injetados em .agentic-pdlc/templates/', '🎉 Archivos del framework inyectados en .agentic-pdlc/templates/'),
-  next_steps: t('👉 NEXT STEPS:', '👉 PRÓXIMOS PASSOS:', '👉 PRÓXIMOS PASOS:'),
-  step_1: t('1. Open your AI Assistant (Claude, Cursor, Copilot, etc).', '1. Abra o seu Assistente de IA (Claude, Cursor, Copilot, etc).', '1. Abre tu Asistente de IA (Claude, Cursor, Copilot, etc).'),
-  step_2: t('2. Ask it to read the .agentic-setup.md and start Setup Mode in any language you prefer. Example 👇', '2. Peça para ele ler o .agentic-setup.md e iniciar o Setup Mode. Exemplo 👇', '2. Pídele que lea .agentic-setup.md e inicie el Setup Mode. Ejemplo 👇'),
-  note_cleanup: t('Note: The agent will clean up the .agentic-setup.md file automatically when finished.\n', 'Nota: O agente irá limpar o arquivo .agentic-setup.md automaticamente quando terminar.\n', 'Nota: El agente limpiará el archivo .agentic-setup.md automáticamente cuando termine.\n'),
   missing_claude: t('❌ Could not find instruction file at ', '❌ Não foi possível encontrar o arquivo de instrução em ', '❌ No se pudo encontrar el archivo de instrucción en '),
   cursor_rules_written: t('✅ Default cursor rules written to .cursorrules', '✅ Regras padrão do cursor salvas em .cursorrules', '✅ Reglas por defecto de cursor guardadas en .cursorrules'),
-  cursor_setup_written: t('✅ Framework Setup Instructions written to .agentic-pdlc/SETUP_PROMPT.md', '✅ Instruções de Setup do Framework salvas em .agentic-pdlc/SETUP_PROMPT.md', '✅ Instrucciones de Setup del Framework guardadas en .agentic-pdlc/SETUP_PROMPT.md'),
-  cursor_done: t('🎉 Done! To start the conversational setup:', '🎉 Pronto! Para iniciar o setup conversacional:', '🎉 ¡Listo! Para iniciar la configuración conversacional:'),
-  cursor_step_1: t('\t1. Open Cursor', '\t1. Abra o Cursor', '\t1. Abre Cursor'),
-  cursor_step_2: t('\t2. Open Composer (Cmd+I or Cmd+L) and type: "@.agentic-pdlc/SETUP_PROMPT.md execute Setup Mode"\n', '\t2. Abra o Composer (Cmd+I ou Cmd+L) e digite: "@.agentic-pdlc/SETUP_PROMPT.md execute Setup Mode"\n', '\t2. Abre Composer (Cmd+I o Cmd+L) y escribe: "@.agentic-pdlc/SETUP_PROMPT.md execute Setup Mode"\n'),
-  generic_written: t('✅ Agent generic setup instructions written to .agentic-setup.md', '✅ Instruções genéricas salvas em .agentic-setup.md', '✅ Instrucciones genéricas guardadas en .agentic-setup.md'),
-  generic_done: t('Tell your AI agent to read and execute the .agentic-setup.md file!\n', 'Diga ao seu agente para ler e executar o arquivo .agentic-setup.md!\n', '¡Dile a tu agente de IA que lea y ejecute el archivo .agentic-setup.md!\n'),
   setup_done: t('🎉 All set! Continue the setup with your agent:', '🎉 Aqui tá pronto! Continue o setup com o seu agente:', '🎉 ¡Listo! Continúa el setup con tu agente:'),
   setup_done_hint: t('>>> Tell it to read and execute the .agentic-setup.md file!', '>>> Diga a ele para ler e executar o arquivo .agentic-setup.md!', '>>> Dile que lea y ejecute el archivo .agentic-setup.md!')
 };
@@ -157,14 +142,6 @@ async function runSetup() {
   } catch (err) {
     const accountTypeAnswer = await askQuestion(i18n.ask_org);
     isOrg = accountTypeAnswer.trim().toLowerCase() === 'org' || accountTypeAnswer.trim().toLowerCase() === 'organization';
-  }
-
-  let branchName = 'main';
-  try {
-    branchName = execFileSync('gh', ['api', `repos/${repo}`, '--jq', '.default_branch'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || 'main';
-  } catch (err) {
-    const branchAnswer = await askQuestion(i18n.ask_branch);
-    if (branchAnswer.trim()) branchName = branchAnswer.trim();
   }
 
   console.log(`\n${yellow}${i18n.starting_setup}${reset}`);
@@ -378,11 +355,14 @@ async function runSetup() {
       console.error(`${i18n.missing_claude}${cursorSetupSrc}`);
     }
   } else {
-    // Generic fallback mapping
-    const dest = path.join(targetDir, '.agentic-setup.md');
-    fs.copyFileSync(claudeSetupSrc, dest);
-    console.log(`${i18n.generic_written}`);
-    printSetupDone();
+    if (fs.existsSync(claudeSetupSrc)) {
+      const dest = path.join(targetDir, '.agentic-setup.md');
+      fs.copyFileSync(claudeSetupSrc, dest);
+      console.log(`${i18n.setup_written}`);
+      printSetupDone();
+    } else {
+      console.error(`${i18n.missing_claude}${claudeSetupSrc}`);
+    }
   }
 
   rl.close();
