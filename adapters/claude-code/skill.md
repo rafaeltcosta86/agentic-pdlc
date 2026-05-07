@@ -42,7 +42,7 @@ If any of these files are missing, you are in **Setup Mode**. Do not proceed wit
      - c) **Yes, activate** — *Uncomment the `move-violation-to-board` job in `project-automation.yml`.* → Activate immediately.
    - **QA Agent:** Ask: *"Do you want to use a QA agent to verify PRs automatically before Code Review?"* Present the options:
      - a) **No (Variant A)** — *PRs go straight to Code Review. Standard and simpler.*
-     - b) **Yes (Variant B), but I need help configuring it** — *PRs pass through a QA Agent before being reviewed. Requires a QA Agent (e.g., QAWolf).* → Guide the user through configuration.
+     - b) **Yes (Variant B), but I need help configuring it** — *PRs pass through a QA Agent before being reviewed. Requires a `GEMINI_API_KEY` secret (free tier available at ai.google.dev).* → Guide the user through configuration.
      - c) **Yes (Variant B), I already have it configured** — *PRs pass through a QA Agent before being reviewed.* → Activate Variant B immediately: change `STATUS_CODE_REVIEW_PR` to `STATUS_TESTING` in the `move-card-on-pr-open` job and uncomment the `move-card-on-qa-pass` job in `project-automation.yml`.
    - **Implementation Agent:** Ask: *"Do you use an autonomous implementation agent? (It implements the features you approve for development)"* Present the options:
      - a) **No** — *No autonomous implementation agent.*

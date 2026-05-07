@@ -22,7 +22,7 @@ Adapt columns as needed. The functional baseline is:
 ## Workflow Variants (QA Agent)
 
 - **Variant A (Default):** PRs bypass the `Testing` column and land directly in `Code Review / PR`.
-- **Variant B (QA Agent Enabled):** PRs land in the `Testing` column first. An AI QA agent verifies the PR, adding `qa:pass` or `qa:fail`. Only after a `qa:pass` is the issue moved to `Code Review / PR`.
+- **Variant B (QA Agent Enabled):** PRs land in the `Testing` column first. An AI QA agent verifies the PR, adding `qa:approved` or `qa:needs-work`. Only after a `qa:approved` is the issue moved to `Code Review / PR`.
 
 ## Board Identifiers (GitHub Projects)
 
@@ -77,6 +77,9 @@ REPO         = {{REPO_OWNER}}/{{REPO_NAME}}
 | `spec:approved` | Issue | Green | Gate 2 — agent is cleared to implement |
 | `pr:in-review` | PR | Yellow | Awaiting code review |
 | `pr:approved` | PR | Green | Code review approved |
+| `qa:approved` | PR | Green | QA Agent passed — AC coverage verified |
+| `qa:needs-work` | PR | Red | QA Agent failed — PR needs changes |
+| `infra:qa-broken` | PR | Orange | QA Agent error — manual review required |
 
 ## Approval Gates
 
