@@ -159,6 +159,7 @@ async function runSetup() {
     { name: 'architecture-violation', color: 'd93f0b', description: 'Invariant violation detected by CI' },
     { name: 'qa:approved', color: '0e8a16', description: 'QA Agent approved the implementation' },
     { name: 'qa:needs-work', color: 'd93f0b', description: 'QA Agent found issues' },
+    { name: 'infra:qa-broken', color: 'F97316', description: 'QA Agent failed to run — manual review required' },
     { name: 'jules', color: '5319e7', description: 'Jules AI Agent' }
   ];
 
