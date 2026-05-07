@@ -185,7 +185,11 @@ async function runSetup() {
     }
 
     const projectCreateRaw = execFileSync('gh', ['api', 'graphql', '-f', 'query=mutation($owner: ID!, $title: String!) { createProjectV2(input: {ownerId: $owner, title: $title}) { projectV2 { id number } } }', '-f', `owner=${ownerId}`, '-f', `title=${boardName}`]).toString().trim();
-    const projectCreateData = JSON.parse(projectCreateRaw).data.createProjectV2.projectV2;
+    const projectCreateResponse = JSON.parse(projectCreateRaw);
+    if (projectCreateResponse.errors) {
+      throw new Error(projectCreateResponse.errors.map(e => e.message).join('; '));
+    }
+    const projectCreateData = projectCreateResponse.data.createProjectV2.projectV2;
     projectId = projectCreateData.id;
     projectNumber = projectCreateData.number;
 
@@ -305,14 +309,14 @@ async function runSetup() {
       if (statusFieldId) wfContent = wfContent.replace(/\{\{STATUS_FIELD_ID\}\}/g, () => statusFieldId);
       if (Object.keys(optionMap).length > 0) {
         wfContent = wfContent.replace(/\{\{ID_IDEA\}\}/g, optionMap["💡 Idea"] || 'MISSING_ID');
-        wfContent = wfContent.replace(/\{\{ID_EXPLORATION\}\}/g, optionMap["🔍 Exploration"] || 'MISSING_ID');
-        wfContent = wfContent.replace(/\{\{ID_BRAINSTORMING\}\}/g, optionMap["🧠 Brainstorming"] || 'MISSING_ID');
-        wfContent = wfContent.replace(/\{\{ID_DETAILING\}\}/g, optionMap["📐 Detail Solution"] || 'MISSING_ID');
-        wfContent = wfContent.replace(/\{\{ID_APPROVAL\}\}/g, optionMap["✅ Approval"] || 'MISSING_ID');
-        wfContent = wfContent.replace(/\{\{ID_DEVELOPMENT\}\}/g, optionMap["⚙️ Development"] || 'MISSING_ID');
-        wfContent = wfContent.replace(/\{\{ID_TESTING\}\}/g, optionMap["🧪 Testing"] || 'MISSING_ID');
-        wfContent = wfContent.replace(/\{\{ID_CODE_REVIEW_PR\}\}/g, optionMap["👁 Code Review / PR"] || 'MISSING_ID');
-        wfContent = wfContent.replace(/\{\{ID_PRODUCTION\}\}/g, optionMap["🚀 Ready for Production"] || 'MISSING_ID');
+        wfContent = wfContent.replace(/\{\{ID_EXPLORATION\}\}/g, () => optionMap["🔍 Exploration"] || 'MISSING_ID');
+        wfContent = wfContent.replace(/\{\{ID_BRAINSTORMING\}\}/g, () => optionMap["🧠 Brainstorming"] || 'MISSING_ID');
+        wfContent = wfContent.replace(/\{\{ID_DETAILING\}\}/g, () => optionMap["📐 Detail Solution"] || 'MISSING_ID');
+        wfContent = wfContent.replace(/\{\{ID_APPROVAL\}\}/g, () => optionMap["✅ Approval"] || 'MISSING_ID');
+        wfContent = wfContent.replace(/\{\{ID_DEVELOPMENT\}\}/g, () => optionMap["⚙️ Development"] || 'MISSING_ID');
+        wfContent = wfContent.replace(/\{\{ID_TESTING\}\}/g, () => optionMap["🧪 Testing"] || 'MISSING_ID');
+        wfContent = wfContent.replace(/\{\{ID_CODE_REVIEW_PR\}\}/g, () => optionMap["👁 Code Review / PR"] || 'MISSING_ID');
+        wfContent = wfContent.replace(/\{\{ID_PRODUCTION\}\}/g, () => optionMap["🚀 Ready for Production"] || 'MISSING_ID');
       }
       fs.writeFileSync(workflowAutomationPath, wfContent);
     }
