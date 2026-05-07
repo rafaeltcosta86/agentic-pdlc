@@ -70,6 +70,18 @@ If any of these files are missing, you are in **Setup Mode**. Do not proceed wit
 
 ---
 
+## UPDATE MODE
+
+If the user says anything like "update the pipeline", "update the board", "update agentic-pdlc", or "configure the agents", run:
+
+```bash
+npx create-agentic-pdlc --update
+```
+
+This detects which optional agents (Jules, QA Agent, Sentinel) are already configured in the project and interactively configures the missing ones. It does **not** overwrite user-owned files (`AGENTS.md`, agent config files).
+
+---
+
 ## EXECUTION MODE
 
 If `AGENTS.md` and `docs/pdlc.md` are present, you are in **Execution Mode**. 

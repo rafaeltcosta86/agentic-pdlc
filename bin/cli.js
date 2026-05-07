@@ -59,7 +59,19 @@ const i18n = {
   missing_claude: t('❌ Could not find instruction file at ', '❌ Não foi possível encontrar o arquivo de instrução em ', '❌ No se pudo encontrar el archivo de instrucción en '),
   cursor_rules_written: t('✅ Default cursor rules written to .cursorrules', '✅ Regras padrão do cursor salvas em .cursorrules', '✅ Reglas por defecto de cursor guardadas en .cursorrules'),
   setup_done: t('🎉 All set! Continue the setup with your agent:', '🎉 Aqui tá pronto! Continue o setup com o seu agente:', '🎉 ¡Listo! Continúa el setup con tu agente:'),
-  setup_done_hint: t('>>> Tell it to read and execute the .agentic-setup.md file!', '>>> Diga a ele para ler e executar o arquivo .agentic-setup.md!', '>>> Dile que lea y ejecute el archivo .agentic-setup.md!')
+  setup_done_hint: t('>>> Tell it to read and execute the .agentic-setup.md file!', '>>> Diga a ele para ler e executar o arquivo .agentic-setup.md!', '>>> Dile que lea y ejecute el archivo .agentic-setup.md!'),
+  update_title: t('agentic-pdlc — Agent Configuration Status', 'agentic-pdlc — Status de Configuração dos Agentes', 'agentic-pdlc — Estado de Configuración de Agentes'),
+  update_no_context: t('❌ No .agentic-pdlc/cli-context.json found. Run npx create-agentic-pdlc first.', '❌ Arquivo .agentic-pdlc/cli-context.json não encontrado. Rode npx create-agentic-pdlc primeiro.', '❌ Archivo .agentic-pdlc/cli-context.json no encontrado. Ejecuta npx create-agentic-pdlc primero.'),
+  update_all_ok: t('All agents configured!', 'Todos os agentes configurados!', '¡Todos los agentes configurados!'),
+  update_ask_configure: t('Configure missing agents? (Y/n): ', 'Configurar agentes faltantes? (S/n): ', '¿Configurar agentes faltantes? (S/n): '),
+  update_skipped: t('Skipped.', 'Pulado.', 'Omitido.'),
+  update_jules_header: t('— Jules (autonomous implementation agent) —', '— Jules (agente de implementação autônomo) —', '— Jules (agente de implementación autónomo) —'),
+  update_jules_ask: t('  Which agent? (a) @google-labs-jules  (b) Other  (c) Skip: ', '  Qual agente? (a) @google-labs-jules  (b) Outro  (c) Pular: ', '  ¿Qué agente? (a) @google-labs-jules  (b) Otro  (c) Omitir: '),
+  update_jules_ask_handle: t('  Agent handle (e.g. @my-agent): ', '  Handle do agente (ex: @meu-agente): ', '  Handle del agente (ej: @mi-agente): '),
+  update_qa_header: t('— QA Agent (AC verification via Gemini — free tier) —', '— QA Agent (verificação de ACs via Gemini — free tier) —', '— QA Agent (verificación de ACs via Gemini — free tier) —'),
+  update_qa_ask: t('  Activate? Requires GEMINI_API_KEY secret. (Y/n): ', '  Ativar? Requer secret GEMINI_API_KEY. (S/n): ', '  ¿Activar? Requiere el secret GEMINI_API_KEY. (S/n): '),
+  update_sentinel_header: t('— Sentinel (architecture audit via Gemini Code Assist) —', '— Sentinel (auditoria de arquitetura via Gemini Code Assist) —', '— Sentinel (auditoría de arquitectura via Gemini Code Assist) —'),
+  update_sentinel_ask: t('  Activate? Requires Gemini Code Assist CI job. (Y/n): ', '  Ativar? Requer CI job do Gemini Code Assist. (S/n): ', '  ¿Activar? Requiere CI job de Gemini Code Assist. (S/n): '),
 };
 
 const cyan = '\x1b[36m';
@@ -373,4 +385,189 @@ async function runSetup() {
   rl.close();
 }
 
-runSetup();
+// ─── Update Mode helpers ──────────────────────────────────────────────────────
+
+function detectAgentState(dir) {
+  const state = { jules: false, julesHandle: null, qaAgent: false, sentinel: false };
+
+  const atPath = path.join(dir, '.github', 'workflows', 'agent-trigger.yml');
+  if (fs.existsSync(atPath)) {
+    const content = fs.readFileSync(atPath, 'utf8');
+    if (!content.includes('{{AGENT_HANDLE}}') && !content.includes('{{IMPLEMENTATION_AGENT_LABEL}}')) {
+      const match = content.match(/(@[\w-]+)/);
+      if (match) { state.jules = true; state.julesHandle = match[1]; }
+    }
+  }
+
+  const paPath = path.join(dir, '.github', 'workflows', 'project-automation.yml');
+  if (fs.existsSync(paPath)) {
+    const content = fs.readFileSync(paPath, 'utf8');
+    state.qaAgent   = /^  move-card-on-qa-pass:/m.test(content);
+    state.sentinel  = /^  move-violation-to-board:/m.test(content);
+  }
+
+  return state;
+}
+
+function uncommentYamlJob(content, jobCommentedLine) {
+  if (!content.includes(jobCommentedLine)) return content;
+  const lines = content.split('\n');
+  const output = [];
+  let state = 'before';
+
+  for (const line of lines) {
+    if (state === 'before') {
+      if (line === jobCommentedLine) {
+        state = 'in-job';
+        output.push(line.replace(/^(\s{2})# ?/, '$1'));
+      } else if (/^\s{2}# (OPTIONAL:|When )/.test(line)) {
+        state = 'in-preamble';
+      } else {
+        output.push(line);
+      }
+    } else if (state === 'in-preamble') {
+      if (line === jobCommentedLine) {
+        state = 'in-job';
+        output.push(line.replace(/^(\s{2})# ?/, '$1'));
+      }
+    } else if (state === 'in-job') {
+      if (/^\s{2}#/.test(line)) {
+        output.push(line.replace(/^(\s{2})# ?/, '$1'));
+      } else {
+        state = 'after';
+        output.push(line);
+      }
+    } else {
+      output.push(line);
+    }
+  }
+
+  return output.join('\n');
+}
+
+function activateQaAgent(paPath) {
+  let content = fs.readFileSync(paPath, 'utf8');
+  content = uncommentYamlJob(content, '  # move-card-on-qa-pass:');
+
+  // Change STATUS_CODE_REVIEW_PR → STATUS_TESTING in move-card-on-pr-open only
+  const variantBIdx = content.indexOf('# 💡 VARIANT B');
+  if (variantBIdx !== -1) {
+    const before = content.slice(0, variantBIdx);
+    const after = content.slice(variantBIdx).replace('process.env.STATUS_CODE_REVIEW_PR', () => 'process.env.STATUS_TESTING');
+    content = before + after;
+  }
+
+  fs.writeFileSync(paPath, content, 'utf8');
+}
+
+function activateSentinel(paPath) {
+  let content = fs.readFileSync(paPath, 'utf8');
+  content = uncommentYamlJob(content, '  # move-violation-to-board:');
+  fs.writeFileSync(paPath, content, 'utf8');
+}
+
+function configureJules(atPath, handle, label) {
+  let content = fs.readFileSync(atPath, 'utf8');
+  const name = handle.replace('@', '');
+  content = content.replace(/\{\{IMPLEMENTATION_AGENT_NAME\}\}/g, () => name);
+  content = content.replace(/\{\{IMPLEMENTATION_AGENT_LABEL\}\}/g, () => label);
+  content = content.replace(/\{\{AGENT_HANDLE\}\}/g, () => handle);
+  fs.writeFileSync(atPath, content, 'utf8');
+}
+
+async function runUpdate() {
+  const contextPath = path.join(targetDir, '.agentic-pdlc', 'cli-context.json');
+  if (!fs.existsSync(contextPath)) {
+    console.error(`\n${red}${i18n.update_no_context}${reset}\n`);
+    rl.close();
+    process.exit(1);
+  }
+
+  const state = detectAgentState(targetDir);
+  const sep = '─'.repeat(55);
+
+  console.log(`\n${cyan}${sep}${reset}`);
+  console.log(`${cyan}  ${i18n.update_title}${reset}`);
+  console.log(`${cyan}${sep}${reset}\n`);
+
+  const julesSuffix = state.julesHandle ? ` (${state.julesHandle})` : '';
+  console.log(`  ${state.jules    ? green + '✅' : red + '❌'}  Jules${julesSuffix} — ${state.jules    ? t('configured','configurado','configurado') : t('not configured','não configurado','no configurado')}${reset}`);
+  console.log(`  ${state.qaAgent  ? green + '✅' : red + '❌'}  QA Agent — ${state.qaAgent  ? t('active (Variant B)','ativo (Variant B)','activo (Variant B)') : t('not active (Variant A)','não ativo (Variant A)','no activo (Variant A)')}${reset}`);
+  console.log(`  ${state.sentinel ? green + '✅' : red + '❌'}  Sentinel — ${state.sentinel ? t('active','ativo','activo') : t('not configured','não configurado','no configurado')}${reset}`);
+
+  if (state.jules && state.qaAgent && state.sentinel) {
+    console.log(`\n${green}${i18n.update_all_ok}${reset}\n`);
+    rl.close();
+    return;
+  }
+
+  console.log(`\n${cyan}${sep}${reset}`);
+  const configureAnswer = await askQuestion(i18n.update_ask_configure);
+  const shouldConfigure = !['n', 'no', 'não', 'nao'].includes(configureAnswer.trim().toLowerCase());
+
+  if (!shouldConfigure) {
+    console.log(`\n${i18n.update_skipped}\n`);
+    rl.close();
+    return;
+  }
+
+  const paPath = path.join(targetDir, '.github', 'workflows', 'project-automation.yml');
+  const atPath = path.join(targetDir, '.github', 'workflows', 'agent-trigger.yml');
+  const results = [];
+
+  if (!state.jules && fs.existsSync(atPath)) {
+    console.log(`\n${cyan}${i18n.update_jules_header}${reset}`);
+    const choice = (await askQuestion(i18n.update_jules_ask)).trim().toLowerCase();
+    if (choice === 'a' || choice === '') {
+      configureJules(atPath, '@google-labs-jules', 'jules');
+      results.push(t('✅  Jules configured (@google-labs-jules)', '✅  Jules configurado (@google-labs-jules)', '✅  Jules configurado (@google-labs-jules)'));
+    } else if (choice === 'b') {
+      const handle = (await askQuestion(i18n.update_jules_ask_handle)).trim();
+      configureJules(atPath, handle, handle.replace('@', '').toLowerCase());
+      results.push(t(`✅  Agent configured (${handle})`, `✅  Agente configurado (${handle})`, `✅  Agente configurado (${handle})`));
+    } else {
+      results.push(t('⏭  Jules — skipped', '⏭  Jules — pulado', '⏭  Jules — omitido'));
+    }
+  }
+
+  if (!state.qaAgent && fs.existsSync(paPath)) {
+    console.log(`\n${cyan}${i18n.update_qa_header}${reset}`);
+    const answer = (await askQuestion(i18n.update_qa_ask)).trim().toLowerCase();
+    if (!['n', 'no', 'não', 'nao'].includes(answer)) {
+      activateQaAgent(paPath);
+      results.push(t(
+        '✅  QA Agent configured — Variant B activated\n     Next: gh secret set GEMINI_API_KEY --body "<your-key>"',
+        '✅  QA Agent configurado — Variant B ativado\n     Próximo: gh secret set GEMINI_API_KEY --body "<sua-chave>"',
+        '✅  QA Agent configurado — Variant B activado\n     Siguiente: gh secret set GEMINI_API_KEY --body "<tu-clave>"'
+      ));
+    } else {
+      results.push(t('⏭  QA Agent — skipped', '⏭  QA Agent — pulado', '⏭  QA Agent — omitido'));
+    }
+  }
+
+  if (!state.sentinel && fs.existsSync(paPath)) {
+    console.log(`\n${cyan}${i18n.update_sentinel_header}${reset}`);
+    const answer = (await askQuestion(i18n.update_sentinel_ask)).trim().toLowerCase();
+    if (!['n', 'no', 'não', 'nao'].includes(answer)) {
+      activateSentinel(paPath);
+      results.push(t('✅  Sentinel configured', '✅  Sentinel configurado', '✅  Sentinel configurado'));
+    } else {
+      results.push(t('⏭  Sentinel — skipped', '⏭  Sentinel — pulado', '⏭  Sentinel — omitido'));
+    }
+  }
+
+  console.log(`\n${cyan}${sep}${reset}`);
+  for (const r of results) console.log(`  ${r}`);
+  console.log(`${cyan}${sep}${reset}\n`);
+
+  rl.close();
+}
+
+// ─── Entry point ──────────────────────────────────────────────────────────────
+
+const args = process.argv.slice(2);
+if (args.includes('--update')) {
+  runUpdate().catch(err => { console.error(err.message); rl.close(); process.exit(1); });
+} else {
+  runSetup().catch(err => { console.error(err.message); rl.close(); process.exit(1); });
+}
