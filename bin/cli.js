@@ -364,16 +364,15 @@ async function runSetup() {
     }
   } else if (agent === 'cursor') {
     if (fs.existsSync(cursorSetupSrc)) {
-      // Create .cursorrules which has the general invariants
       const dest = path.join(targetDir, '.cursorrules');
       fs.copyFileSync(cursorSetupSrc, dest);
-
-      // Also copy skill.md as a setup prompt for cursor composer
-      const setupPromptDest = path.join(targetDir, '.agentic-pdlc', 'SETUP_PROMPT.md');
-      if (fs.existsSync(claudeSetupSrc)) fs.copyFileSync(claudeSetupSrc, setupPromptDest);
-
       console.log(`${i18n.cursor_rules_written}`);
-      console.log(`${i18n.cursor_setup_written}`);
+
+      if (fs.existsSync(claudeSetupSrc)) {
+        const setupDest = path.join(targetDir, '.agentic-setup.md');
+        fs.copyFileSync(claudeSetupSrc, setupDest);
+        console.log(`${i18n.setup_written}`);
+      }
       printSetupDone();
     } else {
       console.error(`${i18n.missing_claude}${cursorSetupSrc}`);
