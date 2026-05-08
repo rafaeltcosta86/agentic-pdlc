@@ -64,6 +64,16 @@ When detailing a solution in an issue body, you must **always** include both the
 - `path/to/file.ts` — what changes
 ```
 
+## Pipeline Updates
+
+To add or configure optional agents (Jules, QA Agent, Sentinel) at any time:
+
+```bash
+npx create-agentic-pdlc --update
+```
+
+Run this when the user says anything like "update the pipeline", "update the board", or "configure the agents". It detects what is already configured and interactively sets up what is missing — without touching this file or any user-owned config.
+
 ## What NOT to do
 
 - Never commit directly to `main`.
