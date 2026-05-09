@@ -33,6 +33,14 @@ npx create-agentic-pdlc
 
 The CLI sets up your GitHub board, labels, and workflows, then hands over to your AI assistant to finish the configuration interactively. No YAML editing. No manual config.
 
+**Already set up? Add or reconfigure optional agents at any time:**
+
+```bash
+npx create-agentic-pdlc --update
+```
+
+Detects what is already configured (Jules, QA Agent, Sentinel) and interactively sets up what is missing. Your existing board IDs and customizations are never touched.
+
 ---
 
 ## 🏗️ How It Works
