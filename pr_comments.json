@@ -1,0 +1,20 @@
+{
+  "body": "![security-high](https://www.gstatic.com/codereviewagent/security-high-priority.svg) ![high](https://www.gstatic.com/codereviewagent/high-priority.svg)\n\nThe use of `execSync` with template literals containing user-provided variables (such as `${repo}`, `${repoOwner}`, `${repoName}`, and `${branchName}`) is vulnerable to command injection. If a user provides a malicious repository URL or branch name containing shell metacharacters (e.g., `; rm -rf /`), they could execute arbitrary shell commands. It is highly recommended to use `spawnSync` with an arguments array to avoid shell interpretation, or at least sanitize and quote the inputs strictly.",
+  "path": "bin/cli.js",
+  "line": 155
+}
+{
+  "body": "![medium](https://www.gstatic.com/codereviewagent/medium-priority.svg)\n\nThe required status check context `\"Sentinel / CI\"` does not match any of the workflow or job names defined in the provided templates (e.g., `PDLC Board Automation` or `Detect Project Board Drift`). This will cause pull requests to be permanently blocked as the required check will never be reported. Based on the provided templates, `\"Detect Project Board Drift\"` seems to be the intended health check job name.\n\n```suggestion\n    required_status_checks: { strict: true, checks: [{ context: \"Detect Project Board Drift\" }] },\n```",
+  "path": "bin/cli.js",
+  "line": 165
+}
+{
+  "body": "![medium](https://www.gstatic.com/codereviewagent/medium-priority.svg)\n\nParsing `updateOutput` directly can throw a `SyntaxError` if the command fails or returns an empty/invalid response. Although it's inside a `try...catch` block, checking if the output is truthy before parsing and using optional chaining provides better resilience and prevents the script from crashing on unexpected API responses.\n\n```suggestion\n        const jsonResponse = updateOutput ? JSON.parse(updateOutput) : null;\n        const returnedOptions = jsonResponse?.data?.updateProjectV2SingleSelectField?.projectV2SingleSelectField?.options || [];\n```",
+  "path": "bin/cli.js",
+  "line": 248
+}
+{
+  "body": "![medium](https://www.gstatic.com/codereviewagent/medium-priority.svg)\n\nTypo in Spanish translation: \"arquivo\" is Portuguese. In Spanish, it should be \"archivo\".\n\n```suggestion\n      console.log(`${cyan}>>> Español: \"Lea el archivo .agentic-setup.md e inicie el Setup Mode\"${reset}`);\n```",
+  "path": "bin/cli.js",
+  "line": 314
+}
