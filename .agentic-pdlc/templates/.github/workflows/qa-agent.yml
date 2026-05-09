@@ -1,0 +1,27 @@
+name: AI QA Agent
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  qa:
+    name: Run AI QA Agent
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute QA Tests
+        run: |
+          echo "Run your QA Agent here."
+          echo "This could be QAWolf, a custom LLM script, or a secondary agent."
+          echo "If tests pass: gh pr edit $PR_URL --add-label 'qa:pass'"
+          echo "If tests fail: gh pr edit $PR_URL --add-label 'qa:fail'"
+          
+          # Example success:
+          # gh pr edit ${{ github.event.pull_request.html_url }} --add-label "qa:pass"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
