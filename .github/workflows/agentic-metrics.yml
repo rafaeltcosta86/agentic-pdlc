@@ -117,6 +117,24 @@ jobs:
             }
             function round1(n) { return Math.round(n * 10) / 10; }
 
+            // Week date range for issue title (ISO week, Mon–Sun)
+            function weekDateRange(key) {
+              const [yr, wStr] = key.split('-W');
+              const week = parseInt(wStr, 10);
+              // Jan 4 is always in week 1
+              const jan4 = new Date(Date.UTC(parseInt(yr, 10), 0, 4));
+              const monday = new Date(jan4);
+              monday.setUTCDate(jan4.getUTCDate() - ((jan4.getUTCDay() + 6) % 7) + (week - 1) * 7);
+              const sunday = new Date(monday);
+              sunday.setUTCDate(monday.getUTCDate() + 6);
+              const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+              const pad = n => String(n).padStart(2, '0');
+              const startMonth = months[monday.getUTCMonth()];
+              const endMonth   = months[sunday.getUTCMonth()];
+              const monthLabel = startMonth === endMonth ? startMonth : startMonth + '/' + endMonth;
+              return pad(monday.getUTCDate()) + '-' + pad(sunday.getUTCDate()) + '/' + monthLabel;
+            }
+
             // ── Signal collection ───────────────────────────────────────────
             const signals = [];
 
@@ -304,7 +322,7 @@ jobs:
                 }
 
                 if (rows.length > 0) {
-                  stageSection = `\n---\n\n### 🔄 Stage Residence Time *(board ativo)*\n\n| Stage | Avg | N |\n|---|---|---|\n${rows.join('\n')}\n\n> \`${maxStage}\` é o maior gargalo (${maxDays}d avg). Considere quebrar specs ou aumentar cadência de revisão nessa fase.\n`;
+                  stageSection = `\n---\n\n### 🔄 Stage Residence Time *(board ativo)*\n\n| Stage | Média | Issues |\n|---|---|---|\n${rows.join('\n')}\n\n> \`${maxStage}\` é o maior gargalo (${maxDays}d avg). Considere quebrar specs ou aumentar cadência de revisão nessa fase.\n`;
                 }
               }
             }
@@ -345,10 +363,13 @@ jobs:
               signalLines,
               stageSection,
               '---',
-              '*Próximo pulse: ' + nextWeekNum + '*'
+              '*Próximo pulse: ' + nextWeekNum + ' · Considere fechar esta issue após sua análise para não sujar sua lista na aba de Issues.*',
+              '',
+              '👍 Se este pulse foi útil, reaja com 👍 — ajuda a priorizar melhorias.'
             ].join('\n');
 
-            core.exportVariable('PULSE_TITLE', `📊 Agentic Pulse — ${weekKey}`);
+            const dateRange = weekDateRange(weekKey);
+            core.exportVariable('PULSE_TITLE', '📊 Agentic Pulse — ' + weekKey + ' (' + dateRange + ')');
             core.exportVariable('PULSE_BODY', body);
             console.log(`Built pulse issue for ${weekKey} — ${signals.length} signals, ${reds} red, ${yellows} yellow`);
 
