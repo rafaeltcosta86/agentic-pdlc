@@ -1,0 +1,108 @@
+name: Agentic Metrics — Weekly Report
+
+on:
+  schedule:
+    - cron: '0 8 * * 0' # Sunday 8am UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: read
+
+jobs:
+  generate-report:
+    name: Generate Weekly Agentic Metrics
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Collect Stage Residence Time
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            const { owner, repo } = context.repo;
+            const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+            const STAGE_LABELS = new Set([
+              'stage:exploration', 'stage:brainstorming', 'stage:detailing',
+              'stage:approval', 'stage:development', 'stage:testing'
+            ]);
+
+            const QUERY = `
+              query($owner: String!, $repo: String!, $since: DateTime!, $cursor: String) {
+                repository(owner: $owner, name: $repo) {
+                  issues(first: 50, after: $cursor, filterBy: { since: $since }) {
+                    pageInfo { hasNextPage endCursor }
+                    nodes {
+                      number
+                      timelineItems(first: 100, itemTypes: [LABELED_EVENT, UNLABELED_EVENT]) {
+                        nodes {
+                          ... on LabeledEvent   { __typename createdAt label { name } }
+                          ... on UnlabeledEvent { __typename createdAt label { name } }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const records = [];
+            let cursor = null;
+            do {
+              const result = await github.graphql(QUERY, { owner, repo, since, cursor });
+              const { nodes, pageInfo } = result.repository.issues;
+
+              for (const issue of nodes) {
+                const events = issue.timelineItems.nodes
+                  .filter(e => e.label && STAGE_LABELS.has(e.label.name))
+                  .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+                const labeledAt = {};
+                for (const ev of events) {
+                  const stage = ev.label.name;
+                  if (ev.__typename === 'LabeledEvent') {
+                    labeledAt[stage] = new Date(ev.createdAt);
+                  } else if (ev.__typename === 'UnlabeledEvent' && labeledAt[stage]) {
+                    const durationDays = Math.round((new Date(ev.createdAt) - labeledAt[stage]) / 864e5 * 10) / 10;
+                    records.push({ issueNumber: issue.number, stage, durationDays });
+                    delete labeledAt[stage];
+                  }
+                }
+              }
+
+              cursor = pageInfo.hasNextPage ? pageInfo.endCursor : null;
+            } while (cursor);
+
+            // ISO week helper
+            function isoWeek(d) {
+              const dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+              dt.setUTCDate(dt.getUTCDate() + 4 - (dt.getUTCDay() || 7));
+              const y = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
+              return { year: dt.getUTCFullYear(), week: Math.ceil((((dt - y) / 86400000) + 1) / 7) };
+            }
+
+            const { year, week } = isoWeek(new Date());
+            const weekKey = `${year}-W${String(week).padStart(2, '0')}`;
+
+            fs.mkdirSync('.agentic-pdlc/metrics/raw', { recursive: true });
+            fs.writeFileSync(
+              `.agentic-pdlc/metrics/raw/${weekKey}.jsonl`,
+              records.map(r => JSON.stringify(r)).join('\n')
+            );
+
+            core.exportVariable('WEEK_KEY', weekKey);
+            console.log(`Collected ${records.length} stage transitions → week ${weekKey}`);
+
+      - name: Generate Markdown Report
+        run: node scripts/aggregate-metrics.js
+
+      - name: Commit Report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .agentic-pdlc/metrics/
+          git diff --staged --quiet && echo "No changes to commit" && exit 0
+          git commit -m "metrics: weekly report ${WEEK_KEY} [skip ci]"
+          git push
