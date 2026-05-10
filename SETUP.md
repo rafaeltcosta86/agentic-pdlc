@@ -151,13 +151,15 @@ If you don't use this, you can safely delete `templates/.github/workflows/qa-age
 
 ## (Optional) Agentic Metrics — Weekly Report
 
-Activate a weekly automated report with agentic-specific metrics that no off-the-shelf tool provides:
+Every Sunday a `📊 Agentic Pulse` issue is created automatically in your repository with agentic-specific insights no off-the-shelf tool provides:
 
-- **Stage Residence Time** — how long issues spend in each PDLC phase (where your flow stalls)
-- **Agent Rework Rate** — commits added after Jules' first push (agent assertiveness) _(Milestone 2)_
-- **HITL Factor** — human interventions per issue lifecycle (real autonomy measure) _(Milestone 2)_
+- **Orphan issues** — open 14+ days with no linked PR (forgotten or blocked work)
+- **PR merge time trend** — week-over-week comparison (flow acceleration or slowdown)
+- **Rework rate** — PRs merged without extra commit sessions (agent or human first-shot rate)
+- **Unlinked PRs** — merged without `Closes #N` (traceability gaps)
+- **Stage Residence Time** — included automatically if your team uses `stage:*` labels _(Milestone 2)_
 
-The report is committed automatically every Sunday to `.agentic-pdlc/metrics/YYYY-WW.md` — visible directly in the GitHub UI, zero extra setup.
+The issue appears in your GitHub notifications automatically — zero extra setup, zero extra secrets.
 
 **To activate:**
 
@@ -166,22 +168,12 @@ The report is committed automatically every Sunday to `.agentic-pdlc/metrics/YYY
    cp .agentic-pdlc/templates/.github/workflows/agentic-metrics.yml .github/workflows/agentic-metrics.yml
    ```
 
-2. Copy the aggregation script:
-   ```bash
-   cp scripts/aggregate-metrics.js scripts/aggregate-metrics.js
-   ```
-
-3. Ensure the metrics directory exists:
-   ```bash
-   mkdir -p .agentic-pdlc/metrics/raw
-   ```
-
-4. Commit and push. The first report runs next Sunday, or trigger it manually:
+2. Commit and push. The first pulse runs next Sunday, or trigger it manually:
    ```bash
    gh workflow run agentic-metrics.yml
    ```
 
-> **No additional secrets needed.** The workflow uses the standard `GITHUB_TOKEN`.
+> **No additional secrets needed.** The workflow uses the standard `GITHUB_TOKEN` and creates a `metrics:weekly` label automatically on first run.
 
 ---
 

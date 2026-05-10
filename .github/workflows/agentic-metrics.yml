@@ -1,4 +1,4 @@
-name: Agentic Metrics — Weekly Report
+name: Agentic Metrics — Weekly Pulse
 
 on:
   schedule:
@@ -7,11 +7,11 @@ on:
 
 permissions:
   contents: write
-  issues: read
+  issues: write
 
 jobs:
-  generate-report:
-    name: Generate Weekly Agentic Metrics
+  generate-pulse:
+    name: Generate Weekly Agentic Pulse
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -75,7 +75,6 @@ jobs:
               cursor = pageInfo.hasNextPage ? pageInfo.endCursor : null;
             } while (cursor);
 
-            // ISO week helper
             function isoWeek(d) {
               const dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
               dt.setUTCDate(dt.getUTCDate() + 4 - (dt.getUTCDay() || 7));
@@ -95,14 +94,296 @@ jobs:
             core.exportVariable('WEEK_KEY', weekKey);
             console.log(`Collected ${records.length} stage transitions → week ${weekKey}`);
 
-      - name: Generate Markdown Report
-        run: node scripts/aggregate-metrics.js
-
-      - name: Commit Report
+      - name: Commit JSONL raw data
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .agentic-pdlc/metrics/
-          git diff --staged --quiet && echo "No changes to commit" && exit 0
-          git commit -m "metrics: weekly report ${WEEK_KEY} [skip ci]"
+          git add .agentic-pdlc/metrics/raw/
+          git diff --staged --quiet && echo "No new stage data" && exit 0
+          git commit -m "metrics: raw stage data ${WEEK_KEY} [skip ci]"
           git push
+
+      - name: Collect PR and Issue Insights
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const { owner, repo } = context.repo;
+            const weekKey = process.env.WEEK_KEY;
+
+            // ── Helper ──────────────────────────────────────────────────────
+            function daysSince(isoStr) {
+              return (Date.now() - new Date(isoStr).getTime()) / 864e5;
+            }
+            function round1(n) { return Math.round(n * 10) / 10; }
+
+            // ── Signal collection ───────────────────────────────────────────
+            const signals = [];
+
+            // 1. Orphan issues: open >14 days with no linked PR
+            const closeRe = /(?:closes?|fixes?|resolves?)\s+#(\d+)/gi;
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'open', per_page: 100
+            });
+
+            const recentPRs = await github.paginate(github.rest.pulls.list, {
+              owner, repo, state: 'closed', per_page: 50,
+              sort: 'updated', direction: 'desc'
+            });
+
+            const linkedIssueNums = new Set();
+            for (const pr of recentPRs) {
+              const body = pr.body || '';
+              let m;
+              while ((m = closeRe.exec(body)) !== null) linkedIssueNums.add(parseInt(m[1]));
+              closeRe.lastIndex = 0;
+            }
+
+            const orphans = openIssues.filter(i =>
+              !i.pull_request &&
+              daysSince(i.created_at) > 14 &&
+              !linkedIssueNums.has(i.number)
+            );
+
+            if (orphans.length > 0) {
+              const names = orphans.slice(0, 5).map(i => `#${i.number} "${i.title}"`).join(', ');
+              const extra = orphans.length > 5 ? ` e mais ${orphans.length - 5}` : '';
+              signals.push({
+                level: 'red',
+                emoji: '🔴',
+                title: `**${orphans.length} issue${orphans.length > 1 ? 's abertas' : ' aberta'} há 14+ dias sem PR linkado**`,
+                body: `${names}${extra}\n→ Atribua, planeje ou feche se não for mais relevante.`
+              });
+            } else {
+              signals.push({
+                level: 'green',
+                emoji: '🟢',
+                title: '**Nenhuma issue esquecida**',
+                body: 'Todas as issues abertas têm menos de 14 dias ou têm PR linkado.'
+              });
+            }
+
+            // 2. PR merge time trend: last 10 merged PRs split 5+5
+            const mergedPRs = recentPRs
+              .filter(pr => pr.merged_at)
+              .slice(0, 10);
+
+            if (mergedPRs.length >= 4) {
+              const half = Math.floor(mergedPRs.length / 2);
+              const recent = mergedPRs.slice(0, half);
+              const older  = mergedPRs.slice(half);
+              const avgDays = prs => {
+                const total = prs.reduce((s, pr) =>
+                  s + (new Date(pr.merged_at) - new Date(pr.created_at)) / 864e5, 0);
+                return round1(total / prs.length);
+              };
+              const recentAvg = avgDays(recent);
+              const olderAvg  = avgDays(older);
+              const ratio = recentAvg / olderAvg;
+
+              if (ratio >= 1.5) {
+                signals.push({
+                  level: 'yellow',
+                  emoji: '🟡',
+                  title: `**Tempo de merge aumentou ${round1(ratio)}x esta semana**`,
+                  body: `Últimos ${half} PRs: **${recentAvg} dias** · ${half} anteriores: **${olderAvg} dias**\n→ Algo desacelerou o review. Verifique PRs pendentes de aprovação.`
+                });
+              } else if (ratio <= 0.67) {
+                signals.push({
+                  level: 'green',
+                  emoji: '🟢',
+                  title: `**Tempo de merge melhorou ${round1(1/ratio)}x esta semana**`,
+                  body: `Últimos ${half} PRs: **${recentAvg} dias** · ${half} anteriores: **${olderAvg} dias** ✅`
+                });
+              } else {
+                signals.push({
+                  level: 'neutral',
+                  emoji: '🔵',
+                  title: `**Tempo de merge estável: ${recentAvg} dias** (semana passada: ${olderAvg}d)`,
+                  body: ''
+                });
+              }
+            }
+
+            // 3. Rework rate: commits per PR — single push session = first-shot
+            const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            const weekMerged = recentPRs.filter(pr => pr.merged_at && new Date(pr.merged_at) > weekAgo);
+
+            if (weekMerged.length > 0) {
+              let firstShots = 0;
+              for (const pr of weekMerged.slice(0, 10)) {
+                try {
+                  const commits = await github.rest.pulls.listCommits({
+                    owner, repo, pull_number: pr.number, per_page: 100
+                  });
+                  const times = commits.data.map(c => new Date(c.commit.committer.date).getTime()).sort();
+                  let sessions = 1;
+                  for (let i = 1; i < times.length; i++) {
+                    if (times[i] - times[i-1] > 10 * 60 * 1000) sessions++;
+                  }
+                  if (sessions === 1) firstShots++;
+                } catch (e) { /* skip if commits not accessible */ }
+              }
+              const total = Math.min(weekMerged.length, 10);
+              const pct = Math.round(firstShots / total * 100);
+
+              // Detect if repo uses an agent label (jules, sweep, codex, etc.)
+              const agentLabels = new Set(['jules', 'sweep', 'codex', 'copilot']);
+              const usesAgent = weekMerged.some(pr =>
+                (pr.labels || []).some(l => agentLabels.has(l.name.toLowerCase()))
+              );
+              const subject = usesAgent ? 'Agent first-shot rate' : 'PRs sem rework';
+              const verb = usesAgent ? 'acertaram de primeira' : 'foram mergeados sem rework';
+
+              if (pct >= 80) {
+                signals.push({
+                  level: 'green',
+                  emoji: '🟢',
+                  title: `**${subject}: ${pct}%**`,
+                  body: `${firstShots} de ${total} PRs ${verb} esta semana. ✅`
+                });
+              } else if (pct < 50) {
+                signals.push({
+                  level: 'yellow',
+                  emoji: '🟡',
+                  title: `**${subject}: ${pct}% — rework alto**`,
+                  body: `Apenas ${firstShots} de ${total} PRs sem commits extras.\n→ Specs incompletas ou mudanças de requisito durante implementação.`
+                });
+              } else {
+                signals.push({
+                  level: 'neutral',
+                  emoji: '🔵',
+                  title: `**${subject}: ${pct}%**`,
+                  body: `${firstShots} de ${total} PRs sem rework commits.`
+                });
+              }
+            }
+
+            // 4. Unlinked PRs: merged without Closes/Fixes #N
+            const unlinkRe = /(?:closes?|fixes?|resolves?)\s+#\d+/i;
+            const unlinked = weekMerged.filter(pr => !unlinkRe.test(pr.body || ''));
+            if (unlinked.length > 0) {
+              const nums = unlinked.map(pr => `#${pr.number}`).join(', ');
+              signals.push({
+                level: 'yellow',
+                emoji: '🔵',
+                title: `**${unlinked.length} PR${unlinked.length > 1 ? 's mergeados' : ' mergeado'} sem link de issue**`,
+                body: `${nums} não ${unlinked.length > 1 ? 'têm' : 'tem'} \`Closes #N\` no body. Difícil rastrear o que resolveram.\n→ Edite o body do PR ou feche as issues relacionadas manualmente.`
+              });
+            }
+
+            // ── Stage Residence Time section (conditional) ──────────────────
+            let stageSection = '';
+            const jsonlPath = `.agentic-pdlc/metrics/raw/${weekKey}.jsonl`;
+            if (fs.existsSync(jsonlPath)) {
+              const records = fs.readFileSync(jsonlPath, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse);
+              if (records.length > 0) {
+                const STAGES = [
+                  ['stage:exploration',   'Exploration'],
+                  ['stage:brainstorming', 'Brainstorming'],
+                  ['stage:detailing',     'Detailing'],
+                  ['stage:approval',      'Approval'],
+                  ['stage:development',   'Development'],
+                  ['stage:testing',       'Testing'],
+                ];
+                const byStage = {};
+                for (const r of records) {
+                  if (!byStage[r.stage]) byStage[r.stage] = [];
+                  byStage[r.stage].push(r.durationDays);
+                }
+                const avg = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
+
+                let maxStage = null, maxDays = 0;
+                const rows = [];
+                for (const [stage, label] of STAGES) {
+                  const days = byStage[stage];
+                  if (!days) continue;
+                  const a = round1(avg(days));
+                  rows.push(`| **${label}** | ${a}d | ${days.length} |`);
+                  if (a > maxDays) { maxStage = label; maxDays = a; }
+                }
+
+                if (rows.length > 0) {
+                  stageSection = `\n---\n\n### 🔄 Stage Residence Time *(board ativo)*\n\n| Stage | Avg | N |\n|---|---|---|\n${rows.join('\n')}\n\n> \`${maxStage}\` é o maior gargalo (${maxDays}d avg). Considere quebrar specs ou aumentar cadência de revisão nessa fase.\n`;
+                }
+              }
+            }
+
+            // ── Narrative ───────────────────────────────────────────────────
+            const reds    = signals.filter(s => s.level === 'red').length;
+            const yellows = signals.filter(s => s.level === 'yellow').length;
+
+            let narrative;
+            if (reds >= 2)             narrative = '⚠️ Fluxo sob pressão esta semana. Múltiplos bloqueios identificados. Priorize limpar issues orphans e revisar PRs pendentes antes de iniciar novas features.';
+            else if (reds === 1 && yellows >= 1) narrative = 'Semana mista. Um ponto crítico e sinais de desaceleração. Verifique os itens marcados em 🔴 antes de avançar.';
+            else if (reds === 0 && yellows === 0) narrative = '🟢 Fluxo saudável. Nenhum bloqueio identificado esta semana. Bom momento para avançar em novas features.';
+            else                        narrative = 'Fluxo normal. Alguns ajustes de processo podem melhorar rastreabilidade e velocidade.';
+
+            // ── Build issue body ────────────────────────────────────────────
+            const signalLines = signals.map(s =>
+              `${s.emoji} ${s.title}${s.body ? '\n' + s.body : ''}`
+            ).join('\n\n');
+
+            const nextWeekNum = (() => {
+              const d = new Date(); d.setDate(d.getDate() + 7);
+              const dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+              dt.setUTCDate(dt.getUTCDate() + 4 - (dt.getUTCDay() || 7));
+              const y = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
+              const w = Math.ceil((((dt - y) / 86400000) + 1) / 7);
+              return `${dt.getUTCFullYear()}-W${String(w).padStart(2, '0')}`;
+            })();
+
+            const body = `> Auto-generated by [agentic-pdlc](https://github.com/rafaeltcosta86/agentic-pdlc). Appears every Sunday.
+
+${narrative}
+
+---
+
+### Sinais desta semana
+
+${signalLines}
+${stageSection}
+---
+*Próximo pulse: ${nextWeekNum}*`;
+
+            core.exportVariable('PULSE_TITLE', `📊 Agentic Pulse — ${weekKey}`);
+            core.exportVariable('PULSE_BODY', body);
+            console.log(`Built pulse issue for ${weekKey} — ${signals.length} signals, ${reds} red, ${yellows} yellow`);
+
+      - name: Create Weekly Pulse Issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const title = process.env.PULSE_TITLE;
+            const body  = process.env.PULSE_BODY;
+            const LABEL = 'metrics:weekly';
+
+            // Ensure label exists
+            try {
+              await github.rest.issues.getLabel({ owner, repo, name: LABEL });
+            } catch (e) {
+              await github.rest.issues.createLabel({
+                owner, repo, name: LABEL,
+                color: '0075ca',
+                description: 'Auto-generated weekly metrics pulse'
+              });
+              console.log(`Created label ${LABEL}`);
+            }
+
+            // Close previous pulse issues
+            const prev = await github.rest.issues.listForRepo({
+              owner, repo, labels: LABEL, state: 'open', per_page: 20
+            });
+            for (const issue of prev.data) {
+              if (issue.title !== title) {
+                await github.rest.issues.update({ owner, repo, issue_number: issue.number, state: 'closed' });
+                console.log(`Closed previous pulse: #${issue.number}`);
+              }
+            }
+
+            // Create new pulse issue
+            const created = await github.rest.issues.create({
+              owner, repo, title, body, labels: [LABEL]
+            });
+            console.log(`✅ Created pulse issue: #${created.data.number} — ${title}`);
