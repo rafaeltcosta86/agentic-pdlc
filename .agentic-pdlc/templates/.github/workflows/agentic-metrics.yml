@@ -363,9 +363,9 @@ jobs:
               signalLines,
               stageSection,
               '---',
-              '*Próximo pulse: ' + nextWeekNum + ' · Considere fechar esta issue após sua análise para não sujar sua lista na aba de Issues.*',
+              '*Próximo pulse: ' + nextWeekNum + '*',
               '',
-              '👍 Se este pulse foi útil, reaja com 👍 — ajuda a priorizar melhorias.'
+              '💬 Este pulse foi útil? [Conta pra gente](https://github.com/rafaeltcosta86/agentic-pdlc/issues/new?template=pulse-feedback.md&title=' + encodeURIComponent('[Pulse] ' + weekKey) + ') — 1 clique, sem formulário.'
             ].join('\n');
 
             const dateRange = weekDateRange(weekKey);
