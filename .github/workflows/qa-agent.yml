@@ -6,22 +6,74 @@ on:
 permissions:
   pull-requests: write
   contents: read
+  issues: read
+  models: read
 
 jobs:
   qa:
-    name: Run AI QA Agent
+    name: AC Coverage Verification (GitHub Models)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Execute QA Tests
-        run: |
-          echo "Run your QA Agent here."
-          echo "This could be QAWolf, a custom LLM script, or a secondary agent."
-          echo "If tests pass: gh pr edit $PR_URL --add-label 'qa:pass'"
-          echo "If tests fail: gh pr edit $PR_URL --add-label 'qa:fail'"
-          
-          # Example success:
-          # gh pr edit ${{ github.event.pull_request.html_url }} --add-label "qa:pass"
+        with:
+          fetch-depth: 0
+
+      - name: Verify AC Coverage via GitHub Models
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          set -e
+
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+
+          # Get PR diff (truncated to 8000 chars to stay within context limits)
+          DIFF=$(git diff "$BASE" "$HEAD" | head -c 8000)
+
+          # Extract linked issues from PR body
+          PR_BODY=$(gh pr view "$PR_NUMBER" --json body --jq '.body // ""')
+          ISSUE_NUMS=$(echo "$PR_BODY" | grep -oiE '(Closes?|Fixes?|Resolves?)\s+#([0-9]+)' | grep -oE '[0-9]+' || true)
+
+          # Build acceptance criteria context
+          AC_CONTEXT=""
+          if [ -n "$ISSUE_NUMS" ]; then
+            for NUM in $ISSUE_NUMS; do
+              ISSUE_BODY=$(gh issue view "$NUM" --json body --jq '.body // ""' 2>/dev/null || echo "")
+              AC_CONTEXT="${AC_CONTEXT}\\n\\n--- Issue #${NUM} ---\\n${ISSUE_BODY}"
+            done
+          fi
+
+          if [ -z "$AC_CONTEXT" ]; then
+            AC_CONTEXT="No linked issue found. Evaluate if the PR description is self-contained."
+          fi
+
+          # Serialize prompt as JSON string and call GitHub Models API (30s timeout)
+          PROMPT_JSON=$(printf '%s' "You are a senior QA engineer. Review whether this PR diff satisfies the Acceptance Criteria below.\n\nACCEPTANCE CRITERIA:\n${AC_CONTEXT}\n\nPR DIFF:\n${DIFF}\n\nRespond with exactly one word: PASS or FAIL, then on the next line explain briefly why (max 3 sentences)." | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
+
+          RESPONSE=$(curl -s -X POST \
+            "https://models.github.ai/inference/chat/completions" \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"model\":\"gpt-4o-mini\",\"messages\":[{\"role\":\"user\",\"content\":${PROMPT_JSON}}]}" \
+            --max-time 30 || echo "API_ERROR")
+
+          if [ "$RESPONSE" = "API_ERROR" ]; then
+            gh pr edit "$PR_NUMBER" --add-label "infra:qa-broken"
+            gh pr comment "$PR_NUMBER" --body "🤖 **QA Agent:** Could not reach GitHub Models API. Manual review required."
+            exit 0
+          fi
+
+          VERDICT=$(echo "$RESPONSE" | python3 -c 'import json,sys; d=json.load(sys.stdin); t=d.get("choices",[{}])[0].get("message",{}).get("content","").strip(); print(t.split("\n")[0].upper() if t else "API_ERROR")')
+          EXPLANATION=$(echo "$RESPONSE" | python3 -c 'import json,sys; d=json.load(sys.stdin); t=d.get("choices",[{}])[0].get("message",{}).get("content","").strip(); lines=t.split("\n",1); print(lines[1].strip() if len(lines)>1 else "")')
+
+          if echo "$VERDICT" | grep -q "^PASS"; then
+            gh pr edit "$PR_NUMBER" --add-label "qa:approved"
+            gh pr comment "$PR_NUMBER" --body "🤖 **QA Agent:** AC coverage verified. ${EXPLANATION}"
+          elif echo "$VERDICT" | grep -q "^FAIL"; then
+            gh pr edit "$PR_NUMBER" --add-label "qa:needs-work"
+            gh pr comment "$PR_NUMBER" --body "🤖 **QA Agent:** AC coverage insufficient. ${EXPLANATION}"
+          else
+            gh pr edit "$PR_NUMBER" --add-label "infra:qa-broken"
+            gh pr comment "$PR_NUMBER" --body "🤖 **QA Agent:** Could not parse GitHub Models response. Manual review required."
+          fi

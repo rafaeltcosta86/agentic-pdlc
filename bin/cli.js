@@ -68,8 +68,8 @@ const i18n = {
   update_jules_header: t('— Jules (autonomous implementation agent) —', '— Jules (agente de implementação autônomo) —', '— Jules (agente de implementación autónomo) —'),
   update_jules_ask: t('  Which agent? (a) @google-labs-jules  (b) Other  (c) Skip: ', '  Qual agente? (a) @google-labs-jules  (b) Outro  (c) Pular: ', '  ¿Qué agente? (a) @google-labs-jules  (b) Otro  (c) Omitir: '),
   update_jules_ask_handle: t('  Agent handle (e.g. @my-agent): ', '  Handle do agente (ex: @meu-agente): ', '  Handle del agente (ej: @mi-agente): '),
-  update_qa_header: t('— QA Agent (AC verification via Gemini — free tier) —', '— QA Agent (verificação de ACs via Gemini — free tier) —', '— QA Agent (verificación de ACs via Gemini — free tier) —'),
-  update_qa_ask: t('  Activate? Requires GEMINI_API_KEY secret. (Y/n): ', '  Ativar? Requer secret GEMINI_API_KEY. (S/n): ', '  ¿Activar? Requiere el secret GEMINI_API_KEY. (S/n): '),
+  update_qa_header: t('— QA Agent (AC verification via GitHub Models — zero secrets) —', '— QA Agent (verificação de ACs via GitHub Models — zero secrets) —', '— QA Agent (verificación de ACs via GitHub Models — zero secrets) —'),
+  update_qa_ask: t('  Activate? Uses GITHUB_TOKEN — no extra secrets needed. (Y/n): ', '  Ativar? Usa GITHUB_TOKEN — nenhum secret extra necessário. (S/n): ', '  ¿Activar? Usa GITHUB_TOKEN — sin secrets adicionales. (S/n): '),
   update_sentinel_header: t('— Sentinel (architecture audit via Gemini Code Assist) —', '— Sentinel (auditoria de arquitetura via Gemini Code Assist) —', '— Sentinel (auditoría de arquitectura via Gemini Code Assist) —'),
   update_sentinel_ask: t('  Activate? Requires Gemini Code Assist CI job. (Y/n): ', '  Ativar? Requer CI job do Gemini Code Assist. (S/n): ', '  ¿Activar? Requiere CI job de Gemini Code Assist. (S/n): '),
 };
@@ -536,9 +536,9 @@ async function runUpdate() {
     if (!['n', 'no', 'não', 'nao'].includes(answer)) {
       activateQaAgent(paPath);
       results.push(t(
-        '✅  QA Agent configured — Variant B activated\n     Next: gh secret set GEMINI_API_KEY --body "<your-key>"',
-        '✅  QA Agent configurado — Variant B ativado\n     Próximo: gh secret set GEMINI_API_KEY --body "<sua-chave>"',
-        '✅  QA Agent configurado — Variant B activado\n     Siguiente: gh secret set GEMINI_API_KEY --body "<tu-clave>"'
+        '✅  QA Agent configured — Variant B activated (uses GITHUB_TOKEN, no extra secrets needed)',
+        '✅  QA Agent configurado — Variant B ativado (usa GITHUB_TOKEN, nenhum secret extra necessário)',
+        '✅  QA Agent configurado — Variant B activado (usa GITHUB_TOKEN, sin secrets adicionales)'
       ));
     } else {
       results.push(t('⏭  QA Agent — skipped', '⏭  QA Agent — pulado', '⏭  QA Agent — omitido'));
