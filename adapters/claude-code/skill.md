@@ -98,6 +98,19 @@ These label commands are non-negotiable. They run **before** the activity they a
 
 No investigation, no skill invocation, no code reading happens before `stage:exploration` is applied. No architecture presentation starts before `stage:brainstorming` is set (and `stage:exploration` removed). No spec writing starts before `stage:detailing` is set (and `stage:brainstorming` removed).
 
+### 0.1 PR Stage Gate — Non-Negotiable
+
+**NEVER run `gh pr create` unless the linked issue has label `stage:approval`.**
+
+The PreToolUse hook enforces this automatically and will block the command. The only bypass is a branch prefixed with `hotfix/` — which requires explicit PM instruction, never agent self-authorization.
+
+Hotfix flow (only when PM explicitly requests it):
+```bash
+gh issue edit <N> --add-label "hotfix"
+git checkout -b hotfix/<N>-<description>
+# implement → gh pr create --label hotfix
+```
+
 ### 1. Daily Upstream Loop
 Your job is to move issues from "Idea" to "Detail Solution".
 When asked to work on a feature, you will:
