@@ -3,7 +3,7 @@
 # Bypass: branch prefix hotfix/ skips all checks.
 
 INPUT=$(cat)
-COMMAND=$(echo "$INPUT" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('command',''))" 2>/dev/null || echo "")
+COMMAND=$(echo "$INPUT" | node -e "const d=JSON.parse(require('fs').readFileSync(0)); console.log(d.command || '')" 2>/dev/null || echo "")
 
 if ! echo "$COMMAND" | grep -q "gh pr create"; then
   exit 0
