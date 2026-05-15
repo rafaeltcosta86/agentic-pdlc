@@ -343,6 +343,29 @@ async function runSetup() {
     // Non-fatal — agent will ask for the values instead
   }
 
+  // Install PDLC stage gate hook (all agents)
+  const hookSrc = path.join(sourceDir, 'adapters', 'hooks', 'pdlc-stage-gate.sh');
+  const hookDir = path.join(targetDir, '.agentic-pdlc', 'hooks');
+  const hookDest = path.join(hookDir, 'pdlc-stage-gate.sh');
+  if (fs.existsSync(hookSrc)) {
+    fs.mkdirSync(hookDir, { recursive: true });
+    fs.copyFileSync(hookSrc, hookDest);
+    fs.chmodSync(hookDest, '755');
+  }
+  const claudeSettingsDir = path.join(targetDir, '.claude');
+  const claudeSettingsPath = path.join(claudeSettingsDir, 'settings.json');
+  if (!fs.existsSync(claudeSettingsPath)) {
+    fs.mkdirSync(claudeSettingsDir, { recursive: true });
+    fs.writeFileSync(claudeSettingsPath, JSON.stringify({
+      hooks: {
+        PreToolUse: [{
+          matcher: 'Bash',
+          hooks: [{ type: 'command', command: 'bash .agentic-pdlc/hooks/pdlc-stage-gate.sh' }]
+        }]
+      }
+    }, null, 2) + '\n');
+  }
+
   // Handle the specific setup instructions target
   const claudeSetupSrc = path.join(sourceDir, 'adapters', 'claude-code', 'skill.md');
   const cursorSetupSrc = path.join(sourceDir, 'adapters', 'cursor', 'rules.md');
