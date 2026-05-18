@@ -77,6 +77,10 @@ REPO         = {{REPO_OWNER}}/{{REPO_NAME}}
 | `spec:approved` | Issue | Green | Gate 2 — agent is cleared to implement |
 | `pr:in-review` | PR | Yellow | Awaiting code review |
 | `pr:approved` | PR | Green | Code review approved |
+| `type:us` | Issue | Blue | New feature or behavioral change — full flow |
+| `type:task` | Issue | Yellow | Operational/non-functional change — skips brainstorming |
+| `type:bug` | Issue | Red | Something broken — skips brainstorming |
+| `type:spike` | Issue | Gray | Research/evaluation — never reaches Development |
 
 ## Approval Gates
 
@@ -90,10 +94,16 @@ This triggers the implementation agent via `agent-trigger.yml`.
 
 ## Shortcuts by Type
 
-- **BUG** — Skips Brainstorming; enters Detail Solution with diagnostics + fix.
-- **TASK** — Skips Brainstorming; enters Detail Solution with operational steps.
-- **SPIKE** — Never reaches Development; delivery is a concluding comment.
-- **US** — Full flow observing both gates.
+The `type:*` label is the authoritative signal — set automatically by the agent via type inference (see `adapters/claude-code/skill.md`). Title prefixes (`🔧 TASK:`, `👤 US:`) are hints for humans; the label drives the flow.
+
+| Label | Flow |
+|---|---|
+| `type:us` | Full flow — exploration → brainstorming → Gate 1 → detailing → approval |
+| `type:task` | Skips brainstorming — exploration → detailing → approval |
+| `type:bug` | Skips brainstorming — exploration → detailing → approval |
+| `type:spike` | Skips brainstorming — exploration → detailing → conclusion comment (never reaches Development) |
+
+If no `type:*` label present and agent confidence < 85%, defaults to `type:us` (safe fallback — never skips gates by omission).
 
 ## Definition of Done
 

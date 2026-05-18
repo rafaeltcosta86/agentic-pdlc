@@ -86,7 +86,32 @@ This detects which optional agents (Jules, QA Agent, Sentinel) are already confi
 
 If `AGENTS.md` and `docs/pdlc.md` are present, you are in **Execution Mode**. 
 
-### 0. Board Labels — Mandatory at Every State Transition
+### 0. [FIRST] Issue Type Identification
+
+**Run before anything else — before `stage:exploration`, before reading code.**
+
+Reading the issue title and body for type inference is exempt from the `stage:exploration` requirement: it is metadata already present in the request, not code reading or skill invocation.
+
+1. Check if issue already has a `type:*` label (`type:us`, `type:task`, `type:bug`, `type:spike`) → if yes, skip to Section 0.1.
+2. Read issue title + body (metadata only — no code reading at this step).
+3. Classify using these rules:
+   - `type:task` — operational change, config, rename, docs update, non-functional (no user-facing behavior change)
+   - `type:bug` — something broken that should work
+   - `type:spike` — research/evaluation spike, never reaches Development
+   - `type:us` — new feature, behavioral change, anything product-facing
+4. Confidence ≥ 85% → add inferred label: `gh issue edit <N> --add-label "type:<inferred>"`
+5. Confidence < 85% → default to `type:us`: `gh issue edit <N> --add-label "type:us"`
+
+**Type drives the PDLC flow:**
+
+| Type | Flow |
+|---|---|
+| `type:us` | Full flow: exploration → brainstorming → Gate 1 → detailing → approval |
+| `type:task` | Skip brainstorming: exploration → detailing → approval |
+| `type:bug` | Skip brainstorming: exploration → detailing → approval |
+| `type:spike` | Skip brainstorming: exploration → detailing → conclusion comment (never reaches Development) |
+
+### 0.1 Board Labels — Mandatory at Every State Transition
 
 These label commands are non-negotiable. They run **before** the activity they announce — before reading code, before invoking any skill, before any other action.
 
