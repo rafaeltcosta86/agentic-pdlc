@@ -137,7 +137,7 @@ git checkout -b hotfix/<N>-<description>
 ```
 
 ### 1. Daily Upstream Loop
-Your job is to move issues from "💡 Idea" to "Detail Solution".
+Your job is to move issues from "💡 Idea - don't move manually to Exploration" to "📐 Detail Solution".
 When asked to work on a feature, you will:
 - Explore the code context.
 - Present architectural approaches (Brainstorming).
