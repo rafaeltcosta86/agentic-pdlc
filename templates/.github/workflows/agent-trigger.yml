@@ -18,14 +18,13 @@ jobs:
       contents: read
     steps:
       - name: Update Labels
-        if: ${{ !contains('{{IMPLEMENTATION_AGENT_LABEL}}', '{{') }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const { owner, repo } = context.repo;
             const issue_number = context.payload.issue.number;
-            
+
             try {
               await github.rest.issues.removeLabel({
                 owner,
@@ -36,12 +35,16 @@ jobs:
             } catch (error) {
               console.log('Label stage:approval not found or could not be removed');
             }
-            
+
+            const agentLabel = '{{IMPLEMENTATION_AGENT_LABEL}}';
+            const labelsToAdd = ['stage:development', 'agent:working'];
+            if (!agentLabel.includes('{{')) labelsToAdd.push(agentLabel);
+
             await github.rest.issues.addLabels({
               owner,
               repo,
               issue_number,
-              labels: ['stage:development', '{{IMPLEMENTATION_AGENT_LABEL}}', 'agent:working']
+              labels: labelsToAdd
             });
 
       - name: Comment on issue to trigger agent and prevent race conditions
