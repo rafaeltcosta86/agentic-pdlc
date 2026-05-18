@@ -94,14 +94,14 @@ This triggers the implementation agent via `agent-trigger.yml`.
 
 ## Shortcuts by Type
 
-The `type:*` label is the authoritative signal — set automatically by the agent via type inference. Title prefixes (`🔧 TASK:`, `👤 US:`) are hints for humans; the label drives the flow.
+The `type:*` label is the authoritative signal — set automatically by the agent via type inference (see `adapters/claude-code/skill.md`). Title prefixes (`🔧 TASK:`, `👤 US:`) are hints for humans; the label drives the flow.
 
 | Label | Flow |
 |---|---|
 | `type:us` | Full flow — exploration → brainstorming → Gate 1 → detailing → approval |
 | `type:task` | Skips brainstorming — exploration → detailing → approval |
 | `type:bug` | Skips brainstorming — exploration → detailing → approval |
-| `type:spike` | Never reaches Development — exploration → detailing → conclusion comment |
+| `type:spike` | Skips brainstorming — exploration → detailing → conclusion comment (never reaches Development) |
 
 If no `type:*` label present and agent confidence < 85%, defaults to `type:us` (safe fallback — never skips gates by omission).
 

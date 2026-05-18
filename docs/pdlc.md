@@ -96,7 +96,7 @@ The `type:*` label is the authoritative signal — set automatically by the agen
 | `type:us` | Full flow — exploration → brainstorming → Gate 1 → detailing → approval |
 | `type:task` | Skips brainstorming — exploration → detailing → approval |
 | `type:bug` | Skips brainstorming — exploration → detailing → approval |
-| `type:spike` | Never reaches Development — exploration → detailing → conclusion comment |
+| `type:spike` | Skips brainstorming — exploration → detailing → conclusion comment (never reaches Development) |
 
 If no `type:*` label present and agent confidence < 85%, defaults to `type:us` (safe fallback — never skips gates by omission).
 

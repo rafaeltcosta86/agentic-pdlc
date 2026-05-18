@@ -90,8 +90,10 @@ If `AGENTS.md` and `docs/pdlc.md` are present, you are in **Execution Mode**.
 
 **Run before anything else — before `stage:exploration`, before reading code.**
 
+Reading the issue title and body for type inference is exempt from the `stage:exploration` requirement: it is metadata already present in the request, not code reading or skill invocation.
+
 1. Check if issue already has a `type:*` label (`type:us`, `type:task`, `type:bug`, `type:spike`) → if yes, skip to Section 0.1.
-2. Read issue title + body.
+2. Read issue title + body (metadata only — no code reading at this step).
 3. Classify using these rules:
    - `type:task` — operational change, config, rename, docs update, non-functional (no user-facing behavior change)
    - `type:bug` — something broken that should work
@@ -107,7 +109,7 @@ If `AGENTS.md` and `docs/pdlc.md` are present, you are in **Execution Mode**.
 | `type:us` | Full flow: exploration → brainstorming → Gate 1 → detailing → approval |
 | `type:task` | Skip brainstorming: exploration → detailing → approval |
 | `type:bug` | Skip brainstorming: exploration → detailing → approval |
-| `type:spike` | exploration → detailing → conclusion comment (never reaches Development) |
+| `type:spike` | Skip brainstorming: exploration → detailing → conclusion comment (never reaches Development) |
 
 ### 0.1 Board Labels — Mandatory at Every State Transition
 
