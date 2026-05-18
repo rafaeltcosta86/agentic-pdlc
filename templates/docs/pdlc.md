@@ -4,7 +4,7 @@
 
 | Column | Meaning | Who moves the card |
 |---|---|---|
-| 💡 Idea | Backlog — every new issue lands here | Manual |
+| 💡 Idea — don't move manually to Exploration | Backlog — tell agent: "work on issue #XX" | Don't move manually |
 | 🔍 Exploration | Claude is analyzing code and context | Label `stage:exploration` |
 | 🧠 Brainstorming | Claude proposed approaches, awaiting PM gate | Label `stage:brainstorming` |
 | 📐 Detail Solution | Claude is writing the technical spec | Label `stage:detailing` |
