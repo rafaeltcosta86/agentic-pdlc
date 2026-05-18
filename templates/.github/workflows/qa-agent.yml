@@ -29,7 +29,7 @@ jobs:
           HEAD="${{ github.event.pull_request.head.sha }}"
 
           # Get PR diff (truncated to 8000 chars to stay within context limits)
-          DIFF=$(git diff "$BASE" "$HEAD" | head -c 8000)
+          DIFF=$(git diff "$BASE" "$HEAD" | head -c 64000)
 
           # Extract linked issues from PR body
           PR_BODY=$(gh pr view "$PR_NUMBER" --json body --jq '.body // ""')
@@ -51,7 +51,7 @@ jobs:
           # Serialize prompt as JSON string and call GitHub Models API (30s timeout)
           PROMPT_JSON=$(printf '%s' "You are a senior QA engineer. Review whether this PR diff satisfies the Acceptance Criteria below.\n\nACCEPTANCE CRITERIA:\n${AC_CONTEXT}\n\nPR DIFF:\n${DIFF}\n\nRespond with exactly one word: PASS or FAIL, then on the next line explain briefly why (max 3 sentences)." | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
 
-          RESPONSE=$(curl -s -X POST \
+          RESPONSE=$(curl -sf -X POST \
             "https://models.github.ai/inference/chat/completions" \
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             -H "Content-Type: application/json" \
