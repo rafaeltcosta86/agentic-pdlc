@@ -37,8 +37,8 @@ jobs:
             }
 
             const agentLabel = '{{IMPLEMENTATION_AGENT_LABEL}}';
-            const labelsToAdd = ['stage:development', 'agent:working'];
-            if (!agentLabel.includes('{{')) labelsToAdd.push(agentLabel);
+            const labelsToAdd = ['stage:development'];
+            if (!agentLabel.includes('{{')) labelsToAdd.push(agentLabel, 'agent:working');
 
             await github.rest.issues.addLabels({
               owner,
