@@ -7,20 +7,20 @@ permissions:
   pull-requests: write
   contents: read
   issues: read
+  models: read
 
 jobs:
   qa:
-    name: AC Coverage Verification (Gemini)
+    name: AC Coverage Verification (GitHub Models)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Verify AC Coverage via Gemini
+      - name: Verify AC Coverage via GitHub Models
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           set -e
 
@@ -29,7 +29,7 @@ jobs:
           HEAD="${{ github.event.pull_request.head.sha }}"
 
           # Get PR diff (truncated to 8000 chars to stay within context limits)
-          DIFF=$(git diff "$BASE" "$HEAD" | head -c 8000)
+          DIFF=$(git diff "$BASE" "$HEAD" | head -c 64000)
 
           # Extract linked issues from PR body
           PR_BODY=$(gh pr view "$PR_NUMBER" --json body --jq '.body // ""')
@@ -48,23 +48,24 @@ jobs:
             AC_CONTEXT="No linked issue found. Evaluate if the PR description is self-contained."
           fi
 
-          # Serialize prompt as JSON string and call Gemini API (30s timeout)
-          PROMPT_JSON=$(printf '%s' "You are a senior QA engineer. Review whether this PR diff satisfies the Acceptance Criteria below.\n\nACCEPTANCE CRITERIA:\n${AC_CONTEXT}\n\nPR DIFF:\n${DIFF}\n\nRespond with exactly one word: PASS or FAIL, then on the next line explain briefly why (max 3 sentences)." | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
+          # Serialize prompt as JSON string and call GitHub Models API (30s timeout)
+          PROMPT_JSON=$(printf '%s' "You are a senior QA engineer. Review whether this PR diff satisfies the Acceptance Criteria below.\n\nACCEPTANCE CRITERIA:\n${AC_CONTEXT}\n\nPR DIFF:\n${DIFF}\n\nFirst line of your response must be exactly one word: PASS or FAIL. Second line: brief explanation (max 3 sentences)." | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
 
-          RESPONSE=$(curl -s -X POST \
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}" \
+          RESPONSE=$(curl -sf -X POST \
+            "https://models.github.ai/inference/chat/completions" \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d "{\"contents\":[{\"parts\":[{\"text\":${PROMPT_JSON}}]}]}" \
+            -d "{\"model\":\"gpt-4o-mini\",\"messages\":[{\"role\":\"user\",\"content\":${PROMPT_JSON}}]}" \
             --max-time 30 || echo "API_ERROR")
 
           if [ "$RESPONSE" = "API_ERROR" ]; then
             gh pr edit "$PR_NUMBER" --add-label "infra:qa-broken"
-            gh pr comment "$PR_NUMBER" --body "🤖 **QA Agent:** Could not reach Gemini API. Manual review required."
+            gh pr comment "$PR_NUMBER" --body "🤖 **QA Agent:** Could not reach GitHub Models API. Manual review required."
             exit 0
           fi
 
-          VERDICT=$(echo "$RESPONSE" | python3 -c 'import json,sys; d=json.load(sys.stdin); t=d.get("candidates",[{}])[0].get("content",{}).get("parts",[{}])[0].get("text","").strip(); print(t.split("\n")[0].upper() if t else "API_ERROR")')
-          EXPLANATION=$(echo "$RESPONSE" | python3 -c 'import json,sys; d=json.load(sys.stdin); t=d.get("candidates",[{}])[0].get("content",{}).get("parts",[{}])[0].get("text","").strip(); lines=t.split("\n",1); print(lines[1].strip() if len(lines)>1 else "")')
+          VERDICT=$(echo "$RESPONSE" | python3 -c 'import json,sys,re; d=json.load(sys.stdin); t=d.get("choices",[{}])[0].get("message",{}).get("content","").strip(); first=t.split("\n")[0].upper() if t else ""; print("FAIL" if re.search(r"\bFAIL\b",first) else "PASS" if re.search(r"\bPASS\b",first) else "API_ERROR")')
+          EXPLANATION=$(echo "$RESPONSE" | python3 -c 'import json,sys; d=json.load(sys.stdin); t=d.get("choices",[{}])[0].get("message",{}).get("content","").strip(); lines=t.split("\n",1); print(lines[1].strip() if len(lines)>1 else "")')
 
           if echo "$VERDICT" | grep -q "^PASS"; then
             gh pr edit "$PR_NUMBER" --add-label "qa:approved"
@@ -74,5 +75,5 @@ jobs:
             gh pr comment "$PR_NUMBER" --body "🤖 **QA Agent:** AC coverage insufficient. ${EXPLANATION}"
           else
             gh pr edit "$PR_NUMBER" --add-label "infra:qa-broken"
-            gh pr comment "$PR_NUMBER" --body "🤖 **QA Agent:** Could not parse Gemini response. Manual review required."
+            gh pr comment "$PR_NUMBER" --body "🤖 **QA Agent:** Could not parse GitHub Models response. Manual review required."
           fi
