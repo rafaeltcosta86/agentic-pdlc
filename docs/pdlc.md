@@ -4,7 +4,7 @@
 
 | Column | Meaning | Who moves the card |
 |---|---|---|
-| 💡 Idea | Backlog — every new issue lands here | Manual |
+| 💡 Idea — don't move manually to Exploration | Backlog — tell agent: "work on issue #XX" | Don't move manually |
 | 🔍 Exploration | AI is analyzing code and context | Label `stage:exploration` |
 | 🧠 Brainstorming | AI proposed approaches and trade-offs | Label `stage:brainstorming` |
 | 📐 Detail Solution | AI is writing the technical spec | Label `stage:detailing` |
