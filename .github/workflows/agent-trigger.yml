@@ -15,6 +15,11 @@ jobs:
     permissions:
       issues: write
       contents: read
+    env:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+      PROJECT_ID: "PVT_kwHODpFFL84BXg7h"
+      STATUS_FIELD_ID: "PVTSSF_lAHODpFFL84BXg7hzhStRHI"
+      STATUS_DEVELOPMENT: "2c9e78e6"
     steps:
       - name: Swap labels — stage:approval → stage:development
         uses: actions/github-script@v7
@@ -41,6 +46,28 @@ jobs:
               issue_number,
               labels: ['stage:development', 'agent:working']
             });
+
+      - name: Move board card to Development
+        if: ${{ env.PROJECT_TOKEN != '' }}
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ env.PROJECT_TOKEN }}
+          script: |
+            const nodeId = context.payload.issue.node_id;
+            const number = context.payload.issue.number;
+            const { addProjectV2ItemById: { item } } = await github.graphql(`
+              mutation($p: ID!, $c: ID!) {
+                addProjectV2ItemById(input: {projectId: $p, contentId: $c}) { item { id } }
+              }`, { p: process.env.PROJECT_ID, c: nodeId });
+            await github.graphql(`
+              mutation($p: ID!, $i: ID!, $f: ID!, $v: ProjectV2FieldValue!) {
+                updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f, value: $v}) {
+                  projectV2Item { id }
+                }
+              }`, { p: process.env.PROJECT_ID, i: item.id, f: process.env.STATUS_FIELD_ID,
+                   v: { singleSelectOptionId: process.env.STATUS_DEVELOPMENT } });
+            console.log(`Issue #${number} → Development`);
 
   trigger-agent-on-violation:
     name: Flag architecture violation
