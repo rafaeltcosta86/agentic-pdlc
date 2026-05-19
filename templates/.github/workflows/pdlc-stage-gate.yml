@@ -37,12 +37,12 @@ jobs:
 
           for NUM in $ISSUE_NUMS; do
             LABELS=$(gh issue view "$NUM" --repo "$REPO" --json labels --jq '[.labels[].name] | join(" ")' 2>/dev/null || echo "")
-            if echo "$LABELS" | grep -qw "stage:approval" || echo "$LABELS" | grep -qw "spec:approved"; then
+            if echo "$LABELS" | grep -qw "stage:approval" || echo "$LABELS" | grep -qw "spec:approved" || echo "$LABELS" | grep -qw "stage:development"; then
               echo "✅ Issue #$NUM approved"
             else
               STAGE=$(echo "$LABELS" | tr ' ' '\n' | grep "^stage:" | head -1 || echo "none")
               echo "❌ Issue #$NUM missing approval (current: $STAGE)"
-              echo "   Required: stage:approval OR spec:approved label on the issue."
+              echo "   Required: stage:approval OR spec:approved OR stage:development label on the issue."
               echo "   Emergency bypass: add 'hotfix' label to this PR."
               exit 1
             fi

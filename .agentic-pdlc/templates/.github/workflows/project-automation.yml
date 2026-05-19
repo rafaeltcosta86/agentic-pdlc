@@ -2,7 +2,7 @@ name: PDLC Board Automation
 
 on:
   pull_request:
-    types: [opened, reopened, closed]
+    types: [opened, reopened, closed, labeled]
   pull_request_review:
     types: [submitted]
   issues:
@@ -115,16 +115,15 @@ jobs:
   #             });
   #           console.log(`Issue #${number} moved to Idea`);
 
-  # PR Opened → Move linked issue to Code Review / PR
-  # 💡 VARIANT B (QA Agent): If using an AI QA agent, change `STATUS_CODE_REVIEW_PR` to `STATUS_TESTING` on line ~158
+  # PR Opened → Move linked issue to Testing (Variant B — QA Agent enabled)
   move-card-on-pr-open:
-    name: Open PR → Code Review / PR
+    name: Open PR → Testing
     if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'reopened')
     runs-on: ubuntu-latest
     env:
       PROJECT_PAT: ${{ secrets.PROJECT_PAT }}
     steps:
-      - name: Move linked issue to Code Review / PR
+      - name: Move linked issue to Testing
         if: ${{ env.PROJECT_PAT != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
         uses: actions/github-script@v7
         with:
@@ -153,10 +152,57 @@ jobs:
                   }
                 }`, {
                   p: process.env.PROJECT_ID, i: item.id, f: process.env.STATUS_FIELD_ID,
-                  v: { singleSelectOptionId: process.env.STATUS_CODE_REVIEW_PR }
+                  v: { singleSelectOptionId: process.env.STATUS_TESTING }
                 });
             };
 
+            if (linkedIssues.length > 0) {
+              for (const n of linkedIssues) {
+                const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
+                await moveItem(issue.node_id);
+                console.log(`Issue #${n} → Testing`);
+              }
+            } else {
+              await moveItem(pr.node_id);
+              console.log(`PR #${prNumber} → Testing (no linked issue)`);
+            }
+
+            await github.rest.issues.addLabels({ owner, repo, issue_number: prNumber, labels: ['pr:in-review'] }).catch(() => {});
+
+  # QA Approved → Move linked issue to Code Review / PR
+  move-card-on-qa-pass:
+    name: qa:approved → Code Review / PR
+    if: github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'qa:approved'
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_PAT: ${{ secrets.PROJECT_PAT }}
+    steps:
+      - name: Move linked issue to Code Review / PR
+        if: ${{ env.PROJECT_PAT != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ env.PROJECT_PAT }}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const { owner, repo } = context.repo;
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+            const body = pr.body ?? '';
+            const linkedIssues = [...body.matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)].map(m => parseInt(m[1]));
+            const moveItem = async (nodeId) => {
+              const { addProjectV2ItemById: { item } } = await github.graphql(`
+                mutation($p: ID!, $c: ID!) {
+                  addProjectV2ItemById(input: {projectId: $p, contentId: $c}) { item { id } }
+                }`, { p: process.env.PROJECT_ID, c: nodeId });
+              await github.graphql(`
+                mutation($p: ID!, $i: ID!, $f: ID!, $v: ProjectV2FieldValue!) {
+                  updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f, value: $v}) {
+                    projectV2Item { id }
+                  }
+                }`, {
+                  p: process.env.PROJECT_ID, i: item.id, f: process.env.STATUS_FIELD_ID,
+                  v: { singleSelectOptionId: process.env.STATUS_CODE_REVIEW_PR }
+                });
+            };
             if (linkedIssues.length > 0) {
               for (const n of linkedIssues) {
                 const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
@@ -167,8 +213,6 @@ jobs:
               await moveItem(pr.node_id);
               console.log(`PR #${prNumber} → Code Review / PR (no linked issue)`);
             }
-
-            await github.rest.issues.addLabels({ owner, repo, issue_number: prNumber, labels: ['pr:in-review'] }).catch(() => {});
 
   # Review Approved → Add Label
   move-card-on-review-approved:
