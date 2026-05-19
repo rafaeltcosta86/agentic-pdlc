@@ -31,9 +31,14 @@ if echo "$LABELS" | grep -qw "stage:approval"; then
   exit 0
 fi
 
+if echo "$LABELS" | grep -qw "stage:development"; then
+  echo "✅ PDLC: Issue #$ISSUE_NUM in development (spec already approved) — gate passed."
+  exit 0
+fi
+
 STAGE=$(echo "$LABELS" | tr ' ' '\n' | grep "^stage:" | head -1 || echo "none")
 echo "❌ PDLC Stage Gate: Issue #$ISSUE_NUM is not approved."
 echo "   Current stage: $STAGE"
-echo "   Required: stage:approval label on the issue."
+echo "   Required: stage:approval or stage:development label on the issue."
 echo "   Emergency bypass: rename branch to hotfix/<issue-number>-<description>."
 exit 1
