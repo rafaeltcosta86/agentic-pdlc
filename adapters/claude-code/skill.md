@@ -51,14 +51,19 @@ If any of these files are missing, you are in **Setup Mode**. Do not proceed wit
 5. Generate and write the missing files replacing the `{{SCREAMING_SNAKE_CASE}}` placeholders using the templates in `.agentic-pdlc/templates/`.
 6. Offer to run the `gh` commands for labels (`spec:approved`, `pr:in-review`, `pr:approved`, `architecture-violation`).
 7. **Set up the `PROJECT_PAT` secret (required for board automation):**
-   The board automation workflows need a GitHub Personal Access Token (classic) with `project` scope. Without it, all board card movements will silently skip — no error, no cards moving.
-   - Go to: **github.com/settings/tokens** → *Generate new token (classic)*
-   - Select scopes: ✅ `repo` + ✅ `project`
-   - Copy the token, then run:
-     ```
-     gh secret set PROJECT_PAT --body "<your-token>"
-     ```
-   Wait for the user to confirm the secret is set before continuing.
+   > ⚠️ This is **different** from the `gh auth` OAuth token used for the CLI setup. That token lets you run `gh` commands locally. This PAT is for GitHub Actions workflows that move cards on the board automatically — `GITHUB_TOKEN` in CI/CD does not have `project` scope by default.
+
+   Without `PROJECT_PAT`, all board card movements in CI will silently skip — no error, no cards moving.
+
+   Steps:
+   1. Go to: **github.com/settings/tokens** → *Generate new token (classic)*
+   2. Name: `PROJECT_PAT — <repo-name>`
+   3. Select scopes: ✅ `repo` + ✅ `project`
+   4. Copy the token, then run:
+      ```
+      gh secret set PROJECT_PAT --body "<your-token>"
+      ```
+   5. Reply **"secret set"** (or "done") when finished so setup can continue.
 8. **IMPORTANT:** Delete the setup prompt file by running exactly:
    ```
    rm -f .agentic-setup.md .agentic-setup-prompt.md .agentic-pdlc/SETUP_PROMPT.md
