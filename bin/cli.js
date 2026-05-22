@@ -84,6 +84,11 @@ console.log(`${cyan}============================================================
 console.log(`${cyan}${i18n.welcome}${reset}`);
 console.log(`${cyan}================================================================${reset}\n`);
 
+function buildBoardUrl(repoOwner, projectNumber, isOrg) {
+  const segment = isOrg ? 'orgs' : 'users';
+  return `https://github.com/${segment}/${repoOwner}/projects/${projectNumber}/views/1?layout=board`;
+}
+
 // Helper function to recursively copy directories
 function copyDirSync(src, dest) {
   if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
@@ -322,6 +327,23 @@ async function runSetup() {
     }
   }
 
+  // Auto-provision PROJECT_PAT for personal repos
+  let patAutoSet = false;
+  if (projectId && !isOrg) {
+    try {
+      const tokenOut = execFileSync('gh', ['auth', 'token'], { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' }).trim();
+      if (tokenOut) {
+        execFileSync('gh', ['secret', 'set', 'PROJECT_PAT', '--body', tokenOut, '--repo', repo], { stdio: ['ignore', 'pipe', 'pipe'] });
+        patAutoSet = true;
+        console.log(`\n${green}✅ PROJECT_PAT secret set automatically (uses your gh OAuth token).${reset}`);
+      }
+    } catch (err) {
+      console.log(`\n${yellow}⚠️  Could not auto-set PROJECT_PAT. Agent will guide manual setup.${reset}`);
+    }
+  } else if (projectId && isOrg) {
+    console.log(`\n${yellow}ℹ️  Org repo detected — PROJECT_PAT will require manual setup for security.${reset}`);
+  }
+
   console.log(`\n${yellow}${i18n.scaffolding}${reset}`);
 
   // We copy the templates folder so the agent has the real text logic to replace and rename
@@ -386,7 +408,16 @@ async function runSetup() {
   // Write CLI context for the agent to consume in Setup Mode
   try {
     const cliContextPath = path.join(targetDir, '.agentic-pdlc', 'cli-context.json');
-    fs.writeFileSync(cliContextPath, JSON.stringify({ projectName, repoOwner, repoName, projectNumber }, null, 2));
+    const boardUrl = projectNumber ? buildBoardUrl(repoOwner, projectNumber, isOrg) : null;
+    fs.writeFileSync(cliContextPath, JSON.stringify({
+      projectName,
+      repoOwner,
+      repoName,
+      projectNumber,
+      isOrg,
+      boardUrl,
+      patAutoSet
+    }, null, 2));
   } catch (err) {
     // Non-fatal — agent will ask for the values instead
   }
