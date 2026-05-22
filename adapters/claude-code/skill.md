@@ -25,7 +25,7 @@ If any of these files are missing, you are in **Setup Mode**. Do not proceed wit
 1. **Language Detection:** Analyze the user's previous prompts and preferred language. Conduct this entire Setup Mode and ask all your interactive questions in that same language.
 2. Acknowledge that the framework is not yet set up.
 3. **Pre-filled Context:** Before asking any questions, read the following files if they exist:
-   - `.agentic-pdlc/cli-context.json` — written by the CLI. Contains `projectName`, `repoOwner`, `repoName`. Use these values directly and skip the corresponding questions.
+   - `.agentic-pdlc/cli-context.json` — written by the CLI. Contains `projectName`, `repoOwner`, `repoName`, `projectNumber`, `isOrg`, `boardUrl`, and `patAutoSet` (boolean). Use these values directly and skip the corresponding questions. Honor `patAutoSet` in Step 7 and `boardUrl` in Step 10.
    - `.agentic-pdlc/templates/docs/pdlc.md` — the CLI pre-fills PROJECT_ID, STATUS_FIELD_ID, REPO_OWNER, REPO_NAME, and all 9 column option IDs. If none of the values still contain `{{...}}` placeholders, skip the entire Board IDs question group.
    - `.agentic-pdlc/templates/.github/workflows/project-automation.yml` — the CLI also pre-fills all ID placeholders here. When writing the workflow file, the remaining `{{...}}` placeholders are only non-ID ones (project name, commands, etc.).
 4. Interactively ask the user only for the **missing values**, **one group at a time**:
@@ -50,28 +50,33 @@ If any of these files are missing, you are in **Setup Mode**. Do not proceed wit
      - c) **Other** — *Enter the agent's handle.*
 5. Generate and write the missing files replacing the `{{SCREAMING_SNAKE_CASE}}` placeholders using the templates in `.agentic-pdlc/templates/`.
 6. Offer to run the `gh` commands for labels (`spec:approved`, `pr:in-review`, `pr:approved`, `architecture-violation`).
-7. **Set up the `PROJECT_PAT` secret (required for board automation):**
-   > ⚠️ This is **different** from the `gh auth` OAuth token used for the CLI setup. That token lets you run `gh` commands locally. This PAT is for GitHub Actions workflows that move cards on the board automatically — `GITHUB_TOKEN` in CI/CD does not have `project` scope by default.
+7. **`PROJECT_PAT` secret (required for board automation):**
 
-   Without `PROJECT_PAT`, all board card movements in CI will silently skip — no error, no cards moving.
+   Read `patAutoSet` from `.agentic-pdlc/cli-context.json`:
 
-   Steps:
-   1. Go to: **github.com/settings/tokens** → *Generate new token (classic)*
-   2. Name: `PROJECT_PAT — <repo-name>`
-   3. Select scopes: ✅ `repo` + ✅ `project`
-   4. Copy the token, then run:
-      ```
-      gh secret set PROJECT_PAT --body "<your-token>"
-      ```
-   5. Reply **"secret set"** (or "done") when finished so setup can continue.
+   **If `patAutoSet === true`:** The CLI already configured this secret automatically. Print `✅ PROJECT_PAT is configured.` and continue to Step 8 — do not ask the user anything.
+
+   **If `patAutoSet === false` (org repo):** Show the block below and wait for the user to reply "done" or "secret set" before continuing:
+
+   > Your repo is in an organization. For security, `PROJECT_PAT` must be a dedicated PAT (not your personal OAuth token). Without it, all board card movements in CI will silently skip — no error surfaced.
+   >
+   > 1. Open: **github.com/settings/tokens** → *Generate new token (classic)*
+   > 2. Name: `PROJECT_PAT — <repo-name>`
+   > 3. Select scopes: ✅ `repo` + ✅ `project`
+   > 4. Copy the token, then run:
+   >    ```
+   >    gh secret set PROJECT_PAT --body "<your-token>" --repo <owner>/<repo>
+   >    ```
+   > 5. Reply **"done"** when finished.
 8. **IMPORTANT:** Delete the setup prompt file by running exactly:
    ```
    rm -f .agentic-setup.md .agentic-setup-prompt.md .agentic-pdlc/SETUP_PROMPT.md
    ```
    **Do NOT run `git add` or any other git command.** These files were never committed and do not exist in the git index. This command must run **before** the commit step.
 9. Commit everything with the message: `chore: setup agentic-pdlc framework`.
-10. Conclude Setup Mode. Read `projectNumber` from `.agentic-pdlc/cli-context.json` and show the user their board URL:
-    `https://github.com/users/{repoOwner}/projects/{projectNumber}/views/1?layout=board`
+10. Conclude Setup Mode. Read `boardUrl` from `.agentic-pdlc/cli-context.json` and show the user exactly this (do not reconstruct the URL — `boardUrl` already includes the correct `users/` or `orgs/` path segment and `?layout=board`):
+
+    `🎉 Setup complete! Your board: <boardUrl>`
 
 ---
 
