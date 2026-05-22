@@ -84,6 +84,11 @@ console.log(`${cyan}============================================================
 console.log(`${cyan}${i18n.welcome}${reset}`);
 console.log(`${cyan}================================================================${reset}\n`);
 
+function buildBoardUrl(repoOwner, projectNumber, isOrg) {
+  const segment = isOrg ? 'orgs' : 'users';
+  return `https://github.com/${segment}/${repoOwner}/projects/${projectNumber}/views/1?layout=board`;
+}
+
 // Helper function to recursively copy directories
 function copyDirSync(src, dest) {
   if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
@@ -119,6 +124,43 @@ async function runSetup() {
     console.error(`${red}${i18n.gh_error}${reset}`);
     console.error(`${i18n.gh_install}`);
     process.exit(1);
+  }
+
+  function getScopes() {
+    try {
+      const out = execFileSync('gh', ['api', 'user', '-i'], { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' });
+      const line = out.split('\n').find(l => l.toLowerCase().startsWith('x-oauth-scopes:'));
+      return line ? line.split(':').slice(1).join(':').split(',').map(s => s.trim()) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  const scopesBefore = getScopes();
+  if (scopesBefore.length > 0 && !scopesBefore.includes('project')) {
+    console.log(`${yellow}⚠️  Token missing 'project' scope — required for GitHub Projects board.${reset}`);
+    console.log(`${yellow}   Refreshing token now (browser may open)...${reset}\n`);
+    try {
+      execSync('gh auth refresh -h github.com -s project', { stdio: 'inherit' });
+    } catch (e) {
+      console.log(`${red}❌ Token refresh failed. Run manually: gh auth refresh -h github.com -s project${reset}`);
+      rl.close();
+      process.exit(1);
+    }
+    const scopesAfter = getScopes();
+    if (scopesAfter.length > 0 && !scopesAfter.includes('project')) {
+      console.log(`\n${red}❌ 'project' scope still missing after refresh.${reset}`);
+      console.log(`${yellow}   Active scopes: ${scopesAfter.join(', ')}${reset}`);
+      console.log(`${yellow}   Note: gh uses OAuth tokens — visible at github.com/settings/applications, not /settings/tokens${reset}`);
+      console.log(`${yellow}   Try manually: gh auth refresh -h github.com -s project${reset}`);
+      rl.close();
+      process.exit(1);
+    }
+    if (scopesAfter.length > 0) {
+      console.log(`\n${green}✅ Token refreshed. Active scopes: ${scopesAfter.join(', ')}${reset}\n`);
+    } else {
+      console.log(`\n${green}✅ Token refreshed with 'project' scope.${reset}\n`);
+    }
   }
 
   const agentAnswer = await askQuestion(i18n.ask_agent);
@@ -190,14 +232,14 @@ async function runSetup() {
   let ownerId, projectId, projectNumber;
   try {
     if (isOrg) {
-      const orgOutput = execFileSync('gh', ['api', 'graphql', '-f', 'query=query($login: String!) { organization(login: $login) { id } }', '-f', `login=${repoOwner}`, '--jq', '.data.organization.id']).toString().trim();
+      const orgOutput = execFileSync('gh', ['api', 'graphql', '-f', 'query=query($login: String!) { organization(login: $login) { id } }', '-f', `login=${repoOwner}`, '--jq', '.data.organization.id'], { stdio: ['ignore', 'pipe', 'pipe'] }).toString().trim();
       ownerId = orgOutput;
     } else {
-      const userOutput = execFileSync('gh', ['api', 'graphql', '-f', 'query={ viewer { id } }', '--jq', '.data.viewer.id']).toString().trim();
+      const userOutput = execFileSync('gh', ['api', 'graphql', '-f', 'query={ viewer { id } }', '--jq', '.data.viewer.id'], { stdio: ['ignore', 'pipe', 'pipe'] }).toString().trim();
       ownerId = userOutput;
     }
 
-    const projectCreateRaw = execFileSync('gh', ['api', 'graphql', '-f', 'query=mutation($owner: ID!, $title: String!) { createProjectV2(input: {ownerId: $owner, title: $title}) { projectV2 { id number } } }', '-f', `owner=${ownerId}`, '-f', `title=${boardName}`]).toString().trim();
+    const projectCreateRaw = execFileSync('gh', ['api', 'graphql', '-f', 'query=mutation($owner: ID!, $title: String!) { createProjectV2(input: {ownerId: $owner, title: $title}) { projectV2 { id number } } }', '-f', `owner=${ownerId}`, '-f', `title=${boardName}`], { stdio: ['ignore', 'pipe', 'pipe'] }).toString().trim();
     const projectCreateResponse = JSON.parse(projectCreateRaw);
     if (projectCreateResponse.errors) {
       throw new Error(projectCreateResponse.errors.map(e => e.message).join('; '));
@@ -217,7 +259,14 @@ async function runSetup() {
     }
 
   } catch (err) {
-    console.log(`  ${i18n.project_err}${err.message}`);
+    const isScopeError = (err.message || '').includes("required scopes") || (err.stderr || '').toString().includes("required scopes");
+    if (isScopeError) {
+      console.log(`  ${red}❌ Token missing 'project' scope.${reset}`);
+      console.log(`  ${yellow}Fix: gh auth refresh -s project${reset}`);
+      console.log(`  ${yellow}Then re-run: npx create-agentic-pdlc${reset}`);
+    } else {
+      console.log(`  ${i18n.project_err}${err.message}`);
+    }
   }
 
   let statusFieldId;
@@ -278,6 +327,23 @@ async function runSetup() {
     }
   }
 
+  // Auto-provision PROJECT_PAT for personal repos
+  let patAutoSet = false;
+  if (projectId && !isOrg) {
+    try {
+      const tokenOut = execFileSync('gh', ['auth', 'token'], { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' }).trim();
+      if (tokenOut) {
+        execFileSync('gh', ['secret', 'set', 'PROJECT_PAT', '--body', tokenOut, '--repo', repo], { stdio: ['ignore', 'pipe', 'pipe'] });
+        patAutoSet = true;
+        console.log(`\n${green}✅ PROJECT_PAT secret set automatically (uses your gh OAuth token).${reset}`);
+      }
+    } catch (err) {
+      console.log(`\n${yellow}⚠️  Could not auto-set PROJECT_PAT. Agent will guide manual setup.${reset}`);
+    }
+  } else if (projectId && isOrg) {
+    console.log(`\n${yellow}ℹ️  Org repo detected — PROJECT_PAT will require manual setup for security.${reset}`);
+  }
+
   console.log(`\n${yellow}${i18n.scaffolding}${reset}`);
 
   // We copy the templates folder so the agent has the real text logic to replace and rename
@@ -311,7 +377,11 @@ async function runSetup() {
       }
 
       fs.writeFileSync(pdlcDest, pdlcContent);
-      console.log(`${i18n.pdlc_prefilled}`);
+      if (projectId && statusFieldId && Object.keys(optionMap).length > 0) {
+        console.log(`${i18n.pdlc_prefilled}`);
+      } else {
+        console.log(`${yellow}⚠️  pdlc.md copied — Project IDs not filled (board creation failed). Re-run after fixing token.${reset}`);
+      }
     }
 
     // Pre-fill project-automation.yml with the same IDs so the agent doesn't need to map them
@@ -338,7 +408,16 @@ async function runSetup() {
   // Write CLI context for the agent to consume in Setup Mode
   try {
     const cliContextPath = path.join(targetDir, '.agentic-pdlc', 'cli-context.json');
-    fs.writeFileSync(cliContextPath, JSON.stringify({ projectName, repoOwner, repoName, projectNumber }, null, 2));
+    const boardUrl = projectNumber ? buildBoardUrl(repoOwner, projectNumber, isOrg) : null;
+    fs.writeFileSync(cliContextPath, JSON.stringify({
+      projectName,
+      repoOwner,
+      repoName,
+      projectNumber,
+      isOrg,
+      boardUrl,
+      patAutoSet
+    }, null, 2));
   } catch (err) {
     // Non-fatal — agent will ask for the values instead
   }
