@@ -18,3 +18,11 @@ NEVER run `gh pr create` unless one of these is true:
 Advance stages first: `exploration` → `brainstorming` → `detailing` → `approval`
 
 The PreToolUse hook will block the action automatically if this rule is violated.
+
+## Human-in-the-Loop (MANDATORY)
+
+NEVER apply `stage:brainstorming`, `stage:detailing`, `stage:approval`, or `stage:development` labels without **explicit user confirmation in the current conversation**.
+
+- Apply `stage:exploration` autonomously (first action on any issue)
+- For every subsequent stage: present findings/plan, stop, wait for user to say "ok" / "avança" / equivalent
+- A PreToolUse hook enforces this at the system level — do not attempt to chain stage advances in a single command
