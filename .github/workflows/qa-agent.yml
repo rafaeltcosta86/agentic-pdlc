@@ -64,7 +64,7 @@ jobs:
             --max-time 30 || echo "API_ERROR")
 
           if [ "$RESPONSE" = "API_ERROR" ]; then
-            gh pr edit "$PR_NUMBER" --add-label "infra:qa-broken"
+            GH_TOKEN="$PROJECT_TOKEN" gh pr edit "$PR_NUMBER" --add-label "infra:qa-broken"
             gh pr comment "$PR_NUMBER" --body "🤖 **QA Agent:** Could not reach GitHub Models API. Manual review required."
             exit 0
           fi
@@ -73,13 +73,13 @@ jobs:
           EXPLANATION=$(echo "$RESPONSE" | python3 -c 'import json,sys; d=json.load(sys.stdin); t=d.get("choices",[{}])[0].get("message",{}).get("content","").strip(); lines=t.split("\n",1); print(lines[1].strip() if len(lines)>1 else "")')
 
           if echo "$VERDICT" | grep -q "^PASS"; then
-            gh pr edit "$PR_NUMBER" --add-label "qa:approved"
+            GH_TOKEN="$PROJECT_TOKEN" gh pr edit "$PR_NUMBER" --add-label "qa:approved"
             gh pr comment "$PR_NUMBER" --body "🤖 **QA Agent:** AC coverage verified. ${EXPLANATION}"
           elif echo "$VERDICT" | grep -q "^FAIL"; then
-            gh pr edit "$PR_NUMBER" --add-label "qa:needs-work"
+            GH_TOKEN="$PROJECT_TOKEN" gh pr edit "$PR_NUMBER" --add-label "qa:needs-work"
             gh pr comment "$PR_NUMBER" --body "🤖 **QA Agent:** AC coverage insufficient. ${EXPLANATION}"
           else
-            gh pr edit "$PR_NUMBER" --add-label "infra:qa-broken"
+            GH_TOKEN="$PROJECT_TOKEN" gh pr edit "$PR_NUMBER" --add-label "infra:qa-broken"
             gh pr comment "$PR_NUMBER" --body "🤖 **QA Agent:** Could not parse GitHub Models response. Manual review required."
           fi
 
