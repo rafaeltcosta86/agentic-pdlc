@@ -48,6 +48,10 @@ If any of these files are missing, you are in **Setup Mode**. Do not proceed wit
      - a) **No** — *No autonomous implementation agent.*
      - b) **@google-labs-jules** — *Jules (recommended if you don't have one).*
      - c) **Other** — *Enter the agent's handle.*
+
+     When writing `agent-trigger.yml`, set `{{IMPLEMENTATION_AGENT_LABEL}}` as follows:
+     - Jules (`@google-labs-jules`): use `jules` — this is the native label the Jules GitHub App watches. **Do NOT use `agent:jules`** — Jules does not watch that label and the trigger will silently fail.
+     - Other agents: use the handle without `@`, lowercase (e.g. `@my-agent` → `my-agent`).
 5. Generate and write the missing files replacing the `{{SCREAMING_SNAKE_CASE}}` placeholders using the templates in `.agentic-pdlc/templates/`.
 6. Offer to run the `gh` commands for labels (`spec:approved`, `pr:in-review`, `pr:approved`, `architecture-violation`).
 7. **`PROJECT_PAT` secret (required for board automation):**

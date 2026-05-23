@@ -38,3 +38,17 @@ jobs:
         if: ${{ !contains('{{TEST_COMMAND}}', '{{') }}
         run: |
           {{TEST_COMMAND}}
+
+  ci-status:
+    name: Sentinel / CI
+    needs: [validate]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check validate result
+        run: |
+          result="${{ needs.validate.result }}"
+          if [[ "$result" != "success" && "$result" != "skipped" ]]; then
+            echo "CI failed: validate=$result"
+            exit 1
+          fi
