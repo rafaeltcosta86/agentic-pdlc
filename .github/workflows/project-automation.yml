@@ -156,11 +156,17 @@ jobs:
                 });
             };
 
+            const stageLabelsToRemove = ['stage:development', 'stage:brainstorming', 'stage:detailing', 'stage:approval', 'jules', 'agent:working'];
+
             if (linkedIssues.length > 0) {
               for (const n of linkedIssues) {
                 const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
                 await moveItem(issue.node_id);
-                console.log(`Issue #${n} → Testing`);
+                for (const label of stageLabelsToRemove) {
+                  await github.rest.issues.removeLabel({ owner, repo, issue_number: n, name: label }).catch(() => {});
+                }
+                await github.rest.issues.addLabels({ owner, repo, issue_number: n, labels: ['stage:testing'] }).catch(() => {});
+                console.log(`Issue #${n} → Testing (labels updated)`);
               }
             } else {
               await moveItem(pr.node_id);
