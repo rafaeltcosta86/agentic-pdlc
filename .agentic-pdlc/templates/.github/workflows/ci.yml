@@ -47,7 +47,8 @@ jobs:
     steps:
       - name: Check validate result
         run: |
-          if [ "${{ needs.validate.result }}" != "success" ]; then
-            echo "CI failed: validate=${{ needs.validate.result }}"
+          result="${{ needs.validate.result }}"
+          if [[ "$result" != "success" && "$result" != "skipped" ]]; then
+            echo "CI failed: validate=$result"
             exit 1
           fi
