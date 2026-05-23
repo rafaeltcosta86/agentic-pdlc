@@ -6,7 +6,7 @@ on:
   pull_request_review:
     types: [submitted]
   issues:
-    types: [labeled, edited]
+    types: [labeled, edited, closed]
 
 env:
   PROJECT_ID: "{{PROJECT_ID}}"
@@ -302,3 +302,25 @@ jobs:
             } else {
               await moveItem(pr.node_id);
             }
+
+  cleanup-labels-on-close:
+    name: Issue closed → strip stage/agent labels
+    if: github.event_name == 'issues' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove transient labels
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.issue.number;
+            const toRemove = [
+              'stage:exploration', 'stage:brainstorming', 'stage:detailing',
+              'stage:approval', 'stage:development', 'stage:testing',
+              'agent:working', 'qa:needs-work', 'pr:in-review', 'jules'
+            ];
+            for (const label of toRemove) {
+              await github.rest.issues.removeLabel({ owner, repo, issue_number, name: label }).catch(() => {});
+            }
+            console.log(`Issue #${issue_number} labels cleaned up`);
