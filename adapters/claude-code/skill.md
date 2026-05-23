@@ -116,10 +116,10 @@ Reading the issue title and body for type inference is exempt from the `stage:ex
 
 | Type | Flow |
 |---|---|
-| `type:us` | Full flow: exploration → brainstorming → Gate 1 → detailing → approval |
-| `type:task` | Skip brainstorming: exploration → detailing → approval |
-| `type:bug` | Skip brainstorming: exploration → detailing → approval |
-| `type:spike` | Skip brainstorming: exploration → detailing → conclusion comment (never reaches Development) |
+| `type:us` | exploration → brainstorming → Gate 1 → detailing → approval |
+| `type:task` | exploration → brainstorming → Gate 1 → detailing → approval |
+| `type:bug` | exploration → brainstorming → Gate 1 → detailing → approval |
+| `type:spike` | exploration → brainstorming → Gate 1 → detailing → conclusion comment (never reaches Development) |
 
 ### 0.1 Board Labels — Mandatory at Every State Transition
 
