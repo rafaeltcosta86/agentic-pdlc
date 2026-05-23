@@ -18,3 +18,15 @@ NEVER run `gh pr create` unless one of these is true:
 Advance stages first: `exploration` → `brainstorming` → `detailing` → `approval`
 
 The PreToolUse hook will block the action automatically if this rule is violated.
+
+## Human-in-the-Loop
+
+| Transition | Gate |
+|---|---|
+| → `stage:exploration` | Autonomous — apply immediately |
+| → `stage:brainstorming` | Ask user — present exploration findings, wait for ok |
+| → `stage:detailing` | Ask user — present brainstorming plan, wait for ok |
+| → `stage:approval` | **Autonomous** — agent completes spec end-to-end, advances without asking |
+| → `stage:development` | Human applies `spec:approved` label — that IS the gate |
+
+**Detailing is fully autonomous.** Write the complete spec, add it to the issue, advance to `stage:approval` — no confirmation needed.

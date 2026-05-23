@@ -227,6 +227,16 @@ async function runSetup() {
     }
   }
 
+  const defaultLabels = [
+    'bug', 'documentation', 'duplicate', 'enhancement',
+    'good first issue', 'help wanted', 'invalid', 'question', 'wontfix'
+  ];
+  for (const label of defaultLabels) {
+    try {
+      execFileSync('gh', ['label', 'delete', label, '--repo', repo, '--yes'], { stdio: 'ignore' });
+    } catch (_) {}
+  }
+
   // Project V2
   console.log(`\n${cyan}${i18n.creating_project}${reset}`);
   let ownerId, projectId, projectNumber;
@@ -280,7 +290,7 @@ async function runSetup() {
 
       if (statusFieldId) {
         const columns = [
-          { name: "💡 Idea", description: "Backlog — every new issue lands here", color: "GRAY" },
+          { name: "💡 Idea - No move to Exploration directly", description: "Just tell your agent to work on issue #XX", color: "GRAY" },
           { name: "🔍 Exploration", description: "AI is analyzing code and context", color: "PURPLE" },
           { name: "🧠 Brainstorming", description: "AI proposed approaches and trade-offs", color: "PINK" },
           { name: "📐 Detail Solution", description: "AI is writing the technical spec", color: "BLUE" },
