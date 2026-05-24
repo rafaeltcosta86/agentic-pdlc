@@ -250,13 +250,13 @@ async function runSetup() {
     }
 
     const projectCreateRaw = execFileSync('gh', ['api', 'graphql', '-f', 'query=mutation($owner: ID!, $title: String!) { createProjectV2(input: {ownerId: $owner, title: $title}) { projectV2 { id number } } }', '-f', `owner=${ownerId}`, '-f', `title=${boardName}`], { stdio: ['ignore', 'pipe', 'pipe'] }).toString().trim();
-    const projectCreateResponse = JSON.parse(projectCreateRaw);
-    if (projectCreateResponse.errors) {
+    const projectCreateResponse = projectCreateRaw ? JSON.parse(projectCreateRaw) : null;
+    if (projectCreateResponse?.errors) {
       throw new Error(projectCreateResponse.errors.map(e => e.message).join('; '));
     }
-    const projectCreateData = projectCreateResponse.data.createProjectV2.projectV2;
-    projectId = projectCreateData.id;
-    projectNumber = projectCreateData.number;
+    const projectCreateData = projectCreateResponse?.data?.createProjectV2?.projectV2;
+    projectId = projectCreateData?.id;
+    projectNumber = projectCreateData?.number;
 
     console.log(`  ${i18n.project_ok}${projectId})`);
 
@@ -324,7 +324,8 @@ async function runSetup() {
 
         const updateOutput = execFileSync('gh', ['api', 'graphql', '--input', '-'], { input: queryPayload }).toString().trim();
         const jsonResponse = updateOutput ? JSON.parse(updateOutput) : null;
-        const returnedOptions = jsonResponse?.data?.updateProjectV2Field?.projectV2Field?.options || [];
+        const returnedOptions = jsonResponse?.data?.updateProjectV2Field?.projectV2Field?.options ||
+                                jsonResponse?.data?.updateProjectV2SingleSelectField?.projectV2SingleSelectField?.options || [];
 
         for (const opt of returnedOptions) {
           optionMap[opt.name] = opt.id;
