@@ -69,6 +69,36 @@ jobs:
                    v: { singleSelectOptionId: process.env.STATUS_DEVELOPMENT } });
             console.log(`Issue #${number} → Development`);
 
+      - name: Comment on issue to trigger implementation agent
+        if: vars.AGENT_DISPATCH_ENABLED == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issueNumber = context.payload.issue.number;
+            const body = [
+              `🤖 **Agentic PDLC Orchestrator:** I have dispatched the implementation agent. Please wait for the Pull Request and avoid making concurrent commits on this task to prevent race conditions.`,
+              '',
+              `@google-labs-jules The spec for this issue has been approved. Please implement it exactly as described in the body above.`,
+              '',
+              '**Mandatory steps before you begin:**',
+              '1. `git fetch origin && git checkout main && git pull` — always start from the current HEAD',
+              '2. Read `AGENTS.md` — mandatory rules for agents in this repository',
+              '3. Read `docs/pdlc.md` — Definition of Done and invariants reference',
+              '',
+              '**Rules:**',
+              '- Implement strictly what the Acceptance Criteria describes',
+              '- Run `echo "No tests/build needed."` before opening the Pull Request',
+              `- Include \`Closes #${issueNumber}\` in the PR body`,
+              '- Create a descriptive branch branching from `main`',
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body,
+            });
+
   trigger-agent-on-violation:
     name: Flag architecture violation
     # Runs when architecture-violation is added (Sentinel flow)
@@ -79,6 +109,7 @@ jobs:
       contents: read
     steps:
       - name: Comment on issue
+        if: vars.AGENT_DISPATCH_ENABLED == 'true'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
