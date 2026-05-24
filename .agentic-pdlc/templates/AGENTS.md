@@ -30,7 +30,7 @@ Always start from the current `main` HEAD. Never work over stale snapshots.
 ## Mandatory Workflow
 
 0. **Identity**: Always prefix your GitHub comments with `🤖 **Agent:** ` to distinguish yourself.
-1. **Initial State**: When beginning work on a new issue, your very first action must be to apply the `stage:brainstorming` label using the GitHub CLI (`gh issue edit <N> --add-label "stage:brainstorming"`).
+1. **Initial State**: When beginning work on a new issue, your very first action must be to apply the `stage:brainstorming` label using the GitHub CLI (`gh issue edit <N> --add-label "stage:brainstorming"`). **Exception — pre-spec'd issue**: if the issue body already contains all required spec sections (`## Problem`, `## Solution`, `## Acceptance Criteria`, `## Edge Cases`, `## Out of Scope`, `## Files to Modify`) — all present and non-empty — apply `stage:approval` directly in a single call instead, skipping `stage:brainstorming` and `stage:detailing`.
 2. Read the issue entirely — understand its type (US/BUG/TASK/SPIKE) and the Acceptance Criteria.
 3. Read `docs/pdlc.md` — understand the PDLC and the Definition of Done in this project.
 4. Read all files mentioned in the issue's technical context.
@@ -82,6 +82,13 @@ spec for human review. Adding them manually triggers irreversible automation
 
 Each stage transition requires a fresh explicit signal from the user in the same
 session where the transition happens. These rules have no exceptions.
+
+**Pre-spec'd exception**: if the issue body already contains all required spec
+sections (`## Problem`, `## Solution`, `## Acceptance Criteria`, `## Edge Cases`,
+`## Out of Scope`, `## Files to Modify`) — all present and non-empty — apply
+`stage:approval` directly in a single `gh issue edit` call, skipping
+`stage:brainstorming` and `stage:detailing`. One label event eliminates the
+race condition that causes the project board to land on the wrong column.
 
 ## What NOT to do
 
