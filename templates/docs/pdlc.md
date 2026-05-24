@@ -58,7 +58,7 @@ REPO         = {{REPO_OWNER}}/{{REPO_NAME}}
 ```
 [icon] [PREFIX]: [short description, imperative tense]
 
-👤 US:     user story
+✨ feat:   new feature or behavioral change
 🐛 BUG:    bug
 🔧 TASK:   operational task
 🔬 SPIKE:  exploration/evaluation spike
@@ -77,7 +77,7 @@ REPO         = {{REPO_OWNER}}/{{REPO_NAME}}
 | `qa:approved` | PR | Green | QA Agent passed — AC coverage verified |
 | `qa:needs-work` | PR | Red | QA Agent failed — PR needs changes |
 | `infra:qa-broken` | PR | Orange | QA Agent error — manual review required |
-| `type:us` | Issue | Blue | New feature or behavioral change — full flow |
+| `type:feature` | Issue | Blue | New feature or behavioral change — full flow |
 | `type:task` | Issue | Yellow | Operational/non-functional change — full flow |
 | `type:bug` | Issue | Red | Something broken — full flow |
 | `type:spike` | Issue | Gray | Research/evaluation — never reaches Development |
@@ -98,12 +98,12 @@ The `type:*` label is the authoritative signal — set automatically by the agen
 
 | Label | Flow |
 |---|---|
-| `type:us` | brainstorming → Gate 1 → detailing → approval |
+| `type:feature` | brainstorming → Gate 1 → detailing → approval |
 | `type:task` | brainstorming → Gate 1 → detailing → approval |
 | `type:bug` | brainstorming → Gate 1 → detailing → approval |
 | `type:spike` | brainstorming → Gate 1 → detailing → conclusion comment (never reaches Development) |
 
-If no `type:*` label present and agent confidence < 85%, defaults to `type:us` (safe fallback — never skips gates by omission).
+If no `type:*` label present and agent confidence < 85%, defaults to `type:feature` (safe fallback — never skips gates by omission).
 
 ## Bypass Mechanism
 
