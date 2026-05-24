@@ -64,6 +64,23 @@ When detailing a solution in an issue body, you must **always** include both the
 - `path/to/file.ts` — what changes
 ```
 
+## Stage Transition Rules (non-negotiable)
+
+MUST NOT add `stage:brainstorming` label until exploration findings have been
+presented to the user and the user has responded in the current conversation turn.
+
+MUST NOT add `stage:detailing` label until the user has explicitly confirmed
+the proposed approach in the current conversation turn. Work done in a prior
+planning session does NOT count as confirmation.
+
+MUST NOT add `spec:approved` or any approval-trigger label under any
+circumstances — these are set by the PM (human) only, after reviewing the spec
+in the issue body. Adding them triggers irreversible automation (Jules dispatch,
+board move).
+
+Each stage transition requires a fresh explicit signal from the user in the same
+session where the transition happens. These rules have no exceptions.
+
 ## Pipeline Updates
 
 To add or configure optional agents (Jules, QA Agent, Sentinel) at any time:
