@@ -2,7 +2,7 @@
 
 **What it is:** npm CLI (`npx create-agentic-pdlc`) that installs a PDLC workflow for AI agent projects. Stack: Markdown + GitHub Actions YAML only — never complex Node/Python/Bash scripts.
 
-**Workflow:** `stage:exploration` → `stage:brainstorming` → `stage:detailing` → `spec:approved` → `stage:development` → PR → merge. Labels move the board automatically.
+**Workflow:** `stage:brainstorming` → `stage:detailing` → `spec:approved` → `stage:development` → PR → merge. Labels move the board automatically.
 
 ## Session Startup
 
@@ -17,7 +17,7 @@ NEVER run `gh pr create` unless one of these is true:
 
 NEVER edit files, create branches, or commit unless the linked issue has label `spec:approved` (set by human PM only) or the branch name starts with `hotfix/`.
 
-Advance stages first: `exploration` → `brainstorming` → `detailing` → `approval` → (human adds `spec:approved`) → `development`
+Advance stages first: `brainstorming` → `detailing` → `approval` → (human adds `spec:approved`) → `development`
 
 The PreToolUse hook will block `gh pr create` automatically if this rule is violated.
 
@@ -25,9 +25,8 @@ The PreToolUse hook will block `gh pr create` automatically if this rule is viol
 
 | Transition | Gate |
 |---|---|
-| → `stage:exploration` | Autonomous — apply immediately |
-| → `stage:brainstorming` | Ask user — present exploration findings, wait for ok |
-| → `stage:detailing` | Ask user — present brainstorming plan, wait for ok |
+| → `stage:brainstorming` | Autonomous — apply immediately |
+| → `stage:detailing` | Ask user — present problem summary + options, wait for choice |
 | → `stage:approval` | **Autonomous** — agent completes spec end-to-end, advances without asking |
 | `spec:approved` | **Human PM only** — agent waits; never adds this label |
 | → `stage:development` | Human applies `spec:approved` label — that IS the gate |
@@ -36,11 +35,12 @@ The PreToolUse hook will block `gh pr create` automatically if this rule is viol
 
 ## Stage Transition Rules (non-negotiable)
 
-MUST NOT add `stage:brainstorming` label until exploration findings have been
-presented to the user and the user has responded in the current conversation turn.
+MUST apply `stage:brainstorming` label immediately on starting work — before
+reading any code, before invoking any skill. Then read context and present
+problem summary + 2–3 solution options in a single message.
 
-MUST NOT add `stage:detailing` label until the user has explicitly confirmed
-the proposed approach in the current conversation turn. Work done in a prior
+MUST NOT add `stage:detailing` label until the user has explicitly selected
+an approach in the current conversation turn. Work done in a prior
 planning session does NOT count as confirmation.
 
 MUST NOT add `spec:approved` or any approval-trigger label under any
@@ -50,8 +50,8 @@ board move).
 
 MUST NOT add or remove `stage:development`, `spec:approved`, or `qa:*` labels —
 these are owned by GitHub Actions automation and the PM. The agent is responsible
-for applying `stage:exploration`, `stage:brainstorming`, `stage:detailing`, and
-`stage:approval` as part of the prescribed workflow above.
+for applying `stage:brainstorming`, `stage:detailing`, and `stage:approval` as
+part of the prescribed workflow above.
 
 Each stage transition requires a fresh explicit signal from the user in the same
 session where the transition happens. These rules have no exceptions.
