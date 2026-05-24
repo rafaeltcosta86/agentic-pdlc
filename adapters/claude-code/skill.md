@@ -157,18 +157,39 @@ When asked to work on a feature, you will:
 - Stop and wait for the human PM's explicit approval (Gate 1).
 
 ### 2. Creating the Spec
-Once approved, you will detail the solution directly into the GitHub Issue body. Focus on precise Acceptance Criteria.
-**IMPORTANT:** You must always rewrite the full issue body to include both the user story and the Acceptance Criteria. Do not simply append the ACs to the existing text. Use this format:
+Once approved, detail the solution directly into the GitHub Issue body. Always rewrite the full issue body — never append only ACs to existing text. Include ALL sections below. Omitting any section blocks `stage:approval`. Use this format:
 
 ```
-**As** [user],
-**I want** [action],
-**so that** [benefit].
+## Problem
+[1-3 sentences. What fails. Who affected. Measured impact.]
 
----
+## Sprint Goal / Success Metrics
+| Metric | Baseline | Target | When |
+|--------|----------|--------|------|
+
+## Solution
+[Behavioral description of what is built. No implementation details.]
 
 ## Acceptance Criteria
-...
+**AC1 — [name]**
+- Given [precondition]
+- When [action]
+- Then [outcome]
+
+## Edge Cases
+- EC1: [condition] → [expected behavior]
+
+## Out of Scope
+- [item] — reason
+
+## Non-Functional Requirements
+- Performance: [metric with number]
+- Security: [constraint]
+- Reliability: [constraint]
+> For pure docs/markdown issues with zero runtime behavior, include the NFRs section and state "N/A".
+
+## Files to Modify
+- `path/to/file` — what changes
 ```
 
 ### 3. Handoff

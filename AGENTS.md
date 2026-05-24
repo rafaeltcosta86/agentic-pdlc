@@ -36,6 +36,43 @@ Always start from the current `main` HEAD. Never work over stale snapshots.
 7. Run typecheck: `echo "No typecheck needed."`
 8. Create a Pull Request with `Closes #N` in the body — automation moves the board.
 
+## Spec Format
+
+When writing or rewriting an issue body during detailing, include ALL sections below. Omitting any section blocks `stage:approval`.
+
+```
+## Problem
+[1-3 sentences. What fails. Who affected. Measured impact.]
+
+## Sprint Goal / Success Metrics
+| Metric | Baseline | Target | When |
+|--------|----------|--------|------|
+
+## Solution
+[Behavioral description of what is built. No implementation details.]
+
+## Acceptance Criteria
+**AC1 — [name]**
+- Given [precondition]
+- When [action]
+- Then [outcome]
+
+## Edge Cases
+- EC1: [condition] → [expected behavior]
+
+## Out of Scope
+- [item] — reason
+
+## Non-Functional Requirements
+- Performance: [metric with number]
+- Security: [constraint]
+- Reliability: [constraint]
+> For pure docs/markdown issues with zero runtime behavior, include the NFRs section and state "N/A".
+
+## Files to Modify
+- `path/to/file` — what changes
+```
+
 ## What NOT to do
 
 - Never commit directly to `main`.
