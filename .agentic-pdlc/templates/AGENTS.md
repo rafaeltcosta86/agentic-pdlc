@@ -70,6 +70,10 @@ When detailing a solution in an issue body, you must **always** include both the
 - Never open a PR without passing the tests.
 - Never implement beyond the immediate scope of the issue.
 - Never create future-proofing abstractions for hypothetical features.
+- The agent MUST NOT apply these labels under any circumstances (PM only):
+  - `spec:approved`: triggers Jules dispatch + board move to Development.
+  - `qa:approved`: triggers board move to Code Review.
+  - `qa:needs-work`: signals the PR requires changes and halts the flow.
 {{EXTRA_DONT}}
 
 ## Project Standards
