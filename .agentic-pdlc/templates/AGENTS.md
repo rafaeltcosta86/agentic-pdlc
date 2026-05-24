@@ -74,6 +74,7 @@ When detailing a solution in an issue body, you must **always** include both the
   - `spec:approved`: triggers Jules dispatch + board move to Development.
   - `qa:approved`: triggers board move to Code Review.
   - `qa:needs-work`: signals the PR requires changes and halts the flow.
+- Never add or remove `stage:*` labels manually (EXCEPT for `stage:exploration` during the Initial State step). These are owned by GitHub Actions automation.
 {{EXTRA_DONT}}
 
 ## Project Standards
