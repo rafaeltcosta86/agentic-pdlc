@@ -48,8 +48,10 @@ circumstances — these are set by the PM (human) only, after reviewing the spec
 in the issue body. Adding them triggers irreversible automation (Jules dispatch,
 board move).
 
-MUST NOT add or remove `stage:*` or `qa:*` labels outside of the prescribed
-transitions above — these are owned by GitHub Actions automation and the PM.
+MUST NOT add or remove `stage:development`, `spec:approved`, or `qa:*` labels —
+these are owned by GitHub Actions automation and the PM. The agent is responsible
+for applying `stage:exploration`, `stage:brainstorming`, `stage:detailing`, and
+`stage:approval` as part of the prescribed workflow above.
 
 Each stage transition requires a fresh explicit signal from the user in the same
 session where the transition happens. These rules have no exceptions.
