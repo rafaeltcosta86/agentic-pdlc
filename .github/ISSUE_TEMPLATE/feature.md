@@ -2,7 +2,7 @@
 name: Feature
 about: New capability with spec scaffold for detailing agent
 title: 'feat: '
-labels: enhancement
+labels: type:feature
 assignees: ''
 ---
 

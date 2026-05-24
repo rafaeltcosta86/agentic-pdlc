@@ -106,21 +106,21 @@ If `AGENTS.md` and `docs/pdlc.md` are present, you are in **Execution Mode**.
 
 Reading the issue title and body for type inference is exempt from the initial label requirement: it is metadata already present in the request, not code reading or skill invocation.
 
-1. Check if issue already has a `type:*` label (`type:us`, `type:task`, `type:bug`, `type:spike`) → if yes, skip to Section 0.1.
+1. Check if issue already has a `type:*` label (`type:feature`, `type:task`, `type:bug`, `type:spike`) → if yes, skip to Section 0.1.
 2. Read issue title + body (metadata only — no code reading at this step).
 3. Classify using these rules:
    - `type:task` — operational change, config, rename, docs update, non-functional (no user-facing behavior change)
    - `type:bug` — something broken that should work
    - `type:spike` — research/evaluation spike, never reaches Development
-   - `type:us` — new feature, behavioral change, anything product-facing
+   - `type:feature` — new feature, behavioral change, anything product-facing
 4. Confidence ≥ 85% → add inferred label: `gh issue edit <N> --add-label "type:<inferred>"`
-5. Confidence < 85% → default to `type:us`: `gh issue edit <N> --add-label "type:us"`
+5. Confidence < 85% → default to `type:feature`: `gh issue edit <N> --add-label "type:feature"`
 
 **Type drives the PDLC flow:**
 
 | Type | Flow |
 |---|---|
-| `type:us` | brainstorming → Gate 1 → detailing → approval |
+| `type:feature` | brainstorming → Gate 1 → detailing → approval |
 | `type:task` | brainstorming → Gate 1 → detailing → approval |
 | `type:bug` | brainstorming → Gate 1 → detailing → approval |
 | `type:spike` | brainstorming → Gate 1 → detailing → conclusion comment (never reaches Development) |
