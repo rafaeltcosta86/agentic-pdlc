@@ -5,8 +5,7 @@ This document describes the full lifecycle of a card on the agentic-pdlc board �
 ```mermaid
 stateDiagram-v2
     direction LR
-    Idea --> Exploration : stage:exploration
-    Exploration --> Brainstorming : stage:brainstorming
+    Idea --> Brainstorming : stage:brainstorming
     Brainstorming --> Detailing : Gate 1 (PM)
     Detailing --> Approval : stage:approval
     Approval --> Development : Gate 2 (spec:approved)
@@ -23,7 +22,7 @@ stateDiagram-v2
 |------|---------------|
 | **PM** (human) | Selects issues for the sprint, approves brainstorm (Gate 1), approves spec (Gate 2) |
 | **TL / Reviewer** (human) | Co-approves spec for technical decisions (Gate 2), reviews and approves the PR (Gate 3) |
-| **Claude** | Exploration, brainstorming, spec writing — acts on PM instruction via chat or via upstream label |
+| **Claude** | Brainstorming (context reading + approaches), spec writing — acts on PM instruction via chat or via upstream label |
 | **Implementation Agent** | Implementation, running tests, opening the PR |
 | **Workflow** | All label swaps and card movements — the source of truth for board state |
 
@@ -38,33 +37,22 @@ Issue exists in the backlog with no `stage:` label.
 
 ---
 
-### 🔍 Exploration
-
-**Trigger (two equivalent paths):**
-- PM tells Claude directly in chat → Claude adds `stage:exploration` to the issue, OR
-- PM adds `stage:exploration` directly to the issue
-
-**Workflow:** `project-automation.yml` detects `stage:exploration` → moves card to Exploration.
-
-**Who works:** Claude reads relevant code and context.
-
----
-
 ### 🧠 Brainstorming
 
-**Trigger:** Claude, after exploration.
+**Trigger:** PM tells Claude to work on the issue (in chat) or applies `stage:brainstorming` directly.
 
 **Actions:**
-- Claude posts a comment on the issue with findings and 2–3 proposed approaches
-- Claude swaps `stage:exploration` → `stage:brainstorming`
+- Claude applies `stage:brainstorming` immediately
+- Claude reads relevant code and context
+- Claude posts a single comment with: (1) brief problem summary, (2) 2–3 proposed approaches with trade-offs
 
-**Workflow:** `project-automation.yml` moves card to Brainstorming.
+**Workflow:** `project-automation.yml` detects `stage:brainstorming` → moves card to Brainstorming.
 
 **⏸ Human gate (Gate 1 — PM):** PM reads the brainstorming comment and selects an approach. This can be done:
 - By commenting on the issue (e.g., "Option A", "Go with B", "approved", "lgtm")
 - By telling Claude in chat
 
-**Note on implicit approval:** If Claude presented multiple options, selecting one (e.g., "Option A") counts as implicit approval. The `upstream-gate.yml` detects option-selection patterns in addition to explicit approval words.
+**Note on implicit approval:** Selecting one option (e.g., "Option A") counts as implicit approval. The `upstream-gate.yml` detects option-selection patterns in addition to explicit approval words.
 
 ---
 
@@ -141,7 +129,6 @@ Issue exists in the backlog with no `stage:` label.
 
 | Label | Added by | Removed by |
 |-------|----------|------------|
-| `stage:exploration` | PM (human) or Claude | Claude |
 | `stage:brainstorming` | Claude | `upstream-gate.yml` |
 | `stage:detailing` | `upstream-gate.yml` | Claude |
 | `stage:approval` | Claude | `agent-trigger.yml` |
