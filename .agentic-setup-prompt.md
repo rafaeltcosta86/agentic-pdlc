@@ -25,7 +25,7 @@ If any of these files are missing, you are in **Setup Mode**. Do not proceed wit
    - **Project basics:** Project Name, Description, Technical Stack (Structure), and GitHub Username (for CODEOWNERS security).
    - **Commands:** Test command, Lint command, Build command.
    - **Invariants:** Critical business rules agents must never violate (e.g. Human-in-the-loop).
-   - **Board IDs:** PROJECT_ID, STATUS_FIELD_ID, column option IDs (provide standard PDLC options: Idea, Exploration, Brainstorming, Detail Solution, Approval, Development, Testing, Code Review / PR, Production). Allow user to answer "skip", which means you leave the placeholders intact.
+   - **Board IDs:** PROJECT_ID, STATUS_FIELD_ID, column option IDs (provide standard PDLC options: Idea, Brainstorming, Detail Solution, Approval, Development, Testing, Code Review / PR, Production). Allow user to answer "skip", which means you leave the placeholders intact.
    - **Architecture Violation:** Ask "Does your project use an automated architecture auditing tool (e.g., a CI job that creates issues with an `architecture-violation` label)?". If yes, uncomment the `move-violation-to-board` job inside `project-automation.yml`. If no, ask if they would like help implementing one, reminding them that it significantly improves their agentic development process. If they decline, you can leave the job commented out.
    - **QA Agent (Variant B):** Ask "Do you plan to use an AI QA Agent (e.g. QAWolf or a secondary script) to verify your PRs before Code Review?". If yes, explain you will adopt Variant B: you will change `STATUS_CODE_REVIEW_PR` to `STATUS_TESTING` inside the `move-card-on-pr-open` job in `project-automation.yml` and uncomment the `move-card-on-qa-pass` job. If no, leave the workflow as Variant A (default) and delete the optional `.github/workflows/qa-agent.yml` template.
    - **Implementation agent handle:** e.g., `@google-labs-jules`, or "none". When replacing `{{IMPLEMENTATION_AGENT_LABEL}}` in `agent-trigger.yml`: for Jules use `jules` (the native label the Jules GitHub App watches — **not** `agent:jules`); for other agents use the handle without `@`, lowercase.
@@ -68,6 +68,5 @@ Do not write code for downstream features! Your goal is to refine the Spec, so t
 
 ### 4. Moving the Board (Upstream States)
 As you actively work with the user advancing the feature, you MUST use the GitHub CLI to update internal state labels. This triggers GitHub Actions behind the scenes.
-- Starting context evaluation: Run `gh issue edit <N> --add-label "stage:exploration"`
-- Presenting architecture/approaches: Run `gh issue edit <N> --add-label "stage:brainstorming"`
+- Starting work on an issue (before reading code): Run `gh issue edit <N> --add-label "stage:brainstorming"`
 - Starting to write the technical spec: Run `gh issue edit <N> --add-label "stage:detailing"`
