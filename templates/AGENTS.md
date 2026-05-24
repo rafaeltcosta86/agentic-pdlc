@@ -80,7 +80,11 @@ Run this when the user says anything like "update the pipeline", "update the boa
 - Never open a PR without passing the tests.
 - Never implement beyond the immediate scope of the issue.
 - Never create future-proofing abstractions for hypothetical features.
-- Never add or remove `stage:*` or `qa:*` labels manually. These are owned by GitHub Actions automation and the PM only.
+- The agent MUST NOT apply these labels under any circumstances (PM only):
+  - `spec:approved`: triggers Jules dispatch + board move to Development.
+  - `qa:approved`: triggers board move to Code Review.
+  - `qa:needs-work`: signals the PR requires changes and halts the flow.
+- Never add or remove stage:* labels manually, except for stage:exploration as required by the workflow (metadata-only actions are exempt). These are owned by GitHub Actions automation and the PM.
 {{EXTRA_DONT}}
 
 ## Project Standards
