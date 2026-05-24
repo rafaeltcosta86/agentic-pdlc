@@ -396,19 +396,27 @@ jobs:
               console.log(`Created label ${LABEL}`);
             }
 
-            // Close previous pulse issues
+            // Close previous pulse issues; upsert if same week already exists
             const prev = await github.rest.issues.listForRepo({
               owner, repo, labels: LABEL, state: 'open', per_page: 20
             });
+            let existingIssue = null;
             for (const issue of prev.data) {
-              if (issue.title !== title) {
+              if (issue.title === title) {
+                existingIssue = issue;
+                console.log(`Found existing pulse for ${title}: #${issue.number} — will update body`);
+              } else {
                 await github.rest.issues.update({ owner, repo, issue_number: issue.number, state: 'closed' });
                 console.log(`Closed previous pulse: #${issue.number}`);
               }
             }
 
-            // Create new pulse issue
-            const created = await github.rest.issues.create({
-              owner, repo, title, body, labels: [LABEL]
-            });
-            console.log(`✅ Created pulse issue: #${created.data.number} — ${title}`);
+            if (existingIssue) {
+              await github.rest.issues.update({ owner, repo, issue_number: existingIssue.number, body });
+              console.log(`✅ Updated pulse issue: #${existingIssue.number} — ${title}`);
+            } else {
+              const created = await github.rest.issues.create({
+                owner, repo, title, body, labels: [LABEL]
+              });
+              console.log(`✅ Created pulse issue: #${created.data.number} — ${title}`);
+            }
