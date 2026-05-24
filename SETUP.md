@@ -12,7 +12,7 @@ Estimated time: 2-3 hours (including GitHub Projects setup).
 - GitHub Projects enabled on your account/organization
 - Implementation agent connected to the repository (e.g., Jules: github.com/google-labs/jules)
 
-> **Implementation agent dispatch:** To enable automatic agent triggering, set `AGENT_DISPATCH_ENABLED=true` at **repo → Settings → Variables → Actions**. For Jules users, install the Jules GitHub App first at [github.com/settings/installations](https://github.com/settings/installations). If this variable is absent, agent comments are silently skipped — no false "dispatched" messages.
+> **Jules users:** After installing the Jules GitHub App at [github.com/settings/installations](https://github.com/settings/installations), set `JULES_ENABLED=true` at **repo → Settings → Variables → Actions** to enable Jules dispatch. If this variable is absent, agent comments are silently skipped — no false "dispatched" messages.
 
 ---
 
