@@ -4,9 +4,8 @@
 
 | Column | Meaning | Who moves the card |
 |---|---|---|
-| 💡 Idea — don't move manually to Exploration | Backlog — tell agent: "work on issue #XX" | Don't move manually |
-| 🔍 Exploration | Claude is analyzing code and context | Label `stage:exploration` |
-| 🧠 Brainstorming | Claude proposed approaches, awaiting PM gate | Label `stage:brainstorming` |
+| 💡 Idea | Backlog — tell agent: "work on issue #XX" | Don't move manually |
+| 🧠 Brainstorming | AI reading context, proposing approaches and trade-offs | Label `stage:brainstorming` |
 | 📐 Detail Solution | Claude is writing the technical spec | Label `stage:detailing` |
 | ✅ Approval | Spec ready, awaiting `spec:approved` label | Label `spec:approved` |
 | ⚙️ Development | Agent implementing the spec | Label `stage:development` |
@@ -37,7 +36,6 @@ REPO         = {{REPO_OWNER}}/{{REPO_NAME}}
 | Column | Option ID |
 |---|---|
 | 💡 Idea | `{{ID_IDEA}}` |
-| 🔍 Exploration | `{{ID_EXPLORATION}}` |
 | 🧠 Brainstorming | `{{ID_BRAINSTORMING}}` |
 | 📐 Detail Solution | `{{ID_DETAIL}}` |
 | ✅ Approval | `{{ID_APPROVAL}}` |
@@ -70,7 +68,6 @@ REPO         = {{REPO_OWNER}}/{{REPO_NAME}}
 
 | Label | Entity | Color | Meaning |
 |---|---|---|---|
-| `stage:exploration` | Issue | Purple | Issue is being evaluated |
 | `stage:brainstorming` | Issue | Pink | Proposed approaches awaiting PM gate |
 | `stage:detailing` | Issue | Blue | Technical spec is being written |
 | `stage:development` | Issue | Orange | Agent is implementing the spec |
@@ -88,8 +85,8 @@ REPO         = {{REPO_OWNER}}/{{REPO_NAME}}
 ## Approval Gates
 
 **Gate 1 — PM/Ideation (Brainstorming):**
-You comment on the issue approving one of the approaches proposed by the ideation agent.
-Format: *"Approved — proceed with option X."*
+Agent presents problem summary + 2–3 solution options in a single message. You select an approach.
+Format: *"Option X"* or *"Go with B"* or *"Approved — proceed with option X."*
 
 **Gate 2 — Tech Lead (Spec):**
 You add the `spec:approved` label to the issue after reviewing the technical spec in the body.
@@ -101,10 +98,10 @@ The `type:*` label is the authoritative signal — set automatically by the agen
 
 | Label | Flow |
 |---|---|
-| `type:us` | exploration → brainstorming → Gate 1 → detailing → approval |
-| `type:task` | exploration → brainstorming → Gate 1 → detailing → approval |
-| `type:bug` | exploration → brainstorming → Gate 1 → detailing → approval |
-| `type:spike` | exploration → brainstorming → Gate 1 → detailing → conclusion comment (never reaches Development) |
+| `type:us` | brainstorming → Gate 1 → detailing → approval |
+| `type:task` | brainstorming → Gate 1 → detailing → approval |
+| `type:bug` | brainstorming → Gate 1 → detailing → approval |
+| `type:spike` | brainstorming → Gate 1 → detailing → conclusion comment (never reaches Development) |
 
 If no `type:*` label present and agent confidence < 85%, defaults to `type:us` (safe fallback — never skips gates by omission).
 

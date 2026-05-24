@@ -102,9 +102,9 @@ If `AGENTS.md` and `docs/pdlc.md` are present, you are in **Execution Mode**.
 
 ### 0. [FIRST] Issue Type Identification
 
-**Run before anything else — before `stage:exploration`, before reading code.**
+**Run before anything else — before reading code.**
 
-Reading the issue title and body for type inference is exempt from the `stage:exploration` requirement: it is metadata already present in the request, not code reading or skill invocation.
+Reading the issue title and body for type inference is exempt from the initial label requirement: it is metadata already present in the request, not code reading or skill invocation.
 
 1. Check if issue already has a `type:*` label (`type:us`, `type:task`, `type:bug`, `type:spike`) → if yes, skip to Section 0.1.
 2. Read issue title + body (metadata only — no code reading at this step).
@@ -120,10 +120,10 @@ Reading the issue title and body for type inference is exempt from the `stage:ex
 
 | Type | Flow |
 |---|---|
-| `type:us` | exploration → brainstorming → Gate 1 → detailing → approval |
-| `type:task` | exploration → brainstorming → Gate 1 → detailing → approval |
-| `type:bug` | exploration → brainstorming → Gate 1 → detailing → approval |
-| `type:spike` | exploration → brainstorming → Gate 1 → detailing → conclusion comment (never reaches Development) |
+| `type:us` | brainstorming → Gate 1 → detailing → approval |
+| `type:task` | brainstorming → Gate 1 → detailing → approval |
+| `type:bug` | brainstorming → Gate 1 → detailing → approval |
+| `type:spike` | brainstorming → Gate 1 → detailing → conclusion comment (never reaches Development) |
 
 ### 0.1 Board Labels — Mandatory at Every State Transition
 
@@ -131,11 +131,10 @@ These label commands are non-negotiable. They run **before** the activity they a
 
 | When | Command |
 |---|---|
-| Before reading any code / invoking any skill | `gh issue edit <N> --add-label "stage:exploration"` |
-| Before presenting architecture approaches | `gh issue edit <N> --add-label "stage:brainstorming" --remove-label "stage:exploration"` |
+| Before reading any code / invoking any skill | `gh issue edit <N> --add-label "stage:brainstorming"` |
 | Before writing the technical spec | `gh issue edit <N> --add-label "stage:detailing" --remove-label "stage:brainstorming"` |
 
-No investigation, no skill invocation, no code reading happens before `stage:exploration` is applied. No architecture presentation starts before `stage:brainstorming` is set (and `stage:exploration` removed). No spec writing starts before `stage:detailing` is set (and `stage:brainstorming` removed).
+No investigation, no skill invocation, no code reading happens before `stage:brainstorming` is applied. No spec writing starts before `stage:detailing` is set (and `stage:brainstorming` removed).
 
 ### 0.1 PR Stage Gate — Non-Negotiable
 
@@ -151,7 +150,7 @@ git checkout -b hotfix/<N>-<description>
 ```
 
 ### 1. Daily Upstream Loop
-Your job is to move issues from "💡 Idea - don't move manually to Exploration" to "📐 Detail Solution".
+Your job is to move issues from "💡 Idea" to "📐 Detail Solution".
 When asked to work on a feature, you will:
 - Explore the code context.
 - Present architectural approaches (Brainstorming).

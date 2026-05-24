@@ -8,7 +8,6 @@ on:
 env:
   PROJECT_ID: "{{PROJECT_ID}}"
   STATUS_FIELD_ID: "{{STATUS_FIELD_ID}}"
-  STATUS_EXPLORATION: "{{ID_EXPLORATION}}"
   STATUS_BRAINSTORMING: "{{ID_BRAINSTORMING}}"
   STATUS_DETAILING: "{{ID_DETAILING}}"
   STATUS_APPROVAL: "{{ID_APPROVAL}}"
@@ -35,7 +34,6 @@ jobs:
             const projectId = process.env.PROJECT_ID;
             const statusFieldId = process.env.STATUS_FIELD_ID;
             const envVars = {
-              'STATUS_EXPLORATION': process.env.STATUS_EXPLORATION,
               'STATUS_BRAINSTORMING': process.env.STATUS_BRAINSTORMING,
               'STATUS_DETAILING': process.env.STATUS_DETAILING,
               'STATUS_APPROVAL': process.env.STATUS_APPROVAL,

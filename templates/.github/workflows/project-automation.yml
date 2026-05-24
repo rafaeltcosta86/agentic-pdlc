@@ -12,7 +12,6 @@ env:
   PROJECT_ID: "{{PROJECT_ID}}"
   STATUS_FIELD_ID: "{{STATUS_FIELD_ID}}"
   STATUS_IDEA: "{{ID_IDEA}}"
-  STATUS_EXPLORATION: "{{ID_EXPLORATION}}"
   STATUS_BRAINSTORMING: "{{ID_BRAINSTORMING}}"
   STATUS_DETAILING: "{{ID_DETAILING}}"
   STATUS_APPROVAL: "{{ID_APPROVAL}}"
@@ -40,10 +39,7 @@ jobs:
             let targetStatusId = null;
             let stageName = null;
 
-            if (labelName === 'stage:exploration') {
-              targetStatusId = process.env.STATUS_EXPLORATION;
-              stageName = 'Exploration';
-            } else if (labelName === 'stage:brainstorming') {
+            if (labelName === 'stage:brainstorming') {
               targetStatusId = process.env.STATUS_BRAINSTORMING;
               stageName = 'Brainstorming';
             } else if (labelName === 'stage:detailing') {
@@ -316,7 +312,7 @@ jobs:
             const { owner, repo } = context.repo;
             const issue_number = context.payload.issue.number;
             const toRemove = [
-              'stage:exploration', 'stage:brainstorming', 'stage:detailing',
+              'stage:brainstorming', 'stage:detailing',
               'stage:approval', 'stage:development', 'stage:testing',
               'agent:working', 'qa:needs-work', 'pr:in-review', 'jules'
             ];

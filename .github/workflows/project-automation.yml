@@ -12,7 +12,6 @@ env:
   PROJECT_ID: "PVT_kwHODpFFL84BXg7h"
   STATUS_FIELD_ID: "PVTSSF_lAHODpFFL84BXg7hzhStRHI"
   STATUS_IDEA: "bb6e5a20"
-  STATUS_EXPLORATION: "96ac537d"
   STATUS_BRAINSTORMING: "8eb07c5b"
   STATUS_DETAILING: "9f6ce70e"
   STATUS_APPROVAL: "31bf4610"
@@ -40,10 +39,7 @@ jobs:
             let targetStatusId = null;
             let stageName = null;
 
-            if (labelName === 'stage:exploration') {
-              targetStatusId = process.env.STATUS_EXPLORATION;
-              stageName = 'Exploration';
-            } else if (labelName === 'stage:brainstorming') {
+            if (labelName === 'stage:brainstorming') {
               targetStatusId = process.env.STATUS_BRAINSTORMING;
               stageName = 'Brainstorming';
             } else if (labelName === 'stage:detailing') {
@@ -302,7 +298,7 @@ jobs:
             const { owner, repo } = context.repo;
             const issue_number = context.payload.issue.number;
             const toRemove = [
-              'stage:exploration', 'stage:brainstorming', 'stage:detailing',
+              'stage:brainstorming', 'stage:detailing',
               'stage:approval', 'stage:development', 'stage:testing',
               'agent:working', 'qa:needs-work', 'pr:in-review', 'jules'
             ];

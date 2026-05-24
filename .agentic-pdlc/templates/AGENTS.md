@@ -30,7 +30,7 @@ Always start from the current `main` HEAD. Never work over stale snapshots.
 ## Mandatory Workflow
 
 0. **Identity**: Always prefix your GitHub comments with `🤖 **Agent:** ` to distinguish yourself.
-1. **Initial State**: When beginning work on a new issue, your very first action must be to apply the `stage:exploration` label using the GitHub CLI (`gh issue edit <N> --add-label "stage:exploration"`).
+1. **Initial State**: When beginning work on a new issue, your very first action must be to apply the `stage:brainstorming` label using the GitHub CLI (`gh issue edit <N> --add-label "stage:brainstorming"`).
 2. Read the issue entirely — understand its type (US/BUG/TASK/SPIKE) and the Acceptance Criteria.
 3. Read `docs/pdlc.md` — understand the PDLC and the Definition of Done in this project.
 4. Read all files mentioned in the issue's technical context.
@@ -66,11 +66,12 @@ When detailing a solution in an issue body, you must **always** include both the
 
 ## Stage Transition Rules (non-negotiable)
 
-MUST NOT add `stage:brainstorming` label until exploration findings have been
-presented to the user and the user has responded in the current conversation turn.
+MUST apply `stage:brainstorming` label immediately on starting work — before reading
+any code, before invoking any skill. Then read context and present problem summary
++ 2–3 solution options in a single message.
 
-MUST NOT add `stage:detailing` label until the user has explicitly confirmed
-the proposed approach in the current conversation turn. Work done in a prior
+MUST NOT add `stage:detailing` label until the user has explicitly selected
+an approach in the current conversation turn. Work done in a prior
 planning session does NOT count as confirmation.
 
 MUST NOT add `spec:approved`, `stage:development`, or manually add
