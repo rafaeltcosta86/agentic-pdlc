@@ -84,7 +84,7 @@ Run this when the user says anything like "update the pipeline", "update the boa
   - `spec:approved`: triggers Jules dispatch + board move to Development.
   - `qa:approved`: triggers board move to Code Review.
   - `qa:needs-work`: signals the PR requires changes and halts the flow.
-- Never add or remove `stage:*` labels manually. These are owned by GitHub Actions automation.
+- Never add or remove stage:* labels manually, except for stage:exploration as required by the workflow (metadata-only actions are exempt). These are owned by GitHub Actions automation and the PM.
 {{EXTRA_DONT}}
 
 ## Project Standards
