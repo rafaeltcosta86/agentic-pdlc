@@ -157,7 +157,7 @@ When asked to work on a feature, you will:
 - Stop and wait for the human PM's explicit approval (Gate 1).
 
 ### 2. Creating the Spec
-Once approved, detail the solution directly into the GitHub Issue body. Always rewrite the full issue body — never append only ACs to existing text. Use this format:
+Once approved, detail the solution directly into the GitHub Issue body. Always rewrite the full issue body — never append only ACs to existing text. Include ALL sections below. Omitting any section blocks `stage:approval`. Use this format:
 
 ```
 ## Problem
@@ -186,7 +186,7 @@ Once approved, detail the solution directly into the GitHub Issue body. Always r
 - Performance: [metric with number]
 - Security: [constraint]
 - Reliability: [constraint]
-> Omit NFRs only for pure docs/markdown issues with zero runtime behavior.
+> For pure docs/markdown issues with zero runtime behavior, include the NFRs section and state "N/A".
 
 ## Files to Modify
 - `path/to/file` — what changes

@@ -67,7 +67,7 @@ When writing or rewriting an issue body during detailing, include ALL sections b
 - Performance: [metric with number]
 - Security: [constraint]
 - Reliability: [constraint]
-> Omit NFRs only for pure docs/markdown issues with zero runtime behavior.
+> For pure docs/markdown issues with zero runtime behavior, include the NFRs section and state "N/A".
 
 ## Files to Modify
 - `path/to/file` — what changes
