@@ -73,10 +73,11 @@ MUST NOT add `stage:detailing` label until the user has explicitly confirmed
 the proposed approach in the current conversation turn. Work done in a prior
 planning session does NOT count as confirmation.
 
-MUST NOT add `spec:approved` or any approval-trigger label under any
-circumstances — these are set by the PM (human) only, after reviewing the spec
-in the issue body. Adding them triggers irreversible automation (Jules dispatch,
-board move).
+MUST NOT add `spec:approved`, `stage:development`, or manually add
+`stage:approval` — these represent final human approval or the result of it.
+`stage:approval` is only set by system automation after you provide a complete
+spec for human review. Adding them manually triggers irreversible automation
+(Jules dispatch, board move).
 
 Each stage transition requires a fresh explicit signal from the user in the same
 session where the transition happens. These rules have no exceptions.
