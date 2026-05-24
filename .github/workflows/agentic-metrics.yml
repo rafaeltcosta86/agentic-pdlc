@@ -311,11 +311,14 @@ jobs:
                 }
                 const avg = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
 
-                let maxStage = null, maxDays = 0;
+                let maxStage = null, maxDays = -1;
                 const rows = [];
                 for (const [stage, label] of STAGES) {
                   const days = byStage[stage];
-                  if (!days) continue;
+                  if (!days) {
+                    rows.push(`| **${label}** | — | — |`);
+                    continue;
+                  }
                   const a = round1(avg(days));
                   rows.push(`| **${label}** | ${a}d | ${days.length} |`);
                   if (a > maxDays) { maxStage = label; maxDays = a; }
