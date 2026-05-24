@@ -12,6 +12,8 @@ Estimated time: 2-3 hours (including GitHub Projects setup).
 - GitHub Projects enabled on your account/organization
 - Implementation agent connected to the repository (e.g., Jules: github.com/google-labs/jules)
 
+> **Jules users:** After installing the Jules GitHub App at [github.com/settings/installations](https://github.com/settings/installations), set `JULES_ENABLED=true` at **repo → Settings → Variables → Actions** to enable Jules dispatch. If this variable is absent, agent comments are silently skipped — no false "dispatched" messages.
+
 ---
 
 ## Step 1 — Create the GitHub Project Board
