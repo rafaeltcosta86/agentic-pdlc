@@ -27,7 +27,7 @@ Always start from the current `main` HEAD. Never work over stale snapshots.
 ## Mandatory Workflow
 
 0. **Identity**: Always prefix your GitHub comments with `🤖 **Agent:** ` to distinguish yourself.
-1. **Initial State**: When beginning work on a new issue, your very first action must be to apply the `stage:exploration` label using the GitHub CLI (`gh issue edit <N> --add-label "stage:exploration"`).
+1. **Initial State**: When beginning work on a new issue, your very first action must be to apply the `stage:brainstorming` label using the GitHub CLI (`gh issue edit <N> --add-label "stage:brainstorming"`).
 2. Read the issue entirely — understand its type (US/BUG/TASK/SPIKE) and the Acceptance Criteria.
 3. Read `docs/pdlc.md` — understand the PDLC and the Definition of Done in this project.
 4. Read all files mentioned in the issue's technical context.
