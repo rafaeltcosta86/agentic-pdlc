@@ -299,6 +299,42 @@ jobs:
               await moveItem(pr.node_id);
             }
 
+  # human-approved on issue → qa:approved on linked open PR (bypass QA gate)
+  auto-qa-on-human-approved:
+    name: human-approved → qa:approved on PR
+    if: github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'human-approved'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add qa:approved to linked PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const issueNumber = context.payload.issue.number;
+
+            const prs = await github.paginate(github.rest.pulls.list, {
+              owner, repo, state: 'open', per_page: 100
+            });
+
+            const linkedPRs = prs.filter(pr => {
+              const body = pr.body || '';
+              return [...body.matchAll(/(?:closes?|fixes?|resolves?)\s+#(\d+)/gi)]
+                .some(m => parseInt(m[1]) === issueNumber);
+            });
+
+            if (linkedPRs.length === 0) {
+              console.log(`No open PR found linking to issue #${issueNumber} — nothing to do`);
+              return;
+            }
+
+            for (const pr of linkedPRs) {
+              await github.rest.issues.addLabels({
+                owner, repo, issue_number: pr.number, labels: ['qa:approved']
+              }).catch(e => console.warn(`Could not add qa:approved to PR #${pr.number}: ${e.message}`));
+              console.log(`✅ Added qa:approved to PR #${pr.number}`);
+            }
+
   cleanup-labels-on-close:
     name: Issue closed → strip stage/agent labels
     if: github.event_name == 'issues' && github.event.action == 'closed'
