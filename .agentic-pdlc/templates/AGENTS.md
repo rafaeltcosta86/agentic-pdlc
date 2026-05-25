@@ -74,19 +74,22 @@ MUST NOT add `stage:detailing` label until the user has explicitly selected
 an approach in the current conversation turn. Work done in a prior
 planning session does NOT count as confirmation.
 
-MUST NOT add `spec:approved`, `stage:development`, or manually add
-`stage:approval` — these represent final human approval or the result of it.
-`stage:approval` is only set by system automation after you provide a complete
-spec for human review. Adding them manually triggers irreversible automation
-(Jules dispatch, board move).
+MUST NOT add `spec:approved` or `stage:development` — these represent final
+human approval or automation output. Adding them manually triggers irreversible
+automation (Jules dispatch, board move).
+
+MUST NOT manually add `stage:approval` except via the pre-spec'd exception
+below. In the standard flow, `stage:approval` is set after you write a complete
+spec and the user confirms; it is not applied before the spec exists.
 
 Each stage transition requires a fresh explicit signal from the user in the same
-session where the transition happens. These rules have no exceptions.
+session where the transition happens. The pre-spec'd exception is the only
+deviation from this rule.
 
-**Pre-spec'd exception**: if the issue body already contains all required spec
-sections (`## Problem`, `## Solution`, `## Acceptance Criteria`, `## Edge Cases`,
-`## Out of Scope`, `## Files to Modify`) — all present and non-empty — apply
-`stage:approval` directly in a single `gh issue edit` call, skipping
+**Pre-spec'd exception**: if the issue body already contains a complete spec
+per the format above — user story (`**As**`/`**I want**`/`**so that**`),
+`## Acceptance Criteria`, and `## Files to modify` — all present and non-empty —
+apply `stage:approval` directly in a single `gh issue edit` call, skipping
 `stage:brainstorming` and `stage:detailing`. One label event eliminates the
 race condition that causes the project board to land on the wrong column.
 
