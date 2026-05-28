@@ -109,6 +109,42 @@ jobs:
             await github.rest.issues.removeLabel({ owner, repo, issue_number, name: 'stage:detailing' }).catch(() => {});
             console.log(`Issue #${issue_number} auto-moved to stage:approval`);
 
+  # human-approved on issue → qa:approved on linked open PRs
+  handle-human-approved:
+    name: human-approved → qa:approved on linked PRs
+    if: github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'human-approved'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Add qa:approved to linked open PRs
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const issueNumber = context.payload.issue.number;
+            const pattern = new RegExp(`(?:Closes?|Fixes?|Resolves?)\\s+#${issueNumber}\\b`, 'i');
+
+            const prs = await github.paginate(github.rest.pulls.list, {
+              owner, repo, state: 'open', per_page: 100
+            });
+
+            const linked = prs.filter(pr => pattern.test(pr.body ?? ''));
+
+            if (linked.length === 0) {
+              console.log(`No open PRs linking issue #${issueNumber}. Exiting.`);
+              return;
+            }
+
+            for (const pr of linked) {
+              await github.rest.issues.addLabels({
+                owner, repo, issue_number: pr.number, labels: ['qa:approved']
+              }).catch(() => {});
+              console.log(`PR #${pr.number} → qa:approved`);
+            }
+
   # OPTIONAL: Uncomment to enable architecture-violation → Idea
   # move-violation-to-board:
   #   name: architecture-violation → 💡 Idea
