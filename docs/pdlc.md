@@ -103,7 +103,7 @@ Agents MUST NOT skip any stage. The ONLY authorized bypasses are:
 
 | Mechanism | Who authorizes | What it bypasses |
 |---|---|---|
-| `human-approved` label on issue | PM (human) only | All stage gates |
+| `human-approved` label on issue | PM (human) only | All stage gates — automation adds `qa:approved` to linked PRs, moving card to Code Review / PR. `pdlc-stage-gate` accepts `stage:testing` as a valid post-gate state. |
 | Branch prefix `hotfix/` | PM (human) only | PR gate only |
 
 Agents MUST NOT self-authorize a bypass. Stop and ask the PM explicitly.
