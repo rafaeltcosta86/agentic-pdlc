@@ -14,7 +14,7 @@ jobs:
     name: AC Coverage Verification (GitHub Models)
     runs-on: ubuntu-latest
     env:
-      PROJECT_PAT: ${{ secrets.PROJECT_PAT }}
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
       - uses: actions/checkout@v5.0.1
         with:
@@ -61,7 +61,7 @@ jobs:
             --max-time 30 || echo "API_ERROR")
 
           if [ "$RESPONSE" = "API_ERROR" ]; then
-            GH_TOKEN="$PROJECT_PAT" gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" --method POST -f 'labels[]=infra:qa-broken'
+            GH_TOKEN="$PROJECT_TOKEN" gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" --method POST -f 'labels[]=infra:qa-broken'
             gh pr comment "$PR_NUMBER" --body "🤖 **QA Agent:** Could not reach GitHub Models API. Manual review required."
             exit 1
           fi
@@ -70,17 +70,17 @@ jobs:
           EXPLANATION=$(echo "$RESPONSE" | python3 -c 'import json,sys; d=json.load(sys.stdin); t=d.get("choices",[{}])[0].get("message",{}).get("content","").strip(); lines=t.split("\n",1); print(lines[1].strip() if len(lines)>1 else "")')
 
           if echo "$VERDICT" | grep -q "^PASS"; then
-            GH_TOKEN="$PROJECT_PAT" gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" --method POST -f 'labels[]=qa:approved'
+            GH_TOKEN="$PROJECT_TOKEN" gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" --method POST -f 'labels[]=qa:approved'
             gh pr comment "$PR_NUMBER" --body "🤖 **QA Agent:** PASS
 
 ${EXPLANATION}"
           elif echo "$VERDICT" | grep -q "^FAIL"; then
-            GH_TOKEN="$PROJECT_PAT" gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" --method POST -f 'labels[]=qa:needs-work'
+            GH_TOKEN="$PROJECT_TOKEN" gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" --method POST -f 'labels[]=qa:needs-work'
             gh pr comment "$PR_NUMBER" --body "🤖 **QA Agent:** FAIL
 
 ${EXPLANATION}"
           else
-            GH_TOKEN="$PROJECT_PAT" gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" --method POST -f 'labels[]=infra:qa-broken'
+            GH_TOKEN="$PROJECT_TOKEN" gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" --method POST -f 'labels[]=infra:qa-broken'
             gh pr comment "$PR_NUMBER" --body "🤖 **QA Agent:** Could not parse GitHub Models response. Manual review required."
             exit 1
           fi

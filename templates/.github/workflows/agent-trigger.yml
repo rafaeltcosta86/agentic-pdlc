@@ -17,7 +17,7 @@ jobs:
       pull-requests: write
       contents: read
     env:
-      PROJECT_PAT: ${{ secrets.PROJECT_PAT }}
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
       PROJECT_ID: "{{PROJECT_ID}}"
       STATUS_FIELD_ID: "{{STATUS_FIELD_ID}}"
       STATUS_DEVELOPMENT: "{{ID_DEVELOPMENT}}"
@@ -49,10 +49,10 @@ jobs:
             });
 
       - name: Add agent label via PAT
-        if: ${{ env.PROJECT_PAT != '' && !contains('{{IMPLEMENTATION_AGENT_LABEL}}', '{{') }}
+        if: ${{ env.PROJECT_TOKEN != '' && !contains('{{IMPLEMENTATION_AGENT_LABEL}}', '{{') }}
         uses: actions/github-script@v8
         with:
-          github-token: ${{ env.PROJECT_PAT }}
+          github-token: ${{ env.PROJECT_TOKEN }}
           script: |
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
@@ -62,11 +62,11 @@ jobs:
             });
 
       - name: Move board card to Development
-        if: ${{ env.PROJECT_PAT != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
         continue-on-error: true
         uses: actions/github-script@v8
         with:
-          github-token: ${{ env.PROJECT_PAT }}
+          github-token: ${{ env.PROJECT_TOKEN }}
           script: |
             const nodeId = context.payload.issue.node_id;
             const number = context.payload.issue.number;
