@@ -51,7 +51,7 @@ jobs:
           fi
 
           # Serialize prompt as JSON string and call GitHub Models API (30s timeout)
-          PROMPT_JSON=$(printf '%s' "You are an adversarial product tester. Your mission is to find what the Acceptance Criteria do NOT cover — undefined edge cases, ambiguous states, missing user scenarios. Do NOT review code quality, file structure, or technical consistency.\n\nACCEPTANCE CRITERIA:\n${AC_CONTEXT}\n\nPR DIFF:\n${DIFF}\n\nRespond in exactly 3 lines:\nLine 1: PASS or FAIL\nLine 2: Gaps: [one-line summary of AC gaps found, or \"none\"]\nLine 3: Not covered: [AC refs where diff falls short, or \"all covered\"]" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
+          PROMPT_JSON=$(printf '%s' "You are an adversarial product tester. Your mission is to find what the Acceptance Criteria do NOT cover — undefined edge cases, ambiguous states, missing user scenarios. Do NOT review code quality, file structure, or technical consistency.\n\nACCEPTANCE CRITERIA:\n${AC_CONTEXT}\n\nPR DIFF:\n${DIFF}\n\nRespond in exactly 3 lines (do NOT wrap your response in markdown code blocks or any other formatting):\nLine 1: PASS or FAIL (PASS if the PR diff fully satisfies the stated Acceptance Criteria, FAIL if it falls short of covering them)\nLine 2: Gaps: [one-line summary of AC gaps found, or \"none\"]\nLine 3: Not covered: [AC refs where diff falls short, or \"all covered\"]" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
 
           RESPONSE=$(curl -sf -X POST \
             "https://models.github.ai/inference/chat/completions" \
@@ -66,7 +66,7 @@ jobs:
             exit 0
           fi
 
-          VERDICT=$(echo "$RESPONSE" | python3 -c 'import json,sys,re; d=json.load(sys.stdin); t=d.get("choices",[{}])[0].get("message",{}).get("content","").strip(); first=t.split("\n")[0].upper() if t else ""; print("FAIL" if re.search(r"\bFAIL\b",first) else "PASS" if re.search(r"\bPASS\b",first) else "API_ERROR")')
+          VERDICT=$(echo "$RESPONSE" | python3 -c 'import json,sys,re; d=json.load(sys.stdin); t=d.get("choices",[{}])[0].get("message",{}).get("content","").strip(); lines=[l for l in t.split("\n") if not l.strip().startswith("```")]; first=lines[0].upper() if lines else ""; print("FAIL" if re.search(r"\bFAIL\b",first) else "PASS" if re.search(r"\bPASS\b",first) else "API_ERROR")')
           EXPLANATION=$(echo "$RESPONSE" | python3 -c 'import json,sys; d=json.load(sys.stdin); t=d.get("choices",[{}])[0].get("message",{}).get("content","").strip(); lines=t.split("\n",1); print(lines[1].strip() if len(lines)>1 else "")')
 
           if echo "$VERDICT" | grep -q "^PASS"; then
