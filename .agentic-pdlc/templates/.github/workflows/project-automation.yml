@@ -51,9 +51,6 @@ jobs:
             } else if (labelName === 'stage:development') {
               targetStatusId = process.env.STATUS_DEVELOPMENT;
               stageName = 'Development';
-            } else if (labelName === 'stage:testing') {
-              targetStatusId = process.env.STATUS_TESTING;
-              stageName = 'Testing';
             }
 
             if (!targetStatusId) {
