@@ -63,7 +63,7 @@ npx create-agentic-pdlc
 The CLI will:
 1. Ask you which AI Agent you use (Claude Code, Cursor, etc.).
 2. Copy the system instructions pointing to our interactive Setup Mode.
-3. Automatically download the base templates to `.agentic-pdlc/templates/`.
+3. Automatically install the base templates into your project.
 
 Once the CLI finishes, it will instruct you to open your AI agent and run the **Setup Mode**. Your AI agent will then ask you the required project variables interactively and generate `AGENTS.md`, `docs/pdlc.md`, and the GitHub Actions for you!
 
@@ -169,6 +169,7 @@ The issue appears in your GitHub notifications automatically — zero extra setu
    ```bash
    cp .agentic-pdlc/templates/.github/workflows/agentic-metrics.yml .github/workflows/agentic-metrics.yml
    ```
+   > If the file is missing, re-run `npx create-agentic-pdlc` to update your installed templates.
 
 2. Commit and push. The first pulse runs next Sunday, or trigger it manually:
    ```bash
