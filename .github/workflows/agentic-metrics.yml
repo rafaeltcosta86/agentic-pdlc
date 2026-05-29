@@ -417,7 +417,6 @@ jobs:
 
             // ── Stage Residence Time section (conditional) ──────────────────
             let stageSection = '';
-            const jsonlPath = `.agentic-pdlc/metrics/raw/${weekKey}.jsonl`;
             if (fs.existsSync(jsonlPath)) {
               const records = fs.readFileSync(jsonlPath, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse);
               if (records.length > 0) {
