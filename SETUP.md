@@ -63,7 +63,7 @@ npx create-agentic-pdlc
 The CLI will:
 1. Ask you which AI Agent you use (Claude Code, Cursor, etc.).
 2. Copy the system instructions pointing to our interactive Setup Mode.
-3. Automatically download the base templates to `.agentic-pdlc/templates/`.
+3. Automatically install the base templates into your project.
 
 Once the CLI finishes, it will instruct you to open your AI agent and run the **Setup Mode**. Your AI agent will then ask you the required project variables interactively and generate `AGENTS.md`, `docs/pdlc.md`, and the GitHub Actions for you!
 
