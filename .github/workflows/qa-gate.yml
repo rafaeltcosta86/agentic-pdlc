@@ -20,24 +20,24 @@ jobs:
           PR_NUMBER="${{ github.event.pull_request.number }}"
           REPO="${{ github.repository }}"
 
-          PR_LABELS=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json labels --jq '[.labels[].name] | join(" ")')
+          PR_LABELS=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json labels --jq '.labels[].name')
 
-          if echo "$PR_LABELS" | grep -qw "hotfix"; then
+          if echo "$PR_LABELS" | grep -qx "hotfix"; then
             echo "✅ QA Gate: hotfix label — bypassed."
             exit 0
           fi
 
-          if echo "$PR_LABELS" | grep -qw "qa:approved"; then
+          if echo "$PR_LABELS" | grep -qx "qa:approved"; then
             echo "✅ QA Gate: qa:approved — merge allowed."
             exit 0
           fi
 
-          if echo "$PR_LABELS" | grep -qw "infra:qa-broken"; then
+          if echo "$PR_LABELS" | grep -qx "infra:qa-broken"; then
             echo "❌ QA Gate: infra:qa-broken — GitHub Models API unreachable. Manual QA review required before merge."
             exit 1
           fi
 
-          if echo "$PR_LABELS" | grep -qw "qa:needs-work"; then
+          if echo "$PR_LABELS" | grep -qx "qa:needs-work"; then
             echo "❌ QA Gate: qa:needs-work — acceptance criteria not fully met. Fix required before merge."
             exit 1
           fi

@@ -358,16 +358,18 @@ async function runSetup() {
     console.log(`\n${yellow}ℹ️  Org repo detected — PROJECT_PAT will require manual setup for security.${reset}`);
   }
 
-  // Branch protection — require PDLC Stage Gate + QA Gate on main
+  // Branch protection — require PDLC Stage Gate + QA Gate on default branch
   console.log(`\n${cyan}${i18n.configuring_protection}${reset}`);
   try {
+    const defaultBranch = execFileSync('gh', ['api', `repos/${repo}`, '--jq', '.default_branch'],
+      { stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf8' }).trim() || 'main';
     const protectionPayload = JSON.stringify({
       required_status_checks: { strict: false, contexts: ['PDLC Stage Gate', 'QA Gate'] },
       enforce_admins: false,
       required_pull_request_reviews: null,
       restrictions: null
     });
-    execFileSync('gh', ['api', `repos/${repo}/branches/main/protection`, '--method', 'PUT', '--input', '-'],
+    execFileSync('gh', ['api', `repos/${repo}/branches/${defaultBranch}/protection`, '--method', 'PUT', '--input', '-'],
       { input: protectionPayload, stdio: ['pipe', 'ignore', 'pipe'] });
     console.log(`  ${green}${i18n.protection_ok}${reset}`);
   } catch (_) {
