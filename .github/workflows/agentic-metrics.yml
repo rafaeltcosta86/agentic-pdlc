@@ -292,15 +292,19 @@ jobs:
                     const reviews = await github.rest.pulls.listReviews({
                       owner, repo, pull_number: pr.number, per_page: 100
                     });
+                    const attributedRoles = new Set();
                     for (const review of reviews.data) {
                       const role = actorMap[review.user.login];
-                      if (!role) continue;
+                      if (!role || attributedRoles.has(role)) continue;
                       const reviewTime = new Date(review.submitted_at).getTime();
                       if (times.some(t => t > reviewTime)) {
                         reworkByRole[role] = (reworkByRole[role] || 0) + 1;
                         reviewTriggered = true;
-                        const m = issueRe.exec(pr.body || '');
-                        if (m) reworkDetails.push({ pr_number: pr.number, issue_number: parseInt(m[1]) });
+                        attributedRoles.add(role);
+                        if (!reworkDetails.some(d => d.pr_number === pr.number)) {
+                          const m = issueRe.exec(pr.body || '');
+                          if (m) reworkDetails.push({ pr_number: pr.number, issue_number: parseInt(m[1]) });
+                        }
                       }
                     }
                   } catch(e) { /* reviews not accessible — skip taxonomy for this PR */ }
