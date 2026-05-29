@@ -41,10 +41,10 @@ const i18n = {
   invalid_repo: t('❌ Invalid repository URL. Expected format: https://github.com/OWNER/REPO', '❌ URL de repositório inválida. Formato esperado: https://github.com/OWNER/REPO', '❌ URL de repositorio inválida. Formato esperado: https://github.com/OWNER/REPO'),
   ask_org: t('Does this repository belong to a personal User account (e.g., github.com/rafaeltcosta86) or an Organization (e.g., github.com/google-labs)? (user/org): ', 'Esse repositório pertence a um Usuário pessoal (ex: github.com/rafaeltcosta86) ou a uma Organização (ex: github.com/google-labs)? (user/org): ', '¿Este repositorio pertenece a un Usuario personal (ej: github.com/rafaeltcosta86) o a una Organización (ej: github.com/google-labs)? (user/org): '),
   starting_setup: t('Starting automated repository setup...', 'Iniciando o setup automatizado do repositório...', 'Iniciando la configuración automatizada del repositorio...'),
-  creating_labels: t('[1/2] Creating repository labels...', '[1/2] Criando labels no repositório...', '[1/2] Creando etiquetas (labels) en el repositorio...'),
+  creating_labels: t('[1/3] Creating repository labels...', '[1/3] Criando labels no repositório...', '[1/3] Creando etiquetas (labels) en el repositorio...'),
   label_ok: t('✅ Label created: ', '✅ Label criada: ', '✅ Etiqueta creada: '),
   label_warn: t('⚠️ Failed to create label (might already exist): ', '⚠️ Falha ao criar label (talvez já exista): ', '⚠️ Fallo al crear etiqueta (quizás ya exista): '),
-  creating_project: t('[2/2] Creating Project V2 Board...', '[2/2] Criando Project V2 Board...', '[2/2] Creando Project V2 Board...'),
+  creating_project: t('[2/3] Creating Project V2 Board...', '[2/3] Criando Project V2 Board...', '[2/3] Creando Project V2 Board...'),
   project_ok: t('✅ Project created (ID: ', '✅ Projeto criado (ID: ', '✅ Proyecto creado (ID: '),
   project_err: t('❌ Failed to create project. Error: ', '❌ Falha ao criar o projeto. Erro: ', '❌ Fallo al crear el proyecto. Error: '),
   link_project_ok: t('✅ Project linked to repository.', '✅ Projeto vinculado ao repositório.', '✅ Proyecto vinculado al repositorio.'),
@@ -72,6 +72,9 @@ const i18n = {
   update_qa_ask: t('  Activate? Uses GITHUB_TOKEN — no extra secrets needed. (Y/n): ', '  Ativar? Usa GITHUB_TOKEN — nenhum secret extra necessário. (S/n): ', '  ¿Activar? Usa GITHUB_TOKEN — sin secrets adicionales. (S/n): '),
   update_sentinel_header: t('— Sentinel (architecture audit via Gemini Code Assist) —', '— Sentinel (auditoria de arquitetura via Gemini Code Assist) —', '— Sentinel (auditoría de arquitectura via Gemini Code Assist) —'),
   update_sentinel_ask: t('  Activate? Requires Gemini Code Assist CI job. (Y/n): ', '  Ativar? Requer CI job do Gemini Code Assist. (S/n): ', '  ¿Activar? Requiere CI job de Gemini Code Assist. (S/n): '),
+  configuring_protection: t('[3/3] Configuring branch protection...', '[3/3] Configurando proteção de branch...', '[3/3] Configurando protección de rama...'),
+  protection_ok: t('✅ Branch protection set — required checks: PDLC Stage Gate, QA Gate.', '✅ Proteção de branch configurada — checks obrigatórios: PDLC Stage Gate, QA Gate.', '✅ Protección de rama configurada — checks requeridos: PDLC Stage Gate, QA Gate.'),
+  protection_warn: t('⚠️  Branch protection could not be set automatically.\n     Set required checks manually: Settings → Branches → main → Required status checks.\n     Required: "PDLC Stage Gate" and "QA Gate"', '⚠️  Proteção de branch não pôde ser configurada automaticamente.\n     Configure manualmente: Settings → Branches → main → Required status checks.\n     Obrigatórios: "PDLC Stage Gate" e "QA Gate"', '⚠️  No se pudo configurar la protección de rama automáticamente.\n     Configúralo en: Settings → Branches → main → Required status checks.\n     Requeridos: "PDLC Stage Gate" y "QA Gate"'),
 };
 
 const cyan = '\x1b[36m';
@@ -353,6 +356,22 @@ async function runSetup() {
     }
   } else if (projectId && isOrg) {
     console.log(`\n${yellow}ℹ️  Org repo detected — PROJECT_PAT will require manual setup for security.${reset}`);
+  }
+
+  // Branch protection — require PDLC Stage Gate + QA Gate on main
+  console.log(`\n${cyan}${i18n.configuring_protection}${reset}`);
+  try {
+    const protectionPayload = JSON.stringify({
+      required_status_checks: { strict: false, contexts: ['PDLC Stage Gate', 'QA Gate'] },
+      enforce_admins: false,
+      required_pull_request_reviews: null,
+      restrictions: null
+    });
+    execFileSync('gh', ['api', `repos/${repo}/branches/main/protection`, '--method', 'PUT', '--input', '-'],
+      { input: protectionPayload, stdio: ['pipe', 'ignore', 'pipe'] });
+    console.log(`  ${green}${i18n.protection_ok}${reset}`);
+  } catch (_) {
+    console.log(`  ${yellow}${i18n.protection_warn}${reset}`);
   }
 
   console.log(`\n${yellow}${i18n.scaffolding}${reset}`);
