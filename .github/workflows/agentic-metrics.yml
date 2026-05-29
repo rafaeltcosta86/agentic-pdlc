@@ -116,6 +116,21 @@ jobs:
             const { owner, repo } = context.repo;
             const weekKey = process.env.WEEK_KEY;
 
+            // ── Preload stage:detailing times for stage correlation ──────────
+            const detailingByIssue = {};
+            const jsonlPath = `.agentic-pdlc/metrics/raw/${weekKey}.jsonl`;
+            if (fs.existsSync(jsonlPath)) {
+              const rawLines = fs.readFileSync(jsonlPath, 'utf8').trim().split('\n').filter(Boolean);
+              for (const line of rawLines) {
+                const r = JSON.parse(line);
+                if (r.stage === 'stage:detailing') {
+                  if (detailingByIssue[r.issueNumber] === undefined || r.durationDays > detailingByIssue[r.issueNumber]) {
+                    detailingByIssue[r.issueNumber] = r.durationDays;
+                  }
+                }
+              }
+            }
+
             // ── Helper ──────────────────────────────────────────────────────
             function daysSince(isoStr) {
               return (Date.now() - new Date(isoStr).getTime()) / 864e5;
