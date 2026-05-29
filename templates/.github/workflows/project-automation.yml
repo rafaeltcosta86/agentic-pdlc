@@ -51,9 +51,6 @@ jobs:
             } else if (labelName === 'stage:development') {
               targetStatusId = process.env.STATUS_DEVELOPMENT;
               stageName = 'Development';
-            } else if (labelName === 'stage:testing') {
-              targetStatusId = process.env.STATUS_TESTING;
-              stageName = 'Testing';
             }
 
             if (!targetStatusId) {
@@ -265,6 +262,9 @@ jobs:
               for (const n of linkedIssues) {
                 const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
                 await moveItem(issue.node_id);
+                if (issue.labels?.some(l => l.name === 'stage:testing')) {
+                  await github.rest.issues.removeLabel({ owner, repo, issue_number: n, name: 'stage:testing' }).catch(() => {});
+                }
                 console.log(`Issue #${n} → Code Review / PR`);
               }
             } else {
@@ -329,6 +329,9 @@ jobs:
               for (const n of linkedIssues) {
                 const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
                 await moveItem(issue.node_id);
+                if (issue.labels?.some(l => l.name === 'stage:approval')) {
+                  await github.rest.issues.removeLabel({ owner, repo, issue_number: n, name: 'stage:approval' }).catch(() => {});
+                }
                 console.log(`Issue #${n} → Production`);
               }
             } else {
