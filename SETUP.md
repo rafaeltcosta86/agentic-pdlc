@@ -169,6 +169,7 @@ The issue appears in your GitHub notifications automatically — zero extra setu
    ```bash
    cp .agentic-pdlc/templates/.github/workflows/agentic-metrics.yml .github/workflows/agentic-metrics.yml
    ```
+   > If the file is missing, re-run `npx create-agentic-pdlc` to update your installed templates.
 
 2. Commit and push. The first pulse runs next Sunday, or trigger it manually:
    ```bash
