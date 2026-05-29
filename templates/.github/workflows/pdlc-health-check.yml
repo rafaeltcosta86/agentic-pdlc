@@ -27,7 +27,7 @@ jobs:
     steps:
       - name: Validate Board Configuration
         if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |

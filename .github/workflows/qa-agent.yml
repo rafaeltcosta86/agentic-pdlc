@@ -19,7 +19,7 @@ jobs:
       STATUS_FIELD_ID: "PVTSSF_lAHODpFFL84BXg7hzhStRHI"
       STATUS_CODE_REVIEW_PR: "86ca9720"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5.0.1
         with:
           fetch-depth: 0
 
@@ -86,7 +86,7 @@ jobs:
 
       - name: Move board card to Code Review on qa:approved
         if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |

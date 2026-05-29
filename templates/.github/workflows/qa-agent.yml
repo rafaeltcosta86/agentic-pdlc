@@ -16,7 +16,7 @@ jobs:
     env:
       PROJECT_PAT: ${{ secrets.PROJECT_PAT }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5.0.1
         with:
           fetch-depth: 0
 
