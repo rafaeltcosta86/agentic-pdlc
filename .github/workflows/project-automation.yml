@@ -188,7 +188,7 @@ jobs:
                 });
             };
 
-            const stageLabelsToRemove = ['stage:development', 'stage:brainstorming', 'stage:detailing', 'stage:approval', 'jules', 'agent:working'];
+            const stageLabelsToRemove = ['stage:development', 'stage:brainstorming', 'stage:detailing', 'jules', 'agent:working'];
 
             if (linkedIssues.length > 0) {
               for (const n of linkedIssues) {
@@ -251,6 +251,7 @@ jobs:
               for (const n of linkedIssues) {
                 const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
                 await moveItem(issue.node_id);
+                await github.rest.issues.removeLabel({ owner, repo, issue_number: n, name: 'stage:testing' }).catch(() => {});
                 console.log(`Issue #${n} → Code Review / PR`);
               }
             } else {
@@ -315,6 +316,7 @@ jobs:
               for (const n of linkedIssues) {
                 const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
                 await moveItem(issue.node_id);
+                await github.rest.issues.removeLabel({ owner, repo, issue_number: n, name: 'stage:approval' }).catch(() => {});
                 console.log(`Issue #${n} → Production`);
               }
             } else {
