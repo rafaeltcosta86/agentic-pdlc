@@ -9,6 +9,11 @@ permissions:
   contents: write
   issues: write
 
+env:
+  AGENTIC_PULSE_REVIEWERS: |
+    code_reviewer=gemini-code-assist[bot]
+    qa_agent=github-actions[bot]
+
 jobs:
   generate-pulse:
     name: Generate Weekly Agentic Pulse
@@ -111,6 +116,21 @@ jobs:
             const { owner, repo } = context.repo;
             const weekKey = process.env.WEEK_KEY;
 
+            // ── Preload stage:detailing times for stage correlation ──────────
+            const detailingByIssue = {};
+            const jsonlPath = `.agentic-pdlc/metrics/raw/${weekKey}.jsonl`;
+            if (fs.existsSync(jsonlPath)) {
+              const rawLines = fs.readFileSync(jsonlPath, 'utf8').trim().split('\n').filter(Boolean);
+              for (const line of rawLines) {
+                const r = JSON.parse(line);
+                if (r.stage === 'stage:detailing') {
+                  if (detailingByIssue[r.issueNumber] === undefined || r.durationDays > detailingByIssue[r.issueNumber]) {
+                    detailingByIssue[r.issueNumber] = r.durationDays;
+                  }
+                }
+              }
+            }
+
             // ── Helper ──────────────────────────────────────────────────────
             function daysSince(isoStr) {
               return (Date.now() - new Date(isoStr).getTime()) / 864e5;
@@ -137,6 +157,22 @@ jobs:
 
             // ── Signal collection ───────────────────────────────────────────
             const signals = [];
+
+            // ── Review actor map (from AGENTIC_PULSE_REVIEWERS env var) ─────
+            const actorMap = {}; // login → role
+            const reviewersEnv = (process.env.AGENTIC_PULSE_REVIEWERS || '').trim();
+            if (reviewersEnv) {
+              for (const line of reviewersEnv.split('\n')) {
+                const eq = line.indexOf('=');
+                if (eq < 0) continue;
+                const role = line.slice(0, eq).trim();
+                const logins = line.slice(eq + 1).trim();
+                for (const login of logins.split(',').map(l => l.trim()).filter(Boolean)) {
+                  actorMap[login] = role;
+                }
+              }
+            }
+            const taxonomyEnabled = Object.keys(actorMap).length > 0;
 
             // 1. Orphan issues: open >14 days with no linked PR
             const closeRe = /(?:closes?|fixes?|resolves?)\s+#(\d+)/gi;
@@ -223,29 +259,67 @@ jobs:
               }
             }
 
-            // 3. Rework rate: commits per PR — single push session = first-shot
+            // 3. Rework rate with actor taxonomy (if AGENTIC_PULSE_REVIEWERS configured)
             const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
             const weekMerged = recentPRs.filter(pr => pr.merged_at && new Date(pr.merged_at) > weekAgo);
 
             if (weekMerged.length > 0) {
               let firstShots = 0;
+              const reworkByRole = {};
+              const reworkDetails = []; // { pr_number, issue_number } for stage correlation
+              const issueRe = /(?:closes?|fixes?|resolves?)\s+#(\d+)/i;
+
               for (const pr of weekMerged.slice(0, 10)) {
                 try {
                   const commits = await github.rest.pulls.listCommits({
                     owner, repo, pull_number: pr.number, per_page: 100
                   });
-                  const times = commits.data.map(c => new Date(c.commit.committer.date).getTime()).sort();
+                  const times = commits.data
+                    .map(c => new Date(c.commit.committer.date).getTime())
+                    .sort((a, b) => a - b);
+
                   let sessions = 1;
                   for (let i = 1; i < times.length; i++) {
                     if (times[i] - times[i-1] > 10 * 60 * 1000) sessions++;
                   }
-                  if (sessions === 1) firstShots++;
+
+                  if (sessions === 1) { firstShots++; continue; }
+
+                  if (!taxonomyEnabled) continue;
+
+                  let reviewTriggered = false;
+                  try {
+                    const reviews = await github.rest.pulls.listReviews({
+                      owner, repo, pull_number: pr.number, per_page: 100
+                    });
+                    const attributedRoles = new Set();
+                    for (const review of reviews.data) {
+                      const role = actorMap[review.user.login];
+                      if (!role || attributedRoles.has(role)) continue;
+                      const reviewTime = new Date(review.submitted_at).getTime();
+                      if (times.some(t => t > reviewTime)) {
+                        reworkByRole[role] = (reworkByRole[role] || 0) + 1;
+                        reviewTriggered = true;
+                        attributedRoles.add(role);
+                        if (!reworkDetails.some(d => d.pr_number === pr.number)) {
+                          const m = issueRe.exec(pr.body || '');
+                          if (m) reworkDetails.push({ pr_number: pr.number, issue_number: parseInt(m[1]) });
+                        }
+                      }
+                    }
+                  } catch(e) { /* reviews not accessible — skip taxonomy for this PR */ }
+
+                  if (!reviewTriggered) {
+                    reworkByRole.self_correction = (reworkByRole.self_correction || 0) + 1;
+                  }
+
                 } catch (e) { /* skip if commits not accessible */ }
               }
+
               const total = Math.min(weekMerged.length, 10);
               const pct = Math.round(firstShots / total * 100);
+              const reworkCount = total - firstShots;
 
-              // Detect if repo uses an agent label (jules, sweep, codex, etc.)
               const agentLabels = new Set(['jules', 'sweep', 'codex', 'copilot']);
               const usesAgent = weekMerged.some(pr =>
                 (pr.labels || []).some(l => agentLabels.has(l.name.toLowerCase()))
@@ -253,27 +327,78 @@ jobs:
               const subject = usesAgent ? 'Agent first-shot rate' : 'PRs sem rework';
               const verb = usesAgent ? 'acertaram de primeira' : 'foram mergeados sem rework';
 
-              if (pct >= 80) {
+              if (taxonomyEnabled && reworkCount > 0) {
+                const lines = [];
+                for (const [role, count] of Object.entries(reworkByRole)) {
+                  const s = count > 1 ? 's' : '';
+                  if (role === 'code_reviewer')        lines.push(`   ↳ Code reviewer: **${count} PR${s}** → revisar DoD em stage:development`);
+                  else if (role === 'qa_agent')        lines.push(`   ↳ QA Agent: **${count} PR${s}** → spec com lacunas funcionais em stage:detailing`);
+                  else if (role === 'self_correction') lines.push(`   ↳ Self-correction: **${count} PR${s}** (causa não determinada automaticamente)`);
+                  else                                 lines.push(`   ↳ ${role}: **${count} PR${s}**`);
+                }
+
+                const reviewerRework = reworkByRole.code_reviewer || 0;
+                const level = reviewerRework >= Math.ceil(reworkCount * 0.8) ? 'red'
+                            : (reviewerRework >= Math.ceil(reworkCount * 0.5) || (reworkByRole.qa_agent || 0) > 0) ? 'yellow'
+                            : 'neutral';
+                const emoji = level === 'red' ? '🔴' : level === 'yellow' ? '🟡' : '🔵';
+
                 signals.push({
-                  level: 'green',
-                  emoji: '🟢',
-                  title: `**${subject}: ${pct}%**`,
-                  body: `${firstShots} de ${total} PRs ${verb} esta semana. ✅`
+                  level,
+                  emoji,
+                  title: `**Rework: ${100 - pct}%** — ${reworkCount} de ${total} PRs tiveram commits extras`,
+                  body: lines.join('\n')
                 });
-              } else if (pct < 50) {
-                signals.push({
-                  level: 'yellow',
-                  emoji: '🟡',
-                  title: `**${subject}: ${pct}% — rework alto**`,
-                  body: `Apenas ${firstShots} de ${total} PRs sem commits extras.\n→ Specs incompletas ou mudanças de requisito durante implementação.`
-                });
+
+                // ── Stage correlation ────────────────────────────────────────
+                if (reworkDetails.length > 0 && Object.keys(detailingByIssue).length > 0) {
+                  const reworkIssueNums = new Set(reworkDetails.map(d => d.issue_number));
+
+                  const reworkGroup = reworkDetails
+                    .map(d => detailingByIssue[d.issue_number])
+                    .filter(t => t !== undefined);
+
+                  const cleanGroup = weekMerged.slice(0, 10)
+                    .map(pr => { const m = issueRe.exec(pr.body || ''); return m ? parseInt(m[1]) : null; })
+                    .filter(n => n !== null && !reworkIssueNums.has(n))
+                    .map(n => detailingByIssue[n])
+                    .filter(t => t !== undefined);
+
+                  if (reworkGroup.length >= 3 && cleanGroup.length >= 3) {
+                    const avgRework = round1(reworkGroup.reduce((a, b) => a + b, 0) / reworkGroup.length);
+                    const avgClean  = round1(cleanGroup.reduce((a, b) => a + b, 0) / cleanGroup.length);
+                    if (avgRework < avgClean * 0.75) {
+                      signals.push({
+                        level: 'neutral',
+                        emoji: '💡',
+                        title: `**Stage correlation:** PRs com reviewer rework tiveram Detailing médio de ${avgRework}d vs ${avgClean}d (N=${reworkGroup.length} vs ${cleanGroup.length})`,
+                        body: '→ Specs rápidas correlacionam com mais rework de review'
+                      });
+                    }
+                  }
+                }
+
               } else {
-                signals.push({
-                  level: 'neutral',
-                  emoji: '🔵',
-                  title: `**${subject}: ${pct}%**`,
-                  body: `${firstShots} de ${total} PRs sem rework commits.`
-                });
+                // Taxonomy disabled or no rework — existing signal unchanged
+                if (pct >= 80) {
+                  signals.push({
+                    level: 'green', emoji: '🟢',
+                    title: `**${subject}: ${pct}%**`,
+                    body: `${firstShots} de ${total} PRs ${verb} esta semana. ✅`
+                  });
+                } else if (pct < 50) {
+                  signals.push({
+                    level: 'yellow', emoji: '🟡',
+                    title: `**${subject}: ${pct}% — rework alto**`,
+                    body: `Apenas ${firstShots} de ${total} PRs sem commits extras.\n→ Specs incompletas ou mudanças de requisito durante implementação.`
+                  });
+                } else {
+                  signals.push({
+                    level: 'neutral', emoji: '🔵',
+                    title: `**${subject}: ${pct}%**`,
+                    body: `${firstShots} de ${total} PRs sem rework commits.`
+                  });
+                }
               }
             }
 
