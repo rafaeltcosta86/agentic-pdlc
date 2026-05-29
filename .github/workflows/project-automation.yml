@@ -31,7 +31,7 @@ jobs:
     steps:
       - name: Detect Label and Move Issue
         if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |
@@ -90,7 +90,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Add qa:approved to linked open PRs
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -124,7 +124,7 @@ jobs:
   #   steps:
   #     - name: Move issue to Idea
   #       if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
-  #       uses: actions/github-script@v7
+  #       uses: actions/github-script@v8
   #       with:
   #         github-token: ${{ env.PROJECT_TOKEN }}
   #         script: |
@@ -154,7 +154,7 @@ jobs:
     steps:
       - name: Move linked issue to Testing
         if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |
@@ -214,7 +214,7 @@ jobs:
     steps:
       - name: Move linked issue to Code Review / PR
         if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |
@@ -268,7 +268,7 @@ jobs:
     steps:
       - name: Swap PR labels
         if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |
@@ -287,7 +287,7 @@ jobs:
     steps:
       - name: Move issue to Production
         if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |
@@ -330,7 +330,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Remove transient labels
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |

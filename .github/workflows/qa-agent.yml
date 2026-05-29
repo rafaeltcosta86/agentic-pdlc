@@ -19,7 +19,7 @@ jobs:
       STATUS_FIELD_ID: "PVTSSF_lAHODpFFL84BXg7hzhStRHI"
       STATUS_CODE_REVIEW_PR: "86ca9720"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5.0.1
         with:
           fetch-depth: 0
 
@@ -66,7 +66,7 @@ jobs:
           if [ "$RESPONSE" = "API_ERROR" ]; then
             GH_TOKEN="$PROJECT_TOKEN" gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" --method POST -f 'labels[]=infra:qa-broken'
             gh pr comment "$PR_NUMBER" --body "🤖 **QA Agent:** Could not reach GitHub Models API. Manual review required."
-            exit 0
+            exit 1
           fi
 
           VERDICT=$(echo "$RESPONSE" | python3 -c 'import json,sys,re; d=json.load(sys.stdin); t=d.get("choices",[{}])[0].get("message",{}).get("content","").strip(); first=t.split("\n")[0].upper() if t else ""; print("FAIL" if re.search(r"\bFAIL\b",first) else "PASS" if re.search(r"\bPASS\b",first) else "API_ERROR")')
@@ -81,11 +81,12 @@ jobs:
           else
             GH_TOKEN="$PROJECT_TOKEN" gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" --method POST -f 'labels[]=infra:qa-broken'
             gh pr comment "$PR_NUMBER" --body "🤖 **QA Agent:** Could not parse GitHub Models response. Manual review required."
+            exit 1
           fi
 
       - name: Move board card to Code Review on qa:approved
         if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |
