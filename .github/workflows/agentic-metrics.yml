@@ -158,6 +158,22 @@ jobs:
             // ── Signal collection ───────────────────────────────────────────
             const signals = [];
 
+            // ── Review actor map (from AGENTIC_PULSE_REVIEWERS env var) ─────
+            const actorMap = {}; // login → role
+            const reviewersEnv = (process.env.AGENTIC_PULSE_REVIEWERS || '').trim();
+            if (reviewersEnv) {
+              for (const line of reviewersEnv.split('\n')) {
+                const eq = line.indexOf('=');
+                if (eq < 0) continue;
+                const role = line.slice(0, eq).trim();
+                const logins = line.slice(eq + 1).trim();
+                for (const login of logins.split(',').map(l => l.trim()).filter(Boolean)) {
+                  actorMap[login] = role;
+                }
+              }
+            }
+            const taxonomyEnabled = Object.keys(actorMap).length > 0;
+
             // 1. Orphan issues: open >14 days with no linked PR
             const closeRe = /(?:closes?|fixes?|resolves?)\s+#(\d+)/gi;
             const openIssues = await github.paginate(github.rest.issues.listForRepo, {
