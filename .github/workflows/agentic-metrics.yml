@@ -9,6 +9,11 @@ permissions:
   contents: write
   issues: write
 
+env:
+  AGENTIC_PULSE_REVIEWERS: |
+    code_reviewer=gemini-code-assist[bot]
+    qa_agent=github-actions[bot]
+
 jobs:
   generate-pulse:
     name: Generate Weekly Agentic Pulse
