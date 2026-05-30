@@ -124,9 +124,7 @@ jobs:
               for (const line of rawLines) {
                 const r = JSON.parse(line);
                 if (r.stage === 'stage:detailing') {
-                  if (detailingByIssue[r.issueNumber] === undefined || r.durationDays > detailingByIssue[r.issueNumber]) {
-                    detailingByIssue[r.issueNumber] = r.durationDays;
-                  }
+                  detailingByIssue[r.issueNumber] = round1((detailingByIssue[r.issueNumber] || 0) + r.durationDays);
                 }
               }
             }
@@ -296,7 +294,7 @@ jobs:
                     for (const review of reviews.data) {
                       if (!review.user) continue;
                       const role = actorMap[review.user.login];
-                      if (!role || attributedRoles.has(role)) continue;
+                      if (!role || review.state === 'APPROVED' || attributedRoles.has(role)) continue;
                       const reviewTime = new Date(review.submitted_at).getTime();
                       if (times.some(t => t > reviewTime)) {
                         reworkByRole[role] = (reworkByRole[role] || 0) + 1;
@@ -330,7 +328,7 @@ jobs:
 
               if (taxonomyEnabled && reworkCount > 0) {
                 const lines = [];
-                for (const [role, count] of Object.entries(reworkByRole)) {
+                for (const [role, count] of Object.entries(reworkByRole).sort((a, b) => b[1] - a[1])) {
                   const s = count > 1 ? 's' : '';
                   if (role === 'code_reviewer')        lines.push(`   ↳ Code reviewer: **${count} PR${s}** → revisar DoD em stage:development`);
                   else if (role === 'qa_agent')        lines.push(`   ↳ QA Agent: **${count} PR${s}** → spec com lacunas funcionais em stage:detailing`);
