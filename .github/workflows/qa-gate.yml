@@ -27,6 +27,11 @@ jobs:
             exit 0
           fi
 
+          if echo "$PR_LABELS" | grep -qx "human-approved"; then
+            echo "✅ QA Gate: human-approved label — manual QA sign-off, bypassed."
+            exit 0
+          fi
+
           if echo "$PR_LABELS" | grep -qx "qa:approved"; then
             echo "✅ QA Gate: qa:approved — merge allowed."
             exit 0

@@ -66,6 +66,7 @@ jobs:
           if [ "$RESPONSE" = "API_ERROR" ]; then
             GH_TOKEN="$PROJECT_TOKEN" gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" --method POST -f 'labels[]=infra:qa-broken'
             gh pr comment "$PR_NUMBER" --body "🤖 **QA Agent:** Could not reach GitHub Models API. Manual review required."
+            # exit 1 marks this check as failed; qa-gate.yml enforces the merge block via infra:qa-broken label
             exit 1
           fi
 
