@@ -185,7 +185,7 @@ jobs:
                 });
             };
 
-            const stageLabelsToRemove = ['stage:development', 'stage:brainstorming', 'stage:detailing', 'jules', 'agent:working'];
+            const stageLabelsToRemove = ['stage:development', 'stage:brainstorming', 'stage:detailing', 'jules'];
 
             if (linkedIssues.length > 0) {
               for (const n of linkedIssues) {
@@ -339,7 +339,7 @@ jobs:
             const toRemove = [
               'stage:brainstorming', 'stage:detailing',
               'stage:approval', 'stage:development', 'stage:testing',
-              'agent:working', 'qa:needs-work', 'pr:in-review', 'jules'
+              'qa:needs-work', 'pr:in-review', 'jules'
             ];
             for (const label of toRemove) {
               await github.rest.issues.removeLabel({ owner, repo, issue_number, name: label }).catch(() => {});
