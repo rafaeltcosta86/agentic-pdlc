@@ -53,19 +53,29 @@ jobs:
             AC_CONTEXT="No linked issue found. Evaluate if the PR description is self-contained."
           fi
 
-          # Serialize prompt as JSON string and call GitHub Models API (30s timeout)
+          # Serialize prompt as JSON string and call GitHub Models API (3 attempts, 20s backoff)
           PROMPT_JSON=$(printf '%s' "You are a senior QA engineer. Review whether this PR diff satisfies the Acceptance Criteria below.\n\nACCEPTANCE CRITERIA:\n${AC_CONTEXT}\n\nPR DIFF:\n${DIFF}\n\nFirst line of your response must be exactly one word: PASS or FAIL. Second line: brief explanation (max 3 sentences)." | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
 
-          RESPONSE=$(curl -sf -X POST \
-            "https://models.github.ai/inference/chat/completions" \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d "{\"model\":\"gpt-4o-mini\",\"messages\":[{\"role\":\"user\",\"content\":${PROMPT_JSON}}]}" \
-            --max-time 30 || echo "API_ERROR")
+          RESPONSE="API_ERROR"
+          for attempt in 1 2 3; do
+            RESULT=$(curl -s -X POST \
+              "https://models.github.ai/inference/chat/completions" \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{\"model\":\"gpt-4o-mini\",\"messages\":[{\"role\":\"user\",\"content\":${PROMPT_JSON}}]}" \
+              -w "\n__HTTP_STATUS__:%{http_code}" \
+              --max-time 45 2>/dev/null)
+            HTTP_STATUS=$(echo "$RESULT" | grep -o '__HTTP_STATUS__:[0-9]*' | cut -d: -f2)
+            BODY=$(echo "$RESULT" | sed 's/__HTTP_STATUS__:[0-9]*$//')
+            echo "Attempt $attempt: HTTP $HTTP_STATUS"
+            if [ "$HTTP_STATUS" = "200" ]; then RESPONSE="$BODY"; break; fi
+            [ $attempt -lt 3 ] && sleep 20
+          done
 
           if [ "$RESPONSE" = "API_ERROR" ]; then
             GH_TOKEN="$PROJECT_TOKEN" gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" --method POST -f 'labels[]=infra:qa-broken'
             gh pr comment "$PR_NUMBER" --body "🤖 **QA Agent:** Could not reach GitHub Models API. Manual review required."
+            # exit 1 marks this check as failed; qa-gate.yml enforces the merge block via infra:qa-broken label
             exit 1
           fi
 
