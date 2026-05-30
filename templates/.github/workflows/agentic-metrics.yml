@@ -294,6 +294,7 @@ jobs:
                     });
                     const attributedRoles = new Set();
                     for (const review of reviews.data) {
+                      if (!review.user) continue;
                       const role = actorMap[review.user.login];
                       if (!role || attributedRoles.has(role)) continue;
                       const reviewTime = new Date(review.submitted_at).getTime();
