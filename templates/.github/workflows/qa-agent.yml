@@ -31,7 +31,7 @@ jobs:
           HEAD="${{ github.event.pull_request.head.sha }}"
 
           # Get PR diff (truncated to 8000 chars to stay within context limits)
-          DIFF=$(git diff "$BASE" "$HEAD" | head -c 64000)
+          DIFF=$(git diff "$BASE" "$HEAD" | head -c 8000)
 
           # Extract linked issues from PR body
           PR_BODY=$(gh pr view "$PR_NUMBER" --json body --jq '.body // ""')
