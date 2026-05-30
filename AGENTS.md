@@ -87,3 +87,4 @@ When writing or rewriting an issue body during detailing, include ALL sections b
 - **Lint/Types:** `echo "No tests/build needed."`
 - **Typecheck:** `echo "No typecheck needed."`
 - **Build:** `echo "No tests/build needed."`
+- **Canonical secret name:** `PROJECT_TOKEN` (not `PROJECT_PAT`) — use this in all workflow files, both live and templates
