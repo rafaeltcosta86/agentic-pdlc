@@ -47,6 +47,8 @@ Always start from the current `main` HEAD. Never work over stale snapshots.
 
 When writing or rewriting an issue body during detailing, include ALL sections below. Omitting any section blocks `stage:approval`.
 
+**Destination: the issue body.** Write spec content to the issue body using `gh issue edit <N> --body "..."` — not to a file. A file is acceptable as optional reference only. Automation checks the issue body for `## Acceptance Criteria` and `## Files to Modify` to advance the stage; content that exists only in a file is invisible to it.
+
 ```
 ## Problem
 [1-3 sentences. What fails. Who affected. Measured impact.]

@@ -33,6 +33,8 @@ The PreToolUse hook will block `gh pr create` automatically if this rule is viol
 
 **Detailing is fully autonomous.** Write the complete spec, add it to the issue, advance to `stage:approval` — no confirmation needed. Then **stop and wait** for human to add `spec:approved` before any implementation.
 
+**Spec destination: the issue body.** Write spec content to the issue body using `gh issue edit <N> --body "..."` — not to a file. A file is acceptable as optional reference only. Automation checks the issue body for `## Acceptance Criteria` and `## Files to Modify` to advance the stage; content that exists only in a file is invisible to it.
+
 ## Stage Transition Rules (non-negotiable)
 
 MUST apply `stage:brainstorming` label immediately on starting work — before
