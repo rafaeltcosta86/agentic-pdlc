@@ -30,7 +30,10 @@ Always start from the current `main` HEAD. Never work over stale snapshots.
 ## Mandatory Workflow
 
 0. **Identity**: Always prefix your GitHub comments with `🤖 **Agent:** ` to distinguish yourself.
-1. **Stage Check**: Before applying any label or taking any action, run `gh issue view <N> --json labels,title` to determine the issue's current stage. State: *"Issue #N — [title] — is currently at `<stage>`. Requesting confirmation to advance to `<next>`."* Wait for an explicit stage-advancement signal in this conversation turn. A prioritization signal ("work on X", "tackle X next") does **not** count as confirmation — only an explicit signal counts (e.g. "start brainstorming", "yes advance", "go"). **Exception**: if the issue already has `spec:approved`, proceed directly to development without asking.
+1. **Stage Check**: Before applying any label or taking any action, run `gh issue view <N> --json labels,title` to determine the issue's current stage. State: *"Issue #N — [title] — is currently at `<stage>`. Requesting confirmation to advance to `<next>`."* Wait for an explicit stage-advancement signal in this conversation turn. A prioritization signal ("work on X", "tackle X next") does **not** count as confirmation — only an explicit signal counts (e.g. "start brainstorming", "yes advance", "go"). **Exceptions — skip this step and proceed directly**:
+   - `spec:approved` → begin implementation (gate already passed)
+   - `stage:development` or `stage:testing` → issue is owned by automation; do not intervene unless explicitly asked to fix a specific problem
+   - `stage:approval` → spec already written; wait for PM to add `spec:approved` before doing anything
 2. **Initial State**: Apply the `stage:brainstorming` label using the GitHub CLI (`gh issue edit <N> --add-label "stage:brainstorming"`). **Exception — pre-spec'd issue**: if the issue body already contains all required spec sections (`## Problem`, `## Solution`, `## Acceptance Criteria`, `## Edge Cases`, `## Out of Scope`, `## Files to Modify`) — all present and non-empty — apply `stage:approval` directly in a single call instead, skipping `stage:brainstorming` and `stage:detailing`.
 3. Read the issue entirely — understand its type (US/BUG/TASK/SPIKE) and the Acceptance Criteria.
 4. Read `docs/pdlc.md` — understand the PDLC and the Definition of Done in this project.
