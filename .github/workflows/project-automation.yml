@@ -80,42 +80,6 @@ jobs:
             await moveItem(node_id, targetStatusId);
             console.log(`Issue #${number} moved to ${stageName}`);
 
-  # human-approved on issue → qa:approved on linked open PRs
-  handle-human-approved:
-    name: human-approved → qa:approved on linked PRs
-    if: github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'human-approved'
-    runs-on: ubuntu-latest
-    permissions:
-      issues: write
-      pull-requests: write
-    steps:
-      - name: Add qa:approved to linked open PRs
-        uses: actions/github-script@v8
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const { owner, repo } = context.repo;
-            const issueNumber = context.payload.issue.number;
-            const pattern = new RegExp(`(?:Closes?|Fixes?|Resolves?)\\s+#${issueNumber}\\b`, 'i');
-
-            const prs = await github.paginate(github.rest.pulls.list, {
-              owner, repo, state: 'open', per_page: 100
-            });
-
-            const linked = prs.filter(pr => pattern.test(pr.body ?? ''));
-
-            if (linked.length === 0) {
-              console.log(`No open PRs linking issue #${issueNumber}. Exiting.`);
-              return;
-            }
-
-            for (const pr of linked) {
-              await github.rest.issues.addLabels({
-                owner, repo, issue_number: pr.number, labels: ['qa:approved']
-              }).catch(() => {});
-              console.log(`PR #${pr.number} → qa:approved`);
-            }
-
   # OPTIONAL: Uncomment to enable architecture-violation → Idea
   # move-violation-to-board:
   #   name: architecture-violation → 💡 Idea
@@ -144,7 +108,7 @@ jobs:
   #             });
   #           console.log(`Issue #${number} moved to Idea`);
 
-  # PR Opened → Move linked issue to Testing (Variant B — QA Agent enabled)
+  # PR Opened → Move linked issue to Testing
   move-card-on-pr-open:
     name: Open PR → Testing
     if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'reopened')
@@ -204,15 +168,15 @@ jobs:
 
             await github.rest.issues.addLabels({ owner, repo, issue_number: prNumber, labels: ['pr:in-review'] }).catch(() => {});
 
-  # QA Approved → Move linked issue to Code Review / PR
-  move-card-on-qa-pass:
-    name: qa:approved → Code Review / PR
-    if: github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'qa:approved'
+  # Review Approved → Move linked issue to Code Review / PR + swap PR labels
+  move-card-on-review-approved:
+    name: Approved PR → Code Review / PR
+    if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
     runs-on: ubuntu-latest
     env:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
-      - name: Move linked issue to Code Review / PR
+      - name: Move linked issue to Code Review and swap PR labels
         if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
         uses: actions/github-script@v8
         with:
@@ -258,22 +222,6 @@ jobs:
               console.log(`PR #${prNumber} → Code Review / PR (no linked issue)`);
             }
 
-  # Review Approved → Add Label
-  move-card-on-review-approved:
-    name: Approved PR → Add Label
-    if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
-    runs-on: ubuntu-latest
-    env:
-      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
-    steps:
-      - name: Swap PR labels
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
-        uses: actions/github-script@v8
-        with:
-          github-token: ${{ env.PROJECT_TOKEN }}
-          script: |
-            const prNumber = context.payload.pull_request.number;
-            const { owner, repo } = context.repo;
             try { await github.rest.issues.removeLabel({ owner, repo, issue_number: prNumber, name: 'pr:in-review' }); } catch {}
             await github.rest.issues.addLabels({ owner, repo, issue_number: prNumber, labels: ['pr:approved'] }).catch(() => {});
 
@@ -339,7 +287,7 @@ jobs:
             const toRemove = [
               'stage:brainstorming', 'stage:detailing',
               'stage:approval', 'stage:development', 'stage:testing',
-              'qa:needs-work', 'pr:in-review', 'jules'
+              'pr:in-review', 'jules'
             ];
             for (const label of toRemove) {
               await github.rest.issues.removeLabel({ owner, repo, issue_number, name: label }).catch(() => {});
