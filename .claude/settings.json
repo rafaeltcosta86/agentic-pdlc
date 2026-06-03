@@ -9,6 +9,24 @@
             "command": "bash .agentic-pdlc/hooks/pdlc-stage-gate.sh"
           }
         ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .agentic-pdlc/hooks/pdlc-stage-gate.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .agentic-pdlc/hooks/pdlc-stage-gate.sh"
+          }
+        ]
       }
     ]
   }
