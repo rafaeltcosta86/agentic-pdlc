@@ -123,7 +123,7 @@ function printSetupDone() {
   console.log(`${green}${sep}${reset}\n`);
 }
 
-async function runSetup() {
+async function runSetup(isAgentic = false) {
   console.log(`${yellow}${i18n.checking_gh}${reset}`);
   try {
     execSync('gh auth status', { stdio: 'ignore' });
@@ -383,15 +383,18 @@ async function runSetup() {
 
   console.log(`\n${yellow}${i18n.scaffolding}${reset}`);
 
-  // We copy the templates folder so the agent has the real text logic to replace and rename
-  const sourceTemplates = path.join(sourceDir, 'templates');
+  // Select profile: lite (default) or full (--agentic)
+  const profileDir = isAgentic ? 'full' : 'lite';
+  const profileSource = path.join(sourceDir, 'templates', profileDir);
+  // Fallback to templates root for backward compat if profile dirs don't exist yet
+  const sourceTemplates = fs.existsSync(profileSource) ? profileSource : path.join(sourceDir, 'templates');
   const targetTemplates = path.join(targetDir, '.agentic-pdlc', 'templates');
 
   if (fs.existsSync(sourceTemplates)) {
     copyDirSync(sourceTemplates, targetTemplates);
     console.log(`${i18n.templates_copied}`);
 
-    // Copy issue templates directly to .github/ISSUE_TEMPLATE/ so GitHub picks them up
+    // Copy issue templates directly to .github/ISSUE_TEMPLATE/ (shared across profiles)
     const sourceIssueTemplates = path.join(sourceDir, 'templates', '.github', 'ISSUE_TEMPLATE');
     const targetIssueTemplates = path.join(targetDir, '.github', 'ISSUE_TEMPLATE');
     if (fs.existsSync(sourceIssueTemplates)) {
@@ -461,7 +464,8 @@ async function runSetup() {
       projectNumber,
       isOrg,
       boardUrl,
-      patAutoSet
+      patAutoSet,
+      profile: isAgentic ? 'full' : 'lite'
     }, null, 2));
   } catch (err) {
     // Non-fatal — agent will ask for the values instead
@@ -703,6 +707,24 @@ async function runUpdate() {
     }
   }
 
+  // Upgrade lite → full agentic profile (extend CLAUDE.md, do not replace)
+  const claudeMdPath = path.join(targetDir, 'CLAUDE.md');
+  const fullClaudeSrc = path.join(sourceDir, 'templates', 'full', 'CLAUDE.md');
+  if (fs.existsSync(claudeMdPath) && fs.existsSync(fullClaudeSrc)) {
+    const existing = fs.readFileSync(claudeMdPath, 'utf8');
+    if (!existing.includes('<!-- agentic-full -->')) {
+      console.log(`\n${cyan}— Agentic Profile Upgrade —${reset}`);
+      const upgradeAnswer = (await askQuestion('  Extend CLAUDE.md with the full multi-agent pipeline rulebook? (Y/n): ')).trim().toLowerCase();
+      if (!['n', 'no', 'não', 'nao'].includes(upgradeAnswer)) {
+        const extension = fs.readFileSync(fullClaudeSrc, 'utf8');
+        fs.writeFileSync(claudeMdPath, existing.trimEnd() + '\n\n' + extension + '\n');
+        results.push('✅  CLAUDE.md extended with full agentic profile');
+      } else {
+        results.push('⏭  Agentic profile upgrade — skipped');
+      }
+    }
+  }
+
   console.log(`\n${cyan}${sep}${reset}`);
   for (const r of results) console.log(`  ${r}`);
   console.log(`${cyan}${sep}${reset}\n`);
@@ -713,8 +735,10 @@ async function runUpdate() {
 // ─── Entry point ──────────────────────────────────────────────────────────────
 
 const args = process.argv.slice(2);
+const isAgentic = args.includes('--agentic');
+
 if (args.includes('--update')) {
   runUpdate().catch(err => { console.error(err.message); rl.close(); process.exit(1); });
 } else {
-  runSetup().catch(err => { console.error(err.message); rl.close(); process.exit(1); });
+  runSetup(isAgentic).catch(err => { console.error(err.message); rl.close(); process.exit(1); });
 }

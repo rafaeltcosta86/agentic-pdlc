@@ -22,12 +22,14 @@ Specifically, check for:
 
 If any of these files are missing, you are in **Setup Mode**. Do not proceed with feature requests until setup is complete.
 
+**Lite profile note:** If `cli-context.json` contains `"profile": "lite"`, the only mandatory artifacts are `AGENTS.md` and `CLAUDE.md` — `docs/pdlc.md` and the workflow files are not installed in the lite profile. Skip checks for those files.
+
 1. **Language Detection:** Analyze the user's previous prompts and preferred language. Conduct this entire Setup Mode and ask all your interactive questions in that same language.
 2. Acknowledge that the framework is not yet set up.
 3. **Pre-filled Context:** Before asking any questions, read the following files if they exist:
-   - `.agentic-pdlc/cli-context.json` — written by the CLI. Contains `projectName`, `repoOwner`, `repoName`, `projectNumber`, `isOrg`, `boardUrl`, and `patAutoSet` (boolean). Use these values directly and skip the corresponding questions. Honor `patAutoSet` in Step 7 and `boardUrl` in Step 10.
-   - `.agentic-pdlc/templates/docs/pdlc.md` — the CLI pre-fills PROJECT_ID, STATUS_FIELD_ID, REPO_OWNER, REPO_NAME, and all 9 column option IDs. If none of the values still contain `{{...}}` placeholders, skip the entire Board IDs question group.
-   - `.agentic-pdlc/templates/.github/workflows/project-automation.yml` — the CLI also pre-fills all ID placeholders here. When writing the workflow file, the remaining `{{...}}` placeholders are only non-ID ones (project name, commands, etc.).
+   - `.agentic-pdlc/cli-context.json` — written by the CLI. Contains `projectName`, `repoOwner`, `repoName`, `projectNumber`, `isOrg`, `boardUrl`, `patAutoSet` (boolean), and `profile` (`"lite"` or `"full"`). Use these values directly and skip the corresponding questions. Honor `patAutoSet` in Step 7 and `boardUrl` in Step 10.
+   - `.agentic-pdlc/templates/docs/pdlc.md` — **only present in the `full` profile.** If absent (lite install), skip the Board IDs question group entirely and skip all steps that reference this file. If present, the CLI pre-fills PROJECT_ID, STATUS_FIELD_ID, REPO_OWNER, REPO_NAME, and all 9 column option IDs; if none still contain `{{...}}` placeholders, skip the Board IDs question group.
+   - `.agentic-pdlc/templates/.github/workflows/project-automation.yml` — **only present in the `full` profile.** If absent, skip. If present, the CLI also pre-fills all ID placeholders here; remaining `{{...}}` placeholders are non-ID ones (project name, commands, etc.).
 4. Interactively ask the user only for the **missing values**, **one group at a time**:
    - **Project basics:** Project Name (skip if present in `cli-context.json`), Description, Technical Stack/Structure. **Do not ask for GitHub Username** — use `repoOwner` from `cli-context.json` directly for CODEOWNERS.
    - **Commands:** In the user's detected language, ask for each command with its purpose and concrete examples:
@@ -53,6 +55,8 @@ If any of these files are missing, you are in **Setup Mode**. Do not proceed wit
      - Jules (`@google-labs-jules`): use `jules` — this is the native label the Jules GitHub App watches. **Do NOT use `agent:jules`** — Jules does not watch that label and the trigger will silently fail.
      - Other agents: use the handle without `@`, lowercase (e.g. `@my-agent` → `my-agent`).
 5. Generate and write the missing files replacing the `{{SCREAMING_SNAKE_CASE}}` placeholders using the templates in `.agentic-pdlc/templates/`.
+   - **CLAUDE.md:** If `.agentic-pdlc/templates/CLAUDE.md` exists and `CLAUDE.md` does not yet exist at the project root, write it — replacing only `{{PROJECT_NAME}}` with the project name. Skip if CLAUDE.md already exists (never downgrade).
+   - **Lite profile:** If `cli-context.json` has `"profile": "lite"`, skip steps that reference `docs/pdlc.md`, `project-automation.yml`, `agent-trigger.yml`, and `pdlc-health-check.yml` — these are not installed in lite.
 6. Offer to run the `gh` commands for labels (`spec:approved`, `pr:in-review`, `pr:approved`, `architecture-violation`).
 7. **`PROJECT_PAT` secret (required for board automation):**
 
