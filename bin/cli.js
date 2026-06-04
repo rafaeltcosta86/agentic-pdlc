@@ -75,6 +75,11 @@ const i18n = {
   configuring_protection: t('[3/3] Configuring branch protection...', '[3/3] Configurando proteção de branch...', '[3/3] Configurando protección de rama...'),
   protection_ok: t('✅ Branch protection set — required checks: PDLC Stage Gate, QA Gate.', '✅ Proteção de branch configurada — checks obrigatórios: PDLC Stage Gate, QA Gate.', '✅ Protección de rama configurada — checks requeridos: PDLC Stage Gate, QA Gate.'),
   protection_warn: t('⚠️  Branch protection could not be set automatically.\n     Set required checks manually: Settings → Branches → main → Required status checks.\n     Required: "PDLC Stage Gate" and "QA Gate"', '⚠️  Proteção de branch não pôde ser configurada automaticamente.\n     Configure manualmente: Settings → Branches → main → Required status checks.\n     Obrigatórios: "PDLC Stage Gate" e "QA Gate"', '⚠️  No se pudo configurar la protección de rama automáticamente.\n     Configúralo en: Settings → Branches → main → Required status checks.\n     Requeridos: "PDLC Stage Gate" y "QA Gate"'),
+  issue_templates_copied: t(
+    '✅ Issue templates copied to .github/ISSUE_TEMPLATE/',
+    '✅ Issue templates copiados para .github/ISSUE_TEMPLATE/',
+    '✅ Issue templates copiados a .github/ISSUE_TEMPLATE/'
+  ),
 };
 
 const cyan = '\x1b[36m';
@@ -385,6 +390,14 @@ async function runSetup() {
   if (fs.existsSync(sourceTemplates)) {
     copyDirSync(sourceTemplates, targetTemplates);
     console.log(`${i18n.templates_copied}`);
+
+    // Copy issue templates directly to .github/ISSUE_TEMPLATE/ so GitHub picks them up
+    const sourceIssueTemplates = path.join(sourceDir, 'templates', '.github', 'ISSUE_TEMPLATE');
+    const targetIssueTemplates = path.join(targetDir, '.github', 'ISSUE_TEMPLATE');
+    if (fs.existsSync(sourceIssueTemplates)) {
+      copyDirSync(sourceIssueTemplates, targetIssueTemplates);
+      console.log(`${i18n.issue_templates_copied}`);
+    }
 
     // Substitute values in docs/pdlc.md automatically
     const pdlcDest = path.join(targetTemplates, 'docs', 'pdlc.md');
