@@ -28,8 +28,8 @@ If any of these files are missing, you are in **Setup Mode**. Do not proceed wit
 2. Acknowledge that the framework is not yet set up.
 3. **Pre-filled Context:** Before asking any questions, read the following files if they exist:
    - `.agentic-pdlc/cli-context.json` — written by the CLI. Contains `projectName`, `repoOwner`, `repoName`, `projectNumber`, `isOrg`, `boardUrl`, `patAutoSet` (boolean), and `profile` (`"lite"` or `"full"`). Use these values directly and skip the corresponding questions. Honor `patAutoSet` in Step 7 and `boardUrl` in Step 10.
-   - `.agentic-pdlc/templates/docs/pdlc.md` — the CLI pre-fills PROJECT_ID, STATUS_FIELD_ID, REPO_OWNER, REPO_NAME, and all 9 column option IDs. If none of the values still contain `{{...}}` placeholders, skip the entire Board IDs question group.
-   - `.agentic-pdlc/templates/.github/workflows/project-automation.yml` — the CLI also pre-fills all ID placeholders here. When writing the workflow file, the remaining `{{...}}` placeholders are only non-ID ones (project name, commands, etc.).
+   - `.agentic-pdlc/templates/docs/pdlc.md` — **only present in the `full` profile.** If absent (lite install), skip the Board IDs question group entirely and skip all steps that reference this file. If present, the CLI pre-fills PROJECT_ID, STATUS_FIELD_ID, REPO_OWNER, REPO_NAME, and all 9 column option IDs; if none still contain `{{...}}` placeholders, skip the Board IDs question group.
+   - `.agentic-pdlc/templates/.github/workflows/project-automation.yml` — **only present in the `full` profile.** If absent, skip. If present, the CLI also pre-fills all ID placeholders here; remaining `{{...}}` placeholders are non-ID ones (project name, commands, etc.).
 4. Interactively ask the user only for the **missing values**, **one group at a time**:
    - **Project basics:** Project Name (skip if present in `cli-context.json`), Description, Technical Stack/Structure. **Do not ask for GitHub Username** — use `repoOwner` from `cli-context.json` directly for CODEOWNERS.
    - **Commands:** In the user's detected language, ask for each command with its purpose and concrete examples:

@@ -394,8 +394,8 @@ async function runSetup(isAgentic = false) {
     copyDirSync(sourceTemplates, targetTemplates);
     console.log(`${i18n.templates_copied}`);
 
-    // Copy issue templates directly to .github/ISSUE_TEMPLATE/ (full profile only)
-    const sourceIssueTemplates = path.join(sourceDir, 'templates', 'full', '.github', 'ISSUE_TEMPLATE');
+    // Copy issue templates directly to .github/ISSUE_TEMPLATE/ (shared across profiles)
+    const sourceIssueTemplates = path.join(sourceDir, 'templates', '.github', 'ISSUE_TEMPLATE');
     const targetIssueTemplates = path.join(targetDir, '.github', 'ISSUE_TEMPLATE');
     if (fs.existsSync(sourceIssueTemplates)) {
       copyDirSync(sourceIssueTemplates, targetIssueTemplates);
