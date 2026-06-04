@@ -3,8 +3,8 @@
 # Bypass: branch prefix hotfix/ skips all checks.
 
 INPUT=$(cat)
-COMMAND=$(echo "$INPUT" | jq -r '.command // ""' 2>/dev/null || echo "")
-FILE_PATH=$(echo "$INPUT" | jq -r '.file_path // ""' 2>/dev/null || echo "")
+COMMAND=$(echo "$INPUT" | node -e "const d=JSON.parse(require('fs').readFileSync(0)); console.log(d.command || '')" 2>/dev/null || echo "")
+FILE_PATH=$(echo "$INPUT" | node -e "const d=JSON.parse(require('fs').readFileSync(0)); console.log(d.file_path || '')" 2>/dev/null || echo "")
 
 IS_PR_CREATE=false
 IS_FILE_EDIT=false
@@ -15,7 +15,7 @@ elif [ -n "$FILE_PATH" ]; then
   IS_FILE_EDIT=true
 fi
 
-if ! $IS_PR_CREATE && ! $IS_FILE_EDIT; then
+if [ "$IS_PR_CREATE" != "true" ] && [ "$IS_FILE_EDIT" != "true" ]; then
   exit 0
 fi
 
@@ -28,7 +28,7 @@ fi
 ISSUE_NUM=$(echo "$BRANCH" | grep -oE '[0-9]+' | head -1)
 
 if [ -z "$ISSUE_NUM" ]; then
-  if $IS_FILE_EDIT; then
+  if [ "$IS_FILE_EDIT" = "true" ]; then
     exit 0
   fi
   echo "❌ PDLC Stage Gate: Cannot determine issue from branch '$BRANCH'."
@@ -50,7 +50,7 @@ fi
 
 STAGE=$(echo "$LABELS" | tr ' ' '\n' | grep "^stage:" | head -1 || echo "none")
 
-if $IS_PR_CREATE; then
+if [ "$IS_PR_CREATE" = "true" ]; then
   echo "❌ PDLC Stage Gate: PR creation blocked — issue #$ISSUE_NUM missing spec:approved."
   echo "   Current stage: $STAGE"
   echo "   Missing condition: spec:approved (set by PM after reviewing spec in issue body)"
