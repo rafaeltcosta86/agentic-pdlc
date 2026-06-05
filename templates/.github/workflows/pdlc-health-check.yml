@@ -6,7 +6,7 @@ on:
     - cron: '0 8 * * 1' # Every Monday at 8am
 
 env:
-  PROJECT_ID: "{{PROJECT_ID}}"
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
   STATUS_FIELD_ID: "{{STATUS_FIELD_ID}}"
   STATUS_BRAINSTORMING: "{{ID_BRAINSTORMING}}"
   STATUS_DETAILING: "{{ID_DETAILING}}"
@@ -26,7 +26,7 @@ jobs:
       issues: write
     steps:
       - name: Validate Board Configuration
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
         uses: actions/github-script@v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
