@@ -142,7 +142,7 @@ jobs:
                 const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
                 const linkedIssues = [...(pr.body ?? '').matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)]
                   .map(m => parseInt(m[1]));
-                const stageLabels = ['stage:development', 'stage:brainstorming', 'stage:detailing', 'stage:testing', 'jules'];
+                const stageLabels = ['stage:development', 'stage:brainstorming', 'stage:detailing', 'jules'];
 
                 if (linkedIssues.length > 0) {
                   const nodes = await Promise.all(linkedIssues.map(async n => {
@@ -183,7 +183,7 @@ jobs:
                     targetStatusId: col('STATUS_CODE_REVIEW_PR'),
                     nodeIds: nodes.map(n => n.nodeId),
                     issueNumbers: nodes.map(n => n.issueNumber),
-                    stageLabelsToClear: ['stage:testing'],
+                    stageLabelsToClear: [],
                     prLabelSwap: { remove: 'pr:in-review', add: 'pr:approved', prNumber },
                   };
                 } else {
@@ -331,7 +331,7 @@ jobs:
             const issue_number = context.payload.issue.number;
             const toRemove = [
               'stage:brainstorming', 'stage:detailing',
-              'stage:approval', 'stage:development', 'stage:testing',
+              'stage:approval', 'stage:development',
               'pr:in-review', 'jules'
             ];
             for (const label of toRemove) {
