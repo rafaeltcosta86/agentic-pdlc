@@ -7,9 +7,54 @@ on:
     types: [labeled]
 
 jobs:
+  resolve-ids:
+    name: Resolve Board Column IDs
+    runs-on: ubuntu-latest
+    outputs:
+      project_id: ${{ steps.resolve.outputs.project_id }}
+      status_field_id: ${{ steps.resolve.outputs.status_field_id }}
+      status_development: ${{ steps.resolve.outputs.status_development }}
+    steps:
+      - name: Resolve column IDs by name
+        id: resolve
+        if: ${{ secrets.PROJECT_TOKEN != '' && vars.PROJECT_ID != '' }}
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const projectId = '${{ vars.PROJECT_ID }}';
+            if (!projectId || projectId === '{{PROJECT_ID}}') {
+              core.warning('vars.PROJECT_ID not set — board features disabled');
+              return;
+            }
+            const { node } = await github.graphql(`
+              query($id: ID!) {
+                node(id: $id) {
+                  ... on ProjectV2 {
+                    fields(first: 20) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options { id name }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `, { id: projectId });
+            const statusField = node.fields.nodes.find(f => f.name === 'Status');
+            if (!statusField) { core.setFailed('Status field not found on board'); return; }
+            const opt = (name) => statusField.options.find(o => o.name.includes(name))?.id ?? '';
+            core.setOutput('project_id', projectId);
+            core.setOutput('status_field_id', statusField.id);
+            core.setOutput('status_development', opt('Development'));
+            console.log('✅ Board IDs resolved by name');
+
   trigger-implementation-agent:
     name: Advance issue to stage:development
-    # Runs only when spec:approved is added
+    needs: [resolve-ids]
     if: github.event.label.name == 'spec:approved'
     runs-on: ubuntu-latest
     permissions:
@@ -17,9 +62,9 @@ jobs:
       contents: read
     env:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
-      PROJECT_ID: "PVT_kwHODpFFL84BXg7h"
-      STATUS_FIELD_ID: "PVTSSF_lAHODpFFL84BXg7hzhStRHI"
-      STATUS_DEVELOPMENT: "2c9e78e6"
+      PROJECT_ID: ${{ needs.resolve-ids.outputs.project_id }}
+      STATUS_FIELD_ID: ${{ needs.resolve-ids.outputs.status_field_id }}
+      STATUS_DEVELOPMENT: ${{ needs.resolve-ids.outputs.status_development }}
     steps:
       - name: Swap labels — stage:approval → stage:development
         uses: actions/github-script@v8
@@ -28,27 +73,15 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             const issue_number = context.payload.issue.number;
-
             try {
-              await github.rest.issues.removeLabel({
-                owner,
-                repo,
-                issue_number,
-                name: 'stage:approval'
-              });
+              await github.rest.issues.removeLabel({ owner, repo, issue_number, name: 'stage:approval' });
             } catch (error) {
               console.log('Label stage:approval not found or could not be removed');
             }
-
-            await github.rest.issues.addLabels({
-              owner,
-              repo,
-              issue_number,
-              labels: ['stage:development']
-            });
+            await github.rest.issues.addLabels({ owner, repo, issue_number, labels: ['stage:development'] });
 
       - name: Move board card to Development
-        if: ${{ env.PROJECT_TOKEN != '' }}
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
         continue-on-error: true
         uses: actions/github-script@v8
         with:
@@ -71,7 +104,6 @@ jobs:
 
   trigger-agent-on-violation:
     name: Flag architecture violation
-    # Runs when architecture-violation is added (Sentinel flow)
     if: github.event.label.name == 'architecture-violation'
     runs-on: ubuntu-latest
     permissions:
@@ -84,7 +116,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const issueNumber = context.payload.issue.number;
-
             const body = [
               `⚠️ **Architecture violation detected.** Please fix the issue described above.`,
               '',
@@ -96,7 +127,6 @@ jobs:
               '- Fix only what the violation points out — do not refactor unrelated code',
               `- Include \`Closes #${issueNumber}\` in the PR body`,
             ].join('\n');
-
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,

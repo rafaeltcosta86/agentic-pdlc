@@ -4,20 +4,64 @@ on:
   issues:
     types: [opened]
 
-env:
-  PROJECT_ID: "PVT_kwHODpFFL84BXg7h"
-  STATUS_FIELD_ID: "PVTSSF_lAHODpFFL84BXg7hzhStRHI"
-  STATUS_IDEA: "bb6e5a20"
-
 jobs:
+  resolve-ids:
+    name: Resolve Board Column IDs
+    runs-on: ubuntu-latest
+    outputs:
+      project_id: ${{ steps.resolve.outputs.project_id }}
+      status_field_id: ${{ steps.resolve.outputs.status_field_id }}
+      status_idea: ${{ steps.resolve.outputs.status_idea }}
+    steps:
+      - name: Resolve column IDs by name
+        id: resolve
+        if: ${{ secrets.PROJECT_TOKEN != '' && vars.PROJECT_ID != '' }}
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const projectId = '${{ vars.PROJECT_ID }}';
+            if (!projectId || projectId === '{{PROJECT_ID}}') {
+              core.warning('vars.PROJECT_ID not set — board features disabled');
+              return;
+            }
+            const { node } = await github.graphql(`
+              query($id: ID!) {
+                node(id: $id) {
+                  ... on ProjectV2 {
+                    fields(first: 20) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options { id name }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `, { id: projectId });
+            const statusField = node.fields.nodes.find(f => f.name === 'Status');
+            if (!statusField) { core.setFailed('Status field not found on board'); return; }
+            const opt = (name) => statusField.options.find(o => o.name.includes(name))?.id ?? '';
+            core.setOutput('project_id', projectId);
+            core.setOutput('status_field_id', statusField.id);
+            core.setOutput('status_idea', opt('Idea'));
+            console.log('✅ Board IDs resolved by name');
+
   add-to-board:
     name: Auto-add new issue to board
+    needs: [resolve-ids]
     runs-on: ubuntu-latest
     env:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+      PROJECT_ID: ${{ needs.resolve-ids.outputs.project_id }}
+      STATUS_FIELD_ID: ${{ needs.resolve-ids.outputs.status_field_id }}
+      STATUS_IDEA: ${{ needs.resolve-ids.outputs.status_idea }}
     steps:
       - name: Add issue to project board
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
         uses: actions/github-script@v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}

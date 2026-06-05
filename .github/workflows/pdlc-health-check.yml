@@ -5,117 +5,115 @@ on:
   schedule:
     - cron: '0 8 * * 1' # Every Monday at 8am
 
-env:
-  PROJECT_ID: "PVT_kwHODpFFL84BXg7h"
-  STATUS_FIELD_ID: "PVTSSF_lAHODpFFL84BXg7hzhStRHI"
-  STATUS_BRAINSTORMING: "8eb07c5b"
-  STATUS_DETAILING: "9f6ce70e"
-  STATUS_APPROVAL: "31bf4610"
-  STATUS_DEVELOPMENT: "2c9e78e6"
-  STATUS_TESTING: "96b59ade"
-  STATUS_CODE_REVIEW_PR: "86ca9720"
-  STATUS_PRODUCTION: "1581e5bd"
-
 jobs:
-  check-drift:
-    name: Detect Project Board Drift
+  resolve-ids:
+    name: Resolve Board Column IDs
     runs-on: ubuntu-latest
-    env:
-      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
-    permissions:
-      issues: write
+    outputs:
+      project_id: ${{ steps.resolve.outputs.project_id }}
+      status_field_id: ${{ steps.resolve.outputs.status_field_id }}
+      status_brainstorming: ${{ steps.resolve.outputs.status_brainstorming }}
+      status_detailing: ${{ steps.resolve.outputs.status_detailing }}
+      status_approval: ${{ steps.resolve.outputs.status_approval }}
+      status_development: ${{ steps.resolve.outputs.status_development }}
+      status_code_review_pr: ${{ steps.resolve.outputs.status_code_review_pr }}
+      status_production: ${{ steps.resolve.outputs.status_production }}
     steps:
-      - name: Validate Board Configuration
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
+      - name: Resolve column IDs by name
+        id: resolve
+        if: ${{ secrets.PROJECT_TOKEN != '' && vars.PROJECT_ID != '' }}
         uses: actions/github-script@v8
         with:
-          github-token: ${{ env.PROJECT_TOKEN }}
+          github-token: ${{ secrets.PROJECT_TOKEN }}
           script: |
-            const projectId = process.env.PROJECT_ID;
-            const statusFieldId = process.env.STATUS_FIELD_ID;
-            const envVars = {
-              'STATUS_BRAINSTORMING': process.env.STATUS_BRAINSTORMING,
-              'STATUS_DETAILING': process.env.STATUS_DETAILING,
-              'STATUS_APPROVAL': process.env.STATUS_APPROVAL,
-              'STATUS_DEVELOPMENT': process.env.STATUS_DEVELOPMENT,
-              'STATUS_TESTING': process.env.STATUS_TESTING,
-              'STATUS_CODE_REVIEW_PR': process.env.STATUS_CODE_REVIEW_PR,
-              'STATUS_PRODUCTION': process.env.STATUS_PRODUCTION
-            };
-
-            const query = `
-              query($projectId: ID!) {
-                node(id: $projectId) {
+            const projectId = '${{ vars.PROJECT_ID }}';
+            if (!projectId || projectId === '{{PROJECT_ID}}') {
+              core.warning('vars.PROJECT_ID not set — board features disabled');
+              return;
+            }
+            const { node } = await github.graphql(`
+              query($id: ID!) {
+                node(id: $id) {
                   ... on ProjectV2 {
-                    title
                     fields(first: 20) {
                       nodes {
                         ... on ProjectV2SingleSelectField {
                           id
                           name
-                          options {
-                            id
-                            name
-                          }
+                          options { id name }
                         }
                       }
                     }
                   }
                 }
               }
-            `;
+            `, { id: projectId });
+            const statusField = node.fields.nodes.find(f => f.name === 'Status');
+            if (!statusField) { core.setFailed('Status field not found on board'); return; }
+            const opt = (name) => statusField.options.find(o => o.name.includes(name))?.id ?? '';
+            core.setOutput('project_id', projectId);
+            core.setOutput('status_field_id', statusField.id);
+            core.setOutput('status_brainstorming',  opt('Brainstorming'));
+            core.setOutput('status_detailing',      opt('Detailing'));
+            core.setOutput('status_approval',       opt('Approval'));
+            core.setOutput('status_development',    opt('Development'));
+            core.setOutput('status_code_review_pr', opt('Code Review'));
+            core.setOutput('status_production',     opt('Production'));
+            console.log('✅ Board IDs resolved by name');
 
-            let result;
-            try {
-              result = await github.graphql(query, { projectId });
-            } catch (error) {
-              console.log("❌ Error fetching project. Verify your PROJECT_ID.");
-              console.log(error);
-              return;
-            }
+  check-drift:
+    name: Detect Project Board Drift
+    needs: [resolve-ids]
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+      PROJECT_ID: ${{ needs.resolve-ids.outputs.project_id }}
+    permissions:
+      issues: write
+    steps:
+      - name: Validate Board Configuration
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ env.PROJECT_TOKEN }}
+          script: |
+            const expectedColumns = [
+              'Brainstorming', 'Detailing', 'Approval',
+              'Development', 'Code Review', 'Production'
+            ];
 
-            const project = result.node;
-            if (!project) {
-              console.log("❌ Project not found.");
-              return;
-            }
+            const resolvedIds = {
+              'Brainstorming': '${{ needs.resolve-ids.outputs.status_brainstorming }}',
+              'Detailing':     '${{ needs.resolve-ids.outputs.status_detailing }}',
+              'Approval':      '${{ needs.resolve-ids.outputs.status_approval }}',
+              'Development':   '${{ needs.resolve-ids.outputs.status_development }}',
+              'Code Review':   '${{ needs.resolve-ids.outputs.status_code_review_pr }}',
+              'Production':    '${{ needs.resolve-ids.outputs.status_production }}',
+            };
 
-            const statusField = project.fields.nodes.find(f => f.id === statusFieldId);
-            if (!statusField) {
-              console.log("❌ Status field not found.");
-              return;
-            }
+            const missing = expectedColumns.filter(col => !resolvedIds[col]);
 
-            const validOptions = statusField.options;
-            const validOptionIds = validOptions.map(o => o.id);
-
-            let hasDrift = false;
-            let missingVars = [];
-
-            for (const [varName, id] of Object.entries(envVars)) {
-              if (id && !id.startsWith('{{') && !validOptionIds.includes(id)) {
-                hasDrift = true;
-                missingVars.push(varName);
-              }
-            }
-
-            if (hasDrift) {
-              console.log("🚨 Drift detected! The following mapped columns no longer exist: " + missingVars.join(", "));
-              
-              let table = "| Column Name | New ID |\n|---|---|\n";
-              validOptions.forEach(opt => {
-                table += `| ${opt.name} | \`${opt.id}\` |\n`;
-              });
-
-              const body = `🚨 **Agentic PDLC Drift Detected**\n\nThe following columns mapped in your \`.github/workflows/project-automation.yml\` no longer exist in your project board:\n\n**${missingVars.join(", ")}**\n\n### How to fix it:\nHere is the list of current columns in your board with their valid IDs. Please update the \`env\` block in your \`.github/workflows/project-automation.yml\` and \`.github/workflows/pdlc-health-check.yml\`.\n\n${table}`;
+            if (missing.length > 0) {
+              const body = [
+                '🚨 **Agentic PDLC Drift Detected**',
+                '',
+                'The following expected columns were not found on the board:',
+                '',
+                missing.map(c => `- **${c}**`).join('\n'),
+                '',
+                'The board may have been recreated or columns renamed.',
+                'Check `vars.PROJECT_ID` and verify column names match expected values.',
+              ].join('\n');
 
               await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 title: '🚨 Agentic PDLC Drift Detected in Project Board',
-                body: body,
+                body,
                 labels: ['bug']
               });
+
+              core.setFailed(`Missing columns: ${missing.join(', ')}`);
             } else {
-              console.log("✅ No drift detected. Board configuration is healthy.");
+              console.log('✅ No drift detected. All expected columns found on board.');
             }
