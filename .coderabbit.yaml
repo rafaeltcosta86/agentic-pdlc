@@ -18,5 +18,15 @@ reviews:
         Flag any logic that could cause silent failures or unintended trigger
         behavior.
   review_status: true
+  auto_apply_labels: true
+  labeling_instructions:
+    - label: "architecture-violation"
+      instructions: >
+        Apply when the PR introduces a change that violates documented architectural
+        invariants of this project: bypasses the PDLC stage gate, manipulates GitHub
+        labels that are reserved for automation (stage:*, spec:approved, qa:*),
+        breaks the template/CLI separation of concerns (e.g., business logic in
+        templates, template content in CLI), or otherwise contradicts the workflow
+        invariants documented in AGENTS.md or CLAUDE.md.
 chat:
   auto_reply: true
