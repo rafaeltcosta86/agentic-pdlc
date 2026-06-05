@@ -366,16 +366,6 @@ async function runSetup(isAgentic = false) {
     process.exit(1);
   }
 
-  function getScopes() {
-    try {
-      const out = execFileSync('gh', ['api', 'user', '-i'], { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' });
-      const line = out.split('\n').find(l => l.toLowerCase().startsWith('x-oauth-scopes:'));
-      return line ? line.split(':').slice(1).join(':').split(',').map(s => s.trim()) : [];
-    } catch (e) {
-      return [];
-    }
-  }
-
   const scopesBefore = getScopes();
   if (scopesBefore.length > 0 && !scopesBefore.includes('project')) {
     console.log(`${yellow}⚠️  Token missing 'project' scope — required for GitHub Projects board.${reset}`);
