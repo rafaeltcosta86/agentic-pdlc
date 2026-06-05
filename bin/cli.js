@@ -966,8 +966,61 @@ function resolveMode(args) {
 // Export for testing
 if (typeof module !== 'undefined') module.exports = { resolveMode };
 
-// Stubs — replaced by real implementations in Tasks 4-6
-async function runLiteSetup()         { console.error('runLiteSetup not yet implemented'); process.exit(1); }
+// ─── runLiteSetup ─────────────────────────────────────────────────────────────
+
+async function runLiteSetup() {
+  await checkGhAuth();
+
+  const agentAnswer = await askQuestion(i18n.ask_agent);
+  const agent = agentAnswer.trim().toLowerCase();
+  if (!['claude', 'cursor', 'copilot'].includes(agent)) {
+    console.log(t(
+      `ℹ️ Generating Universal Setup for '${agent}' (Compatible with any Markdown-reading agent).`,
+      `ℹ️ Gerando Setup Universal para '${agent}' (Compatível com qualquer agente que leia Markdown).`,
+      `ℹ️ Generando Setup Universal para '${agent}' (Compatible con cualquier agente que lea Markdown).`
+    ));
+  }
+
+  let repoOwner, repoName, repo;
+  while (true) {
+    let repoUrl = (await askQuestion(i18n.ask_repo)).trim();
+    if (repoUrl.endsWith('/'))    repoUrl = repoUrl.slice(0, -1);
+    if (repoUrl.endsWith('.git')) repoUrl = repoUrl.slice(0, -4);
+    const repoParts = repoUrl.split('/');
+    if (repoParts.length >= 2) {
+      repoOwner = repoParts[repoParts.length - 2];
+      repoName  = repoParts[repoParts.length - 1];
+      repo      = `${repoOwner}/${repoName}`;
+      break;
+    }
+    console.log(`${red}${i18n.invalid_repo}${reset}`);
+  }
+
+  console.log(`\n${yellow}${i18n.starting_setup}${reset}`);
+
+  installHook(sourceDir, targetDir);
+
+  console.log(`\n${yellow}${i18n.scaffolding}${reset}`);
+  scaffoldLiteTemplates(sourceDir, targetDir);
+  console.log(`${i18n.templates_copied}`);
+
+  await setBranchProtection(repo, ['PDLC Stage Gate']);
+
+  writeCliContext(targetDir, 'lite', {
+    repoOwner,
+    repoName,
+    projectNumber: null,
+    isOrg: false,
+    boardUrl: null,
+    patAutoSet: false
+  });
+
+  copyAdapterFiles(agent, sourceDir, targetDir);
+
+  rl.close();
+}
+
+// Stubs — replaced by real implementations in Tasks 5-6
 async function runFullSetup()         { console.error('runFullSetup not yet implemented'); process.exit(1); }
 async function runUpgradeToAgentic()  { console.error('runUpgradeToAgentic not yet implemented'); process.exit(1); }
 
