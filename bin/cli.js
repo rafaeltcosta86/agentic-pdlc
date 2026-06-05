@@ -575,6 +575,16 @@ async function runFullSetup() {
     console.log(`\n${yellow}ℹ️  Org repo detected — PROJECT_PAT will require manual setup for security.${reset}`);
   }
 
+  // Set PROJECT_ID as GitHub Actions Variable
+  if (projectId) {
+    try {
+      setActionsVariable(repo, 'PROJECT_ID', projectId);
+      console.log(`${green}✅ vars.PROJECT_ID set as Actions Variable.${reset}`);
+    } catch (_) {
+      console.log(`${yellow}⚠️  Could not set vars.PROJECT_ID — token may lack variables:write scope.\n   Set manually: repo Settings → Secrets and variables → Variables → PROJECT_ID = ${projectId}${reset}`);
+    }
+  }
+
   await setBranchProtection(repo, ['PDLC Stage Gate', 'QA Gate']);
 
   console.log(`\n${yellow}${i18n.scaffolding}${reset}`);
