@@ -164,7 +164,7 @@ jobs:
                   return {
                     targetStatusId: col('STATUS_CODE_REVIEW_PR'),
                     nodeIds: nodes.map(n => n.nodeId),
-                    issueNumbers: [],
+                    issueNumbers: nodes.map(n => n.issueNumber),
                     stageLabelsToClear: ['stage:testing'],
                     prLabelSwap: { remove: 'pr:in-review', add: 'pr:approved', prNumber },
                   };
@@ -194,7 +194,7 @@ jobs:
                   return {
                     targetStatusId: col('STATUS_PRODUCTION'),
                     nodeIds: nodes.map(n => n.nodeId),
-                    issueNumbers: [],
+                    issueNumbers: nodes.map(n => n.issueNumber),
                     stageLabelsToClear: ['stage:approval'],
                     prLabelSwap: null,
                   };
@@ -244,7 +244,7 @@ jobs:
             for (const issueNumber of move.issueNumbers) {
               for (const label of move.stageLabelsToClear) {
                 await github.rest.issues.removeLabel({ owner, repo, issue_number: issueNumber, name: label })
-                  .catch(e => { if (e.status !== 404) core.error(`Failed to remove label ${label}: ${e.message}`); });
+                  .catch(e => { if (e.status !== 404) { core.error(`Failed to remove label ${label}: ${e.message}`); throw e; } });
               }
             }
 
@@ -256,7 +256,7 @@ jobs:
               const { prNumber, remove, add } = move.prLabelSwap;
               if (remove) {
                 await github.rest.issues.removeLabel({ owner, repo, issue_number: prNumber, name: remove })
-                  .catch(e => { if (e.status !== 404) core.error(`Failed to remove PR label ${remove}: ${e.message}`); });
+                  .catch(e => { if (e.status !== 404) { core.error(`Failed to remove PR label ${remove}: ${e.message}`); throw e; } });
               }
               if (add) {
                 await github.rest.issues.addLabels({ owner, repo, issue_number: prNumber, labels: [add] });
