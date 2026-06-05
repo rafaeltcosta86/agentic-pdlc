@@ -18,7 +18,7 @@
 Your agent writes the spec, waits for your approval, then implements it. It won't add code you didn't ask for. It won't open a PR before the spec is approved. It won't skip your `CLAUDE.md` rules — because the gate is a hook, not text the agent can ignore. Value on your first PR.
 
 **`--agentic` — see your whole pipeline**
-Everything in lite, plus a self-moving kanban board that shows your full product lifecycle, from **Idea → Production**. It makes transparent what needs your attention/approval, what's been done by the agent, and what's ready to merge. It supports as many agents as you need.
+Everything in `lite`, plus a self-moving kanban board that shows your full product lifecycle, from **Idea → Production**. It makes transparent what needs your attention/approval, what's been done by the agent, and what's ready to merge. It supports as many agents as you need.
 
 ---
 
