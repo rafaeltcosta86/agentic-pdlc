@@ -8,6 +8,8 @@ jobs:
   resolve-ids:
     name: Resolve Board Column IDs
     runs-on: ubuntu-latest
+    env:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     outputs:
       project_id: ${{ steps.resolve.outputs.project_id }}
       status_field_id: ${{ steps.resolve.outputs.status_field_id }}
@@ -15,10 +17,10 @@ jobs:
     steps:
       - name: Resolve column IDs by name
         id: resolve
-        if: ${{ secrets.PROJECT_TOKEN != '' && vars.PROJECT_ID != '' }}
+        if: ${{ env.PROJECT_TOKEN != '' && vars.PROJECT_ID != '' }}
         uses: actions/github-script@v8
         with:
-          github-token: ${{ secrets.PROJECT_TOKEN }}
+          github-token: ${{ env.PROJECT_TOKEN }}
           script: |
             const projectId = '${{ vars.PROJECT_ID }}';
             if (!projectId || projectId === '{{PROJECT_ID}}') {
