@@ -8,30 +8,83 @@ on:
   issues:
     types: [labeled, closed]
 
-env:
-  PROJECT_ID: "PVT_kwHODpFFL84BXg7h"
-  STATUS_FIELD_ID: "PVTSSF_lAHODpFFL84BXg7hzhStRHI"
-  STATUS_IDEA: "bb6e5a20"
-  STATUS_BRAINSTORMING: "8eb07c5b"
-  STATUS_DETAILING: "9f6ce70e"
-  STATUS_APPROVAL: "31bf4610"
-  STATUS_DEVELOPMENT: "2c9e78e6"
-  STATUS_TESTING: "96b59ade"
-  STATUS_CODE_REVIEW_PR: "86ca9720"
-  STATUS_PRODUCTION: "1581e5bd"
-
 jobs:
+  resolve-ids:
+    name: Resolve Board Column IDs
+    if: github.event_name != 'issues' || github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+    outputs:
+      project_id: ${{ steps.resolve.outputs.project_id }}
+      status_field_id: ${{ steps.resolve.outputs.status_field_id }}
+      status_brainstorming: ${{ steps.resolve.outputs.status_brainstorming }}
+      status_detailing: ${{ steps.resolve.outputs.status_detailing }}
+      status_approval: ${{ steps.resolve.outputs.status_approval }}
+      status_development: ${{ steps.resolve.outputs.status_development }}
+      status_code_review_pr: ${{ steps.resolve.outputs.status_code_review_pr }}
+      status_production: ${{ steps.resolve.outputs.status_production }}
+    steps:
+      - name: Resolve column IDs by name
+        id: resolve
+        if: ${{ env.PROJECT_TOKEN != '' && vars.PROJECT_ID != '' }}
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ env.PROJECT_TOKEN }}
+          script: |
+            const projectId = '${{ vars.PROJECT_ID }}';
+            if (!projectId || projectId === '{{PROJECT_ID}}') {
+              core.warning('vars.PROJECT_ID not set — board features disabled');
+              return;
+            }
+            const { node } = await github.graphql(`
+              query($id: ID!) {
+                node(id: $id) {
+                  ... on ProjectV2 {
+                    fields(first: 20) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options { id name }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `, { id: projectId });
+            const statusField = node.fields.nodes.find(f => f.name === 'Status');
+            if (!statusField) { core.setFailed('Status field not found on board'); return; }
+            const opt = (name) => statusField.options.find(o => o.name.includes(name))?.id ?? '';
+            core.setOutput('project_id', projectId);
+            core.setOutput('status_field_id', statusField.id);
+            core.setOutput('status_brainstorming',  opt('Brainstorming'));
+            core.setOutput('status_detailing',      opt('Detailing'));
+            core.setOutput('status_approval',       opt('Approval'));
+            core.setOutput('status_development',    opt('Development'));
+            core.setOutput('status_code_review_pr', opt('Code Review'));
+            core.setOutput('status_production',     opt('Production'));
+            console.log('✅ Board IDs resolved by name');
+
   # Issue Labeled → Move Upstream
   move-card-on-label:
     name: Upstream Label → Move Card
+    needs: [resolve-ids]
     if: github.event_name == 'issues' && github.event.action == 'labeled'
     runs-on: ubuntu-latest
     env:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+      PROJECT_ID: ${{ needs.resolve-ids.outputs.project_id }}
+      STATUS_FIELD_ID: ${{ needs.resolve-ids.outputs.status_field_id }}
+      STATUS_BRAINSTORMING: ${{ needs.resolve-ids.outputs.status_brainstorming }}
+      STATUS_DETAILING: ${{ needs.resolve-ids.outputs.status_detailing }}
+      STATUS_APPROVAL: ${{ needs.resolve-ids.outputs.status_approval }}
+      STATUS_DEVELOPMENT: ${{ needs.resolve-ids.outputs.status_development }}
     steps:
       - name: Detect Label and Move Issue
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
-        uses: actions/github-script@v8
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |
@@ -60,35 +113,38 @@ jobs:
 
             const { issue: { number, node_id } } = context.payload;
 
-            const moveItem = async (nodeId, statusId) => {
-              const { addProjectV2ItemById: { item } } = await github.graphql(`
-                mutation($p: ID!, $c: ID!) {
-                  addProjectV2ItemById(input: {projectId: $p, contentId: $c}) { item { id } }
-                }`, { p: process.env.PROJECT_ID, c: nodeId });
+            const { addProjectV2ItemById: { item } } = await github.graphql(`
+              mutation($p: ID!, $c: ID!) {
+                addProjectV2ItemById(input: {projectId: $p, contentId: $c}) { item { id } }
+              }`, { p: process.env.PROJECT_ID, c: node_id });
 
-              await github.graphql(`
-                mutation($p: ID!, $i: ID!, $f: ID!, $v: ProjectV2FieldValue!) {
-                  updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f, value: $v}) {
-                    projectV2Item { id }
-                  }
-                }`, {
-                  p: process.env.PROJECT_ID, i: item.id, f: process.env.STATUS_FIELD_ID,
-                  v: { singleSelectOptionId: statusId }
-                });
-            };
+            await github.graphql(`
+              mutation($p: ID!, $i: ID!, $f: ID!, $v: ProjectV2FieldValue!) {
+                updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f, value: $v}) {
+                  projectV2Item { id }
+                }
+              }`, {
+                p: process.env.PROJECT_ID, i: item.id, f: process.env.STATUS_FIELD_ID,
+                v: { singleSelectOptionId: targetStatusId }
+              });
 
-            await moveItem(node_id, targetStatusId);
             console.log(`Issue #${number} moved to ${stageName}`);
 
   # OPTIONAL: Uncomment to enable architecture-violation → Idea
   # move-violation-to-board:
   #   name: architecture-violation → 💡 Idea
+  #   needs: [resolve-ids]
   #   if: github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'architecture-violation'
   #   runs-on: ubuntu-latest
+  #   env:
+  #     PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+  #     PROJECT_ID: ${{ needs.resolve-ids.outputs.project_id }}
+  #     STATUS_FIELD_ID: ${{ needs.resolve-ids.outputs.status_field_id }}
+  #     STATUS_IDEA: ${{ needs.resolve-ids.outputs.status_idea }}
   #   steps:
   #     - name: Move issue to Idea
-  #       if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
-  #       uses: actions/github-script@v8
+  #       if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
+  #       uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
   #       with:
   #         github-token: ${{ env.PROJECT_TOKEN }}
   #         script: |
@@ -111,14 +167,18 @@ jobs:
   # PR Opened → Move linked issue to Code Review / PR
   move-card-on-pr-open:
     name: Open PR → Code Review / PR
+    needs: [resolve-ids]
     if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'reopened')
     runs-on: ubuntu-latest
     env:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+      PROJECT_ID: ${{ needs.resolve-ids.outputs.project_id }}
+      STATUS_FIELD_ID: ${{ needs.resolve-ids.outputs.status_field_id }}
+      STATUS_CODE_REVIEW_PR: ${{ needs.resolve-ids.outputs.status_code_review_pr }}
     steps:
       - name: Move linked issue to Code Review / PR
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
-        uses: actions/github-script@v8
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |
@@ -169,14 +229,18 @@ jobs:
   # Review Approved → Move linked issue to Code Review / PR + swap PR labels
   move-card-on-review-approved:
     name: Approved PR → Code Review / PR
+    needs: [resolve-ids]
     if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
     runs-on: ubuntu-latest
     env:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+      PROJECT_ID: ${{ needs.resolve-ids.outputs.project_id }}
+      STATUS_FIELD_ID: ${{ needs.resolve-ids.outputs.status_field_id }}
+      STATUS_CODE_REVIEW_PR: ${{ needs.resolve-ids.outputs.status_code_review_pr }}
     steps:
       - name: Move linked issue to Code Review and swap PR labels
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
-        uses: actions/github-script@v8
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |
@@ -226,14 +290,18 @@ jobs:
   # PR Merged → Production
   move-card-on-pr-merge:
     name: Merged PR → Production
+    needs: [resolve-ids]
     if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     env:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+      PROJECT_ID: ${{ needs.resolve-ids.outputs.project_id }}
+      STATUS_FIELD_ID: ${{ needs.resolve-ids.outputs.status_field_id }}
+      STATUS_PRODUCTION: ${{ needs.resolve-ids.outputs.status_production }}
     steps:
       - name: Move issue to Production
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
-        uses: actions/github-script@v8
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |
@@ -276,7 +344,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Remove transient labels
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
