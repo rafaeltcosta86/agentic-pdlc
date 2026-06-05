@@ -34,7 +34,7 @@ describe('buildFullClaudeContent', () => {
 describe('setActionsVariable', () => {
   it('calls PATCH first', () => {
     const calls = [];
-    const execFn = (cmd, args) => { calls.push([...args]); };
+    const execFn = (cmd, args, _opts) => { calls.push([...args]); };
     const { setActionsVariable } = require('../bin/cli.js');
     setActionsVariable('owner/repo', 'PROJECT_ID', 'PVT_abc', execFn);
     assert.equal(calls.length, 1);
@@ -47,7 +47,7 @@ describe('setActionsVariable', () => {
   it('falls back to POST on 404', () => {
     const calls = [];
     let callCount = 0;
-    const execFn = (cmd, args) => {
+    const execFn = (cmd, args, _opts) => {
       calls.push([...args]);
       callCount++;
       if (callCount === 1) {

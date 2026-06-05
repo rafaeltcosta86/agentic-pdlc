@@ -80,6 +80,16 @@ const i18n = {
     '✅ Issue templates copiados para .github/ISSUE_TEMPLATE/',
     '✅ Issue templates copiados a .github/ISSUE_TEMPLATE/'
   ),
+  vars_project_id_ok: t(
+    '✅ vars.PROJECT_ID set as Actions Variable.',
+    '✅ vars.PROJECT_ID configurado como Variável do Actions.',
+    '✅ vars.PROJECT_ID configurado como Variable de Actions.'
+  ),
+  vars_project_id_warn: t(
+    '⚠️  Could not set vars.PROJECT_ID — token may lack variables:write scope.\n   Set manually: repo Settings → Secrets and variables → Variables → PROJECT_ID = ',
+    '⚠️  Não foi possível configurar vars.PROJECT_ID — o token pode não ter permissão variables:write.\n   Configure manualmente: repo Settings → Secrets and variables → Variables → PROJECT_ID = ',
+    '⚠️  No se pudo configurar vars.PROJECT_ID — el token puede no tener permiso variables:write.\n   Configura manualmente: repo Settings → Secrets and variables → Variables → PROJECT_ID = '
+  ),
 };
 
 const cyan = '\x1b[36m';
@@ -579,9 +589,9 @@ async function runFullSetup() {
   if (projectId) {
     try {
       setActionsVariable(repo, 'PROJECT_ID', projectId);
-      console.log(`${green}✅ vars.PROJECT_ID set as Actions Variable.${reset}`);
+      console.log(`${green}${i18n.vars_project_id_ok}${reset}`);
     } catch (_) {
-      console.log(`${yellow}⚠️  Could not set vars.PROJECT_ID — token may lack variables:write scope.\n   Set manually: repo Settings → Secrets and variables → Variables → PROJECT_ID = ${projectId}${reset}`);
+      console.log(`${yellow}${i18n.vars_project_id_warn}${projectId}${reset}`);
     }
   }
 
@@ -1041,9 +1051,9 @@ async function runUpgradeToAgentic() {
   if (projectId) {
     try {
       setActionsVariable(repo, 'PROJECT_ID', projectId);
-      console.log(`${green}✅ vars.PROJECT_ID set as Actions Variable.${reset}`);
+      console.log(`${green}${i18n.vars_project_id_ok}${reset}`);
     } catch (_) {
-      console.log(`${yellow}⚠️  Could not set vars.PROJECT_ID — token may lack variables:write scope.\n   Set manually: repo Settings → Secrets and variables → Variables → PROJECT_ID = ${projectId}${reset}`);
+      console.log(`${yellow}${i18n.vars_project_id_warn}${projectId}${reset}`);
     }
   }
 
