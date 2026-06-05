@@ -353,45 +353,11 @@ function writeCliContext(targetDir, profile, data) {
   }
 }
 
-// ─── runSetup (legacy — will be split in Tasks 4–5) ──────────────────────────
+// ─── runFullSetup ─────────────────────────────────────────────────────────────
 
-async function runSetup(isAgentic = false) {
-  console.log(`${yellow}${i18n.checking_gh}${reset}`);
-  try {
-    execSync('gh auth status', { stdio: 'ignore' });
-    console.log(`${green}${i18n.gh_ok}${reset}\n`);
-  } catch (error) {
-    console.error(`${red}${i18n.gh_error}${reset}`);
-    console.error(`${i18n.gh_install}`);
-    process.exit(1);
-  }
-
-  const scopesBefore = getScopes();
-  if (scopesBefore.length > 0 && !scopesBefore.includes('project')) {
-    console.log(`${yellow}⚠️  Token missing 'project' scope — required for GitHub Projects board.${reset}`);
-    console.log(`${yellow}   Refreshing token now (browser may open)...${reset}\n`);
-    try {
-      execSync('gh auth refresh -h github.com -s project', { stdio: 'inherit' });
-    } catch (e) {
-      console.log(`${red}❌ Token refresh failed. Run manually: gh auth refresh -h github.com -s project${reset}`);
-      rl.close();
-      process.exit(1);
-    }
-    const scopesAfter = getScopes();
-    if (scopesAfter.length > 0 && !scopesAfter.includes('project')) {
-      console.log(`\n${red}❌ 'project' scope still missing after refresh.${reset}`);
-      console.log(`${yellow}   Active scopes: ${scopesAfter.join(', ')}${reset}`);
-      console.log(`${yellow}   Note: gh uses OAuth tokens — visible at github.com/settings/applications, not /settings/tokens${reset}`);
-      console.log(`${yellow}   Try manually: gh auth refresh -h github.com -s project${reset}`);
-      rl.close();
-      process.exit(1);
-    }
-    if (scopesAfter.length > 0) {
-      console.log(`\n${green}✅ Token refreshed. Active scopes: ${scopesAfter.join(', ')}${reset}\n`);
-    } else {
-      console.log(`\n${green}✅ Token refreshed with 'project' scope.${reset}\n`);
-    }
-  }
+async function runFullSetup(isAgentic = false) {
+  await checkGhAuth();
+  await checkAndRefreshProjectScope();
 
   const agentAnswer = await askQuestion(i18n.ask_agent);
   const agent = agentAnswer.trim().toLowerCase();
@@ -585,175 +551,26 @@ async function runSetup(isAgentic = false) {
     console.log(`\n${yellow}ℹ️  Org repo detected — PROJECT_PAT will require manual setup for security.${reset}`);
   }
 
-  // Branch protection — require PDLC Stage Gate + QA Gate on default branch
-  console.log(`\n${cyan}${i18n.configuring_protection}${reset}`);
-  try {
-    const defaultBranch = execFileSync('gh', ['api', `repos/${repo}`, '--jq', '.default_branch'],
-      { stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf8' }).trim() || 'main';
-    const protectionPayload = JSON.stringify({
-      required_status_checks: { strict: false, contexts: ['PDLC Stage Gate', 'QA Gate'] },
-      enforce_admins: false,
-      required_pull_request_reviews: null,
-      restrictions: null
-    });
-    execFileSync('gh', ['api', `repos/${repo}/branches/${defaultBranch}/protection`, '--method', 'PUT', '--input', '-'],
-      { input: protectionPayload, stdio: ['pipe', 'ignore', 'pipe'] });
-    console.log(`  ${green}${i18n.protection_ok}${reset}`);
-  } catch (_) {
-    console.log(`  ${yellow}${i18n.protection_warn}${reset}`);
-  }
+  await setBranchProtection(repo, ['PDLC Stage Gate', 'QA Gate']);
 
   console.log(`\n${yellow}${i18n.scaffolding}${reset}`);
-
-  // Select profile: lite (default) or full (--agentic)
-  const profileDir = isAgentic ? 'full' : 'lite';
-  const profileSource = path.join(sourceDir, 'templates', profileDir);
-  // Fallback to templates root for backward compat if profile dirs don't exist yet
-  const sourceTemplates = fs.existsSync(profileSource) ? profileSource : path.join(sourceDir, 'templates');
-  const targetTemplates = path.join(targetDir, '.agentic-pdlc', 'templates');
-
-  if (fs.existsSync(sourceTemplates)) {
-    copyDirSync(sourceTemplates, targetTemplates);
-    console.log(`${i18n.templates_copied}`);
-
-    // Copy issue templates directly to .github/ISSUE_TEMPLATE/ (shared across profiles)
-    const sourceIssueTemplates = path.join(sourceDir, 'templates', '.github', 'ISSUE_TEMPLATE');
-    const targetIssueTemplates = path.join(targetDir, '.github', 'ISSUE_TEMPLATE');
-    if (fs.existsSync(sourceIssueTemplates)) {
-      copyDirSync(sourceIssueTemplates, targetIssueTemplates);
-      console.log(`${i18n.issue_templates_copied}`);
-    }
-
-    // Substitute values in docs/pdlc.md automatically
-    const pdlcDest = path.join(targetTemplates, 'docs', 'pdlc.md');
-    if (fs.existsSync(pdlcDest)) {
-      let pdlcContent = fs.readFileSync(pdlcDest, 'utf8');
-
-      if (projectId) pdlcContent = pdlcContent.replace(/\{\{PROJECT_ID\}\}/g, () => projectId);
-      if (statusFieldId) pdlcContent = pdlcContent.replace(/\{\{STATUS_FIELD_ID\}\}/g, () => statusFieldId);
-      pdlcContent = pdlcContent.replace(/\{\{REPO_OWNER\}\}/g, () => repoOwner);
-      pdlcContent = pdlcContent.replace(/\{\{REPO_NAME\}\}/g, () => repoName);
-
-      if (Object.keys(optionMap).length > 0) {
-        pdlcContent = pdlcContent.replace(/\{\{ID_IDEA\}\}/g, optionMap["💡 Idea"] || 'MISSING_ID');
-        pdlcContent = pdlcContent.replace(/\{\{ID_EXPLORATION\}\}/g, optionMap["🔍 Exploration"] || 'MISSING_ID');
-        pdlcContent = pdlcContent.replace(/\{\{ID_BRAINSTORMING\}\}/g, optionMap["🧠 Brainstorming"] || 'MISSING_ID');
-        pdlcContent = pdlcContent.replace(/\{\{ID_DETAIL\}\}/g, optionMap["📐 Detail Solution"] || 'MISSING_ID');
-        pdlcContent = pdlcContent.replace(/\{\{ID_APPROVAL\}\}/g, optionMap["✅ Approval"] || 'MISSING_ID');
-        pdlcContent = pdlcContent.replace(/\{\{ID_DEVELOPMENT\}\}/g, optionMap["⚙️ Development"] || 'MISSING_ID');
-        pdlcContent = pdlcContent.replace(/\{\{ID_TESTING\}\}/g, optionMap["🧪 Testing"] || 'MISSING_ID');
-        pdlcContent = pdlcContent.replace(/\{\{ID_CODE_REVIEW_PR\}\}/g, optionMap["👁 Code Review / PR"] || 'MISSING_ID');
-        pdlcContent = pdlcContent.replace(/\{\{ID_READY_FOR_PRODUCTION\}\}/g, optionMap["🚀 Ready for Production"] || 'MISSING_ID');
-      }
-
-      fs.writeFileSync(pdlcDest, pdlcContent);
-      if (projectId && statusFieldId && Object.keys(optionMap).length > 0) {
-        console.log(`${i18n.pdlc_prefilled}`);
-      } else {
-        console.log(`${yellow}⚠️  pdlc.md copied — Project IDs not filled (board creation failed). Re-run after fixing token.${reset}`);
-      }
-    }
-
-    // Pre-fill project-automation.yml with the same IDs so the agent doesn't need to map them
-    const workflowAutomationPath = path.join(targetTemplates, '.github', 'workflows', 'project-automation.yml');
-    if (fs.existsSync(workflowAutomationPath)) {
-      let wfContent = fs.readFileSync(workflowAutomationPath, 'utf8');
-      if (projectId) wfContent = wfContent.replace(/\{\{PROJECT_ID\}\}/g, () => projectId);
-      if (statusFieldId) wfContent = wfContent.replace(/\{\{STATUS_FIELD_ID\}\}/g, () => statusFieldId);
-      if (Object.keys(optionMap).length > 0) {
-        wfContent = wfContent.replace(/\{\{ID_IDEA\}\}/g, optionMap["💡 Idea"] || 'MISSING_ID');
-        wfContent = wfContent.replace(/\{\{ID_EXPLORATION\}\}/g, () => optionMap["🔍 Exploration"] || 'MISSING_ID');
-        wfContent = wfContent.replace(/\{\{ID_BRAINSTORMING\}\}/g, () => optionMap["🧠 Brainstorming"] || 'MISSING_ID');
-        wfContent = wfContent.replace(/\{\{ID_DETAILING\}\}/g, () => optionMap["📐 Detail Solution"] || 'MISSING_ID');
-        wfContent = wfContent.replace(/\{\{ID_APPROVAL\}\}/g, () => optionMap["✅ Approval"] || 'MISSING_ID');
-        wfContent = wfContent.replace(/\{\{ID_DEVELOPMENT\}\}/g, () => optionMap["⚙️ Development"] || 'MISSING_ID');
-        wfContent = wfContent.replace(/\{\{ID_TESTING\}\}/g, () => optionMap["🧪 Testing"] || 'MISSING_ID');
-        wfContent = wfContent.replace(/\{\{ID_CODE_REVIEW_PR\}\}/g, () => optionMap["👁 Code Review / PR"] || 'MISSING_ID');
-        wfContent = wfContent.replace(/\{\{ID_PRODUCTION\}\}/g, () => optionMap["🚀 Ready for Production"] || 'MISSING_ID');
-      }
-      fs.writeFileSync(workflowAutomationPath, wfContent);
-    }
-  }
+  scaffoldFullTemplates(sourceDir, targetDir, projectId, statusFieldId, optionMap, repoOwner, repoName);
 
   // Write CLI context for the agent to consume in Setup Mode
-  try {
-    const cliContextPath = path.join(targetDir, '.agentic-pdlc', 'cli-context.json');
-    const boardUrl = projectNumber ? buildBoardUrl(repoOwner, projectNumber, isOrg) : null;
-    fs.writeFileSync(cliContextPath, JSON.stringify({
-      projectName,
-      repoOwner,
-      repoName,
-      projectNumber,
-      isOrg,
-      boardUrl,
-      patAutoSet,
-      profile: isAgentic ? 'full' : 'lite'
-    }, null, 2));
-  } catch (err) {
-    // Non-fatal — agent will ask for the values instead
-  }
+  const boardUrl = projectNumber ? buildBoardUrl(repoOwner, projectNumber, isOrg) : null;
+  writeCliContext(targetDir, 'full', {
+    projectName,
+    repoOwner,
+    repoName,
+    projectNumber,
+    isOrg,
+    boardUrl,
+    patAutoSet
+  });
 
-  // Install PDLC stage gate hook (all agents)
-  const hookSrc = path.join(sourceDir, 'adapters', 'hooks', 'pdlc-stage-gate.sh');
-  const hookDir = path.join(targetDir, '.agentic-pdlc', 'hooks');
-  const hookDest = path.join(hookDir, 'pdlc-stage-gate.sh');
-  if (fs.existsSync(hookSrc)) {
-    fs.mkdirSync(hookDir, { recursive: true });
-    fs.copyFileSync(hookSrc, hookDest);
-    fs.chmodSync(hookDest, '755');
-  }
-  const claudeSettingsDir = path.join(targetDir, '.claude');
-  const claudeSettingsPath = path.join(claudeSettingsDir, 'settings.json');
-  if (!fs.existsSync(claudeSettingsPath)) {
-    fs.mkdirSync(claudeSettingsDir, { recursive: true });
-    fs.writeFileSync(claudeSettingsPath, JSON.stringify({
-      hooks: {
-        PreToolUse: [{
-          matcher: 'Bash',
-          hooks: [{ type: 'command', command: 'bash .agentic-pdlc/hooks/pdlc-stage-gate.sh' }]
-        }]
-      }
-    }, null, 2) + '\n');
-  }
+  installHook(sourceDir, targetDir);
 
-  // Handle the specific setup instructions target
-  const claudeSetupSrc = path.join(sourceDir, 'adapters', 'claude-code', 'skill.md');
-  const cursorSetupSrc = path.join(sourceDir, 'adapters', 'cursor', 'rules.md');
-
-  if (agent === 'claude') {
-    if (fs.existsSync(claudeSetupSrc)) {
-      const dest = path.join(targetDir, '.agentic-setup.md');
-      fs.copyFileSync(claudeSetupSrc, dest);
-      console.log(`${i18n.setup_written}`);
-      printSetupDone();
-    } else {
-      console.error(`${i18n.missing_claude}${claudeSetupSrc}`);
-    }
-  } else if (agent === 'cursor') {
-    if (fs.existsSync(cursorSetupSrc)) {
-      const dest = path.join(targetDir, '.cursorrules');
-      fs.copyFileSync(cursorSetupSrc, dest);
-      console.log(`${i18n.cursor_rules_written}`);
-
-      if (fs.existsSync(claudeSetupSrc)) {
-        const setupDest = path.join(targetDir, '.agentic-setup.md');
-        fs.copyFileSync(claudeSetupSrc, setupDest);
-        console.log(`${i18n.setup_written}`);
-      }
-      printSetupDone();
-    } else {
-      console.error(`${i18n.missing_claude}${cursorSetupSrc}`);
-    }
-  } else {
-    if (fs.existsSync(claudeSetupSrc)) {
-      const dest = path.join(targetDir, '.agentic-setup.md');
-      fs.copyFileSync(claudeSetupSrc, dest);
-      console.log(`${i18n.setup_written}`);
-      printSetupDone();
-    } else {
-      console.error(`${i18n.missing_claude}${claudeSetupSrc}`);
-    }
-  }
+  copyAdapterFiles(agent, sourceDir, targetDir);
 
   rl.close();
 }
@@ -1021,7 +838,6 @@ async function runLiteSetup() {
 }
 
 // Stubs — replaced by real implementations in Tasks 5-6
-async function runFullSetup()         { console.error('runFullSetup not yet implemented'); process.exit(1); }
 async function runUpgradeToAgentic()  { console.error('runUpgradeToAgentic not yet implemented'); process.exit(1); }
 
 // ─── Entry point ──────────────────────────────────────────────────────────────
