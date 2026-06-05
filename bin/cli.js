@@ -119,6 +119,242 @@ function printSetupDone() {
   console.log(`${green}${sep}${reset}\n`);
 }
 
+// ─── Shared helper functions ──────────────────────────────────────────────────
+
+async function checkGhAuth() {
+  console.log(`${yellow}${i18n.checking_gh}${reset}`);
+  try {
+    execSync('gh auth status', { stdio: 'ignore' });
+    console.log(`${green}${i18n.gh_ok}${reset}\n`);
+  } catch (error) {
+    console.error(`${red}${i18n.gh_error}${reset}`);
+    console.error(`${i18n.gh_install}`);
+    rl.close();
+    process.exit(1);
+  }
+}
+
+function getScopes() {
+  try {
+    const out = execFileSync('gh', ['api', 'user', '-i'], { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' });
+    const line = out.split('\n').find(l => l.toLowerCase().startsWith('x-oauth-scopes:'));
+    return line ? line.split(':').slice(1).join(':').split(',').map(s => s.trim()) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+async function checkAndRefreshProjectScope() {
+  const scopesBefore = getScopes();
+  if (scopesBefore.length === 0 || scopesBefore.includes('project')) return;
+
+  console.log(`${yellow}⚠️  Token missing 'project' scope — required for GitHub Projects board.${reset}`);
+  console.log(`${yellow}   Refreshing token now (browser may open)...${reset}\n`);
+  try {
+    execSync('gh auth refresh -h github.com -s project', { stdio: 'inherit' });
+  } catch (e) {
+    console.log(`${red}❌ Token refresh failed. Run manually: gh auth refresh -h github.com -s project${reset}`);
+    rl.close();
+    process.exit(1);
+  }
+  const scopesAfter = getScopes();
+  if (scopesAfter.length > 0 && !scopesAfter.includes('project')) {
+    console.log(`\n${red}❌ 'project' scope still missing after refresh.${reset}`);
+    console.log(`${yellow}   Active scopes: ${scopesAfter.join(', ')}${reset}`);
+    console.log(`${yellow}   Try manually: gh auth refresh -h github.com -s project${reset}`);
+    rl.close();
+    process.exit(1);
+  }
+  if (scopesAfter.length > 0) {
+    console.log(`\n${green}✅ Token refreshed. Active scopes: ${scopesAfter.join(', ')}${reset}\n`);
+  } else {
+    console.log(`\n${green}✅ Token refreshed with 'project' scope.${reset}\n`);
+  }
+}
+
+function installHook(sourceDir, targetDir) {
+  const hookSrc  = path.join(sourceDir, 'adapters', 'hooks', 'pdlc-stage-gate.sh');
+  const hookDir  = path.join(targetDir, '.agentic-pdlc', 'hooks');
+  const hookDest = path.join(hookDir, 'pdlc-stage-gate.sh');
+  if (!fs.existsSync(hookSrc)) return;
+
+  fs.mkdirSync(hookDir, { recursive: true });
+  fs.copyFileSync(hookSrc, hookDest);
+  fs.chmodSync(hookDest, '755');
+
+  const settingsDir  = path.join(targetDir, '.claude');
+  const settingsPath = path.join(settingsDir, 'settings.json');
+  if (!fs.existsSync(settingsPath)) {
+    fs.mkdirSync(settingsDir, { recursive: true });
+    fs.writeFileSync(settingsPath, JSON.stringify({
+      hooks: {
+        PreToolUse: [{
+          matcher: 'Bash',
+          hooks: [{ type: 'command', command: 'bash .agentic-pdlc/hooks/pdlc-stage-gate.sh' }]
+        }]
+      }
+    }, null, 2) + '\n');
+  }
+}
+
+async function setBranchProtection(repo, requiredChecks) {
+  console.log(`\n${cyan}${i18n.configuring_protection}${reset}`);
+  try {
+    const defaultBranch = execFileSync(
+      'gh', ['api', `repos/${repo}`, '--jq', '.default_branch'],
+      { stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf8' }
+    ).trim() || 'main';
+
+    const protectionPayload = JSON.stringify({
+      required_status_checks: { strict: false, contexts: requiredChecks },
+      enforce_admins: false,
+      required_pull_request_reviews: null,
+      restrictions: null
+    });
+
+    execFileSync(
+      'gh',
+      ['api', `repos/${repo}/branches/${defaultBranch}/protection`, '--method', 'PUT', '--input', '-'],
+      { input: protectionPayload, stdio: ['pipe', 'ignore', 'pipe'] }
+    );
+    console.log(`  ${green}${i18n.protection_ok}${reset}`);
+  } catch (_) {
+    console.log(`  ${yellow}${i18n.protection_warn}${reset}`);
+  }
+}
+
+function copyAdapterFiles(agent, sourceDir, targetDir) {
+  const claudeSetupSrc = path.join(sourceDir, 'adapters', 'claude-code', 'skill.md');
+  const cursorSetupSrc = path.join(sourceDir, 'adapters', 'cursor',     'rules.md');
+
+  if (agent === 'cursor') {
+    if (fs.existsSync(cursorSetupSrc)) {
+      fs.copyFileSync(cursorSetupSrc, path.join(targetDir, '.cursorrules'));
+      console.log(`${i18n.cursor_rules_written}`);
+    }
+  }
+  if (fs.existsSync(claudeSetupSrc)) {
+    fs.copyFileSync(claudeSetupSrc, path.join(targetDir, '.agentic-setup.md'));
+    console.log(`${i18n.setup_written}`);
+    printSetupDone();
+  } else {
+    console.error(`${i18n.missing_claude}${claudeSetupSrc}`);
+  }
+}
+
+function scaffoldLiteTemplates(sourceDir, targetDir) {
+  const destTemplates = path.join(targetDir, '.agentic-pdlc', 'templates');
+  fs.mkdirSync(destTemplates, { recursive: true });
+
+  // CLAUDE.md — lite version
+  const liteClaudeSrc = path.join(sourceDir, 'templates', 'lite', 'CLAUDE.md');
+  if (fs.existsSync(liteClaudeSrc)) {
+    fs.copyFileSync(liteClaudeSrc, path.join(destTemplates, 'CLAUDE.md'));
+  }
+
+  // AGENTS.md — lite version
+  const liteAgentsSrc = path.join(sourceDir, 'templates', 'lite', 'AGENTS.md');
+  if (fs.existsSync(liteAgentsSrc)) {
+    fs.copyFileSync(liteAgentsSrc, path.join(destTemplates, 'AGENTS.md'));
+  }
+
+  // Issue templates — shared between lite and full
+  const issueTemplateSrc  = path.join(sourceDir, 'templates', '.github', 'ISSUE_TEMPLATE');
+  const issueTemplateDest = path.join(destTemplates, '.github', 'ISSUE_TEMPLATE');
+  if (fs.existsSync(issueTemplateSrc)) {
+    copyDirSync(issueTemplateSrc, issueTemplateDest);
+  }
+}
+
+function scaffoldFullTemplates(sourceDir, targetDir, projectId, statusFieldId, optionMap, repoOwner, repoName) {
+  const destTemplates = path.join(targetDir, '.agentic-pdlc', 'templates');
+  fs.mkdirSync(destTemplates, { recursive: true });
+
+  // CLAUDE.md — concatenate lite + full addon
+  const liteClaudeSrc = path.join(sourceDir, 'templates', 'lite', 'CLAUDE.md');
+  const fullClaudeSrc = path.join(sourceDir, 'templates', 'full', 'CLAUDE.md');
+  if (fs.existsSync(liteClaudeSrc) && fs.existsSync(fullClaudeSrc)) {
+    const combined = fs.readFileSync(liteClaudeSrc, 'utf8') + '\n' + fs.readFileSync(fullClaudeSrc, 'utf8');
+    fs.writeFileSync(path.join(destTemplates, 'CLAUDE.md'), combined);
+  } else if (fs.existsSync(liteClaudeSrc)) {
+    fs.copyFileSync(liteClaudeSrc, path.join(destTemplates, 'CLAUDE.md'));
+  }
+
+  // AGENTS.md — full version
+  const fullAgentsSrc = path.join(sourceDir, 'templates', 'full', 'AGENTS.md');
+  if (fs.existsSync(fullAgentsSrc)) {
+    fs.copyFileSync(fullAgentsSrc, path.join(destTemplates, 'AGENTS.md'));
+  }
+
+  // All of templates/.github/ (issue templates + workflows)
+  const githubSrc  = path.join(sourceDir, 'templates', '.github');
+  const githubDest = path.join(destTemplates, '.github');
+  if (fs.existsSync(githubSrc)) {
+    copyDirSync(githubSrc, githubDest);
+  }
+
+  // docs/pdlc.md — substitute board IDs
+  const pdlcSrc  = path.join(sourceDir, 'templates', 'full', 'docs', 'pdlc.md');
+  const pdlcDest = path.join(destTemplates, 'docs', 'pdlc.md');
+  if (fs.existsSync(pdlcSrc)) {
+    fs.mkdirSync(path.join(destTemplates, 'docs'), { recursive: true });
+    let pdlcContent = fs.readFileSync(pdlcSrc, 'utf8');
+    if (projectId)     pdlcContent = pdlcContent.replace(/\{\{PROJECT_ID\}\}/g,      () => projectId);
+    if (statusFieldId) pdlcContent = pdlcContent.replace(/\{\{STATUS_FIELD_ID\}\}/g, () => statusFieldId);
+    pdlcContent = pdlcContent.replace(/\{\{REPO_OWNER\}\}/g, () => repoOwner);
+    pdlcContent = pdlcContent.replace(/\{\{REPO_NAME\}\}/g,  () => repoName);
+    if (Object.keys(optionMap).length > 0) {
+      pdlcContent = pdlcContent.replace(/\{\{ID_IDEA\}\}/g,                () => optionMap['💡 Idea - No move to Exploration directly'] || 'MISSING_ID');
+      pdlcContent = pdlcContent.replace(/\{\{ID_EXPLORATION\}\}/g,         () => optionMap['🔍 Exploration']         || 'MISSING_ID');
+      pdlcContent = pdlcContent.replace(/\{\{ID_BRAINSTORMING\}\}/g,       () => optionMap['🧠 Brainstorming']       || 'MISSING_ID');
+      pdlcContent = pdlcContent.replace(/\{\{ID_DETAIL\}\}/g,              () => optionMap['📐 Detail Solution']     || 'MISSING_ID');
+      pdlcContent = pdlcContent.replace(/\{\{ID_APPROVAL\}\}/g,            () => optionMap['✅ Approval']            || 'MISSING_ID');
+      pdlcContent = pdlcContent.replace(/\{\{ID_DEVELOPMENT\}\}/g,         () => optionMap['⚙️ Development']        || 'MISSING_ID');
+      pdlcContent = pdlcContent.replace(/\{\{ID_TESTING\}\}/g,             () => optionMap['🧪 Testing']             || 'MISSING_ID');
+      pdlcContent = pdlcContent.replace(/\{\{ID_CODE_REVIEW_PR\}\}/g,      () => optionMap['👁 Code Review / PR']   || 'MISSING_ID');
+      pdlcContent = pdlcContent.replace(/\{\{ID_READY_FOR_PRODUCTION\}\}/g,() => optionMap['🚀 Ready for Production']|| 'MISSING_ID');
+    }
+    fs.writeFileSync(pdlcDest, pdlcContent);
+    if (projectId && statusFieldId && Object.keys(optionMap).length > 0) {
+      console.log(`${i18n.pdlc_prefilled}`);
+    } else {
+      console.log(`${yellow}⚠️  pdlc.md copied — Project IDs not filled (board creation failed). Re-run after fixing token.${reset}`);
+    }
+  }
+
+  // project-automation.yml — substitute IDs
+  const paPath = path.join(destTemplates, '.github', 'workflows', 'project-automation.yml');
+  if (fs.existsSync(paPath) && Object.keys(optionMap).length > 0) {
+    let wfContent = fs.readFileSync(paPath, 'utf8');
+    if (projectId)     wfContent = wfContent.replace(/\{\{PROJECT_ID\}\}/g,      () => projectId);
+    if (statusFieldId) wfContent = wfContent.replace(/\{\{STATUS_FIELD_ID\}\}/g, () => statusFieldId);
+    wfContent = wfContent.replace(/\{\{ID_IDEA\}\}/g,                () => optionMap['💡 Idea - No move to Exploration directly'] || 'MISSING_ID');
+    wfContent = wfContent.replace(/\{\{ID_EXPLORATION\}\}/g,         () => optionMap['🔍 Exploration']         || 'MISSING_ID');
+    wfContent = wfContent.replace(/\{\{ID_BRAINSTORMING\}\}/g,       () => optionMap['🧠 Brainstorming']       || 'MISSING_ID');
+    wfContent = wfContent.replace(/\{\{ID_DETAILING\}\}/g,           () => optionMap['📐 Detail Solution']     || 'MISSING_ID');
+    wfContent = wfContent.replace(/\{\{ID_APPROVAL\}\}/g,            () => optionMap['✅ Approval']            || 'MISSING_ID');
+    wfContent = wfContent.replace(/\{\{ID_DEVELOPMENT\}\}/g,         () => optionMap['⚙️ Development']        || 'MISSING_ID');
+    wfContent = wfContent.replace(/\{\{ID_TESTING\}\}/g,             () => optionMap['🧪 Testing']             || 'MISSING_ID');
+    wfContent = wfContent.replace(/\{\{ID_CODE_REVIEW_PR\}\}/g,      () => optionMap['👁 Code Review / PR']   || 'MISSING_ID');
+    wfContent = wfContent.replace(/\{\{ID_PRODUCTION\}\}/g,          () => optionMap['🚀 Ready for Production']|| 'MISSING_ID');
+    fs.writeFileSync(paPath, wfContent);
+  }
+
+  console.log(`${i18n.templates_copied}`);
+}
+
+function writeCliContext(targetDir, profile, data) {
+  try {
+    const contextPath = path.join(targetDir, '.agentic-pdlc', 'cli-context.json');
+    fs.mkdirSync(path.join(targetDir, '.agentic-pdlc'), { recursive: true });
+    fs.writeFileSync(contextPath, JSON.stringify({ profile, ...data }, null, 2));
+  } catch (_) {
+    // Non-fatal — agent will ask for the values instead
+  }
+}
+
+// ─── runSetup (legacy — will be split in Tasks 4–5) ──────────────────────────
+
 async function runSetup(isAgentic = false) {
   console.log(`${yellow}${i18n.checking_gh}${reset}`);
   try {
