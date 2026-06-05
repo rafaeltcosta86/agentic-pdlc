@@ -1037,6 +1037,16 @@ async function runUpgradeToAgentic() {
     }
   }
 
+  // Set PROJECT_ID as GitHub Actions Variable
+  if (projectId) {
+    try {
+      setActionsVariable(repo, 'PROJECT_ID', projectId);
+      console.log(`${green}✅ vars.PROJECT_ID set as Actions Variable.${reset}`);
+    } catch (_) {
+      console.log(`${yellow}⚠️  Could not set vars.PROJECT_ID — token may lack variables:write scope.\n   Set manually: repo Settings → Secrets and variables → Variables → PROJECT_ID = ${projectId}${reset}`);
+    }
+  }
+
   console.log(`\n${yellow}${i18n.scaffolding}${reset}`);
   scaffoldFullTemplates(sourceDir, targetDir, projectId, statusFieldId, optionMap, repoOwner, repoName);
 
