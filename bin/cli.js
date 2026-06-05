@@ -342,7 +342,6 @@ function scaffoldFullTemplates(sourceDir, targetDir, projectId, statusFieldId, o
   const paPath = path.join(destTemplates, '.github', 'workflows', 'project-automation.yml');
   if (fs.existsSync(paPath) && Object.keys(optionMap).length > 0) {
     let wfContent = fs.readFileSync(paPath, 'utf8');
-    if (projectId)     wfContent = wfContent.replace(/\{\{PROJECT_ID\}\}/g,      () => projectId);
     if (statusFieldId) wfContent = wfContent.replace(/\{\{STATUS_FIELD_ID\}\}/g, () => statusFieldId);
     wfContent = wfContent.replace(/\{\{ID_IDEA\}\}/g,                () => optionMap['💡 Idea - No move to Exploration directly'] || 'MISSING_ID');
     wfContent = wfContent.replace(/\{\{ID_EXPLORATION\}\}/g,         () => optionMap['🔍 Exploration']         || 'MISSING_ID');
