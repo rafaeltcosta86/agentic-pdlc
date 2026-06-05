@@ -5,7 +5,7 @@ on:
     types: [opened]
 
 env:
-  PROJECT_ID: "{{PROJECT_ID}}"
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
   STATUS_FIELD_ID: "{{STATUS_FIELD_ID}}"
   STATUS_IDEA: "{{ID_IDEA}}"
 
@@ -17,7 +17,7 @@ jobs:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
       - name: Add issue to project board
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
         uses: actions/github-script@v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
