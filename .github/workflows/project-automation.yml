@@ -84,30 +84,35 @@ jobs:
       STATUS_CODE_REVIEW_PR: ${{ needs.resolve-ids.outputs.status_code_review_pr }}
       STATUS_PRODUCTION: ${{ needs.resolve-ids.outputs.status_production }}
     steps:
+      - uses: actions/checkout@v5.0.1
       - name: Dispatch board move
         if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |
+            const { classifyItem } = require('./scripts/derive-column.js');
             const { owner, repo } = context.repo;
             const eventName = context.eventName;
             const action = context.payload.action;
+
+            const COLUMN_KEY_TO_ENV = {
+              'code_review_pr': 'STATUS_CODE_REVIEW_PR',
+              'development':    'STATUS_DEVELOPMENT',
+              'approval':       'STATUS_APPROVAL',
+              'detailing':      'STATUS_DETAILING',
+              'brainstorming':  'STATUS_BRAINSTORMING',
+            };
 
             // f(event) → { targetStatusId, linkedNodeIds, stageLabelsToClear, prLabelSwap }
             async function deriveMove() {
               const col = (key) => process.env[key];
 
-              // Issue labeled → stage column
+              // Issue labeled → stage column (uses shared classify logic)
               if (eventName === 'issues' && action === 'labeled') {
-                const labelMap = {
-                  'stage:brainstorming': col('STATUS_BRAINSTORMING'),
-                  'stage:detailing':     col('STATUS_DETAILING'),
-                  'stage:approval':      col('STATUS_APPROVAL'),
-                  'stage:development':   col('STATUS_DEVELOPMENT'),
-                };
                 const label = context.payload.label.name;
-                const targetStatusId = labelMap[label];
+                const columnKey = classifyItem([label]);
+                const targetStatusId = columnKey ? col(COLUMN_KEY_TO_ENV[columnKey]) : null;
                 if (!targetStatusId) return null;
                 return {
                   targetStatusId,

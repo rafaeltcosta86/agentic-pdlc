@@ -1,0 +1,164 @@
+name: Board Reconciliation (Drift Heal)
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  resolve-ids:
+    name: Resolve Board Column IDs
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+    outputs:
+      project_id: ${{ steps.resolve.outputs.project_id }}
+      status_field_id: ${{ steps.resolve.outputs.status_field_id }}
+      status_brainstorming: ${{ steps.resolve.outputs.status_brainstorming }}
+      status_detailing: ${{ steps.resolve.outputs.status_detailing }}
+      status_approval: ${{ steps.resolve.outputs.status_approval }}
+      status_development: ${{ steps.resolve.outputs.status_development }}
+      status_code_review_pr: ${{ steps.resolve.outputs.status_code_review_pr }}
+    steps:
+      - name: Resolve column IDs by name
+        id: resolve
+        if: ${{ env.PROJECT_TOKEN != '' && vars.PROJECT_ID != '' }}
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ env.PROJECT_TOKEN }}
+          script: |
+            const projectId = '${{ vars.PROJECT_ID }}';
+            if (!projectId || projectId === '{{PROJECT_ID}}') {
+              core.warning('vars.PROJECT_ID not set — board features disabled');
+              return;
+            }
+            const { node } = await github.graphql(`
+              query($id: ID!) {
+                node(id: $id) {
+                  ... on ProjectV2 {
+                    fields(first: 20) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options { id name }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `, { id: projectId });
+            const statusField = node.fields.nodes.find(f => f.name === 'Status');
+            if (!statusField) { core.setFailed('Status field not found on board'); return; }
+            const opt = (name) => statusField.options.find(o => o.name.includes(name))?.id ?? '';
+            core.setOutput('project_id', projectId);
+            core.setOutput('status_field_id', statusField.id);
+            core.setOutput('status_brainstorming',  opt('Brainstorming'));
+            core.setOutput('status_detailing',      opt('Detailing'));
+            core.setOutput('status_approval',       opt('Approval'));
+            core.setOutput('status_development',    opt('Development'));
+            core.setOutput('status_code_review_pr', opt('Code Review'));
+            console.log('✅ Board IDs resolved by name');
+
+  reconcile-board:
+    name: Reconcile Board (idempotent drift heal)
+    needs: [resolve-ids]
+    if: needs.resolve-ids.outputs.project_id != ''
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+      PROJECT_ID: ${{ needs.resolve-ids.outputs.project_id }}
+      STATUS_FIELD_ID: ${{ needs.resolve-ids.outputs.status_field_id }}
+      STATUS_BRAINSTORMING: ${{ needs.resolve-ids.outputs.status_brainstorming }}
+      STATUS_DETAILING: ${{ needs.resolve-ids.outputs.status_detailing }}
+      STATUS_APPROVAL: ${{ needs.resolve-ids.outputs.status_approval }}
+      STATUS_DEVELOPMENT: ${{ needs.resolve-ids.outputs.status_development }}
+      STATUS_CODE_REVIEW_PR: ${{ needs.resolve-ids.outputs.status_code_review_pr }}
+    steps:
+      - uses: actions/checkout@v5.0.1
+      - name: Reconcile all open board items
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ env.PROJECT_TOKEN }}
+          script: |
+            const { classifyItem } = require('./scripts/derive-column.js');
+
+            const COLUMN_KEY_TO_ID = {
+              'code_review_pr': process.env.STATUS_CODE_REVIEW_PR,
+              'development':    process.env.STATUS_DEVELOPMENT,
+              'approval':       process.env.STATUS_APPROVAL,
+              'detailing':      process.env.STATUS_DETAILING,
+              'brainstorming':  process.env.STATUS_BRAINSTORMING,
+            };
+
+            // Paginate all board items
+            let allItems = [];
+            let cursor = null;
+            do {
+              const { node } = await github.graphql(`
+                query($id: ID!, $cursor: String) {
+                  node(id: $id) {
+                    ... on ProjectV2 {
+                      items(first: 50, after: $cursor) {
+                        pageInfo { hasNextPage endCursor }
+                        nodes {
+                          id
+                          fieldValueByName(name: "Status") {
+                            ... on ProjectV2ItemFieldSingleSelectValue { optionId }
+                          }
+                          content {
+                            ... on Issue {
+                              number
+                              state
+                              labels(first: 20) { nodes { name } }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `, { id: process.env.PROJECT_ID, cursor });
+              const page = node.items;
+              allItems = allItems.concat(page.nodes);
+              cursor = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null;
+            } while (cursor);
+
+            let checked = 0, corrected = 0;
+
+            for (const item of allItems) {
+              // Skip PRs and closed issues
+              if (!item.content || item.content.state !== 'OPEN') continue;
+
+              const labelNames = item.content.labels.nodes.map(l => l.name);
+              const columnKey = classifyItem(labelNames);
+              if (!columnKey) continue; // no actionable label — skip (e.g. Idea column items)
+
+              const targetId = COLUMN_KEY_TO_ID[columnKey];
+              if (!targetId) continue; // column not resolved (shouldn't happen)
+
+              const currentId = item.fieldValueByName?.optionId ?? null;
+              checked++;
+
+              if (currentId === targetId) continue; // already correct — no mutation
+
+              await github.graphql(`
+                mutation($p: ID!, $i: ID!, $f: ID!, $v: ProjectV2FieldValue!) {
+                  updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f, value: $v}) {
+                    projectV2Item { id }
+                  }
+                }
+              `, {
+                p: process.env.PROJECT_ID,
+                i: item.id,
+                f: process.env.STATUS_FIELD_ID,
+                v: { singleSelectOptionId: targetId },
+              });
+
+              corrected++;
+              console.log(`Corrected #${item.content.number}: ${currentId ?? 'none'} → ${columnKey}`);
+            }
+
+            console.log(`✅ Reconciliation complete: ${checked} items checked, ${corrected} corrected`);
