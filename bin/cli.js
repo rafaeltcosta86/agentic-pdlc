@@ -88,6 +88,22 @@ const green = '\x1b[32m';
 const yellow = '\x1b[33m';
 const red = '\x1b[31m';
 
+const PDLC_LABELS = [
+  { name: 'stage:exploration',      color: '9b59b6', description: 'Issue is being evaluated' },
+  { name: 'stage:brainstorming',    color: 'e84393', description: 'Proposed approaches awaiting PM gate' },
+  { name: 'stage:detailing',        color: '3498db', description: 'Technical spec is being written' },
+  { name: 'stage:development',      color: 'e67e22', description: 'Agent is implementing the spec' },
+  { name: 'stage:testing',          color: '8e44ad', description: 'Agent is testing the implementation' },
+  { name: 'spec:approved',          color: '0e8a16', description: 'Spec approved — agent can implement' },
+  { name: 'pr:in-review',           color: 'e4e669', description: 'PR awaiting code review' },
+  { name: 'pr:approved',            color: '0e8a16', description: 'PR approved, ready for merge' },
+  { name: 'architecture-violation', color: 'd93f0b', description: 'Invariant violation detected by CI' },
+  { name: 'qa:approved',            color: '0e8a16', description: 'QA Agent approved the implementation' },
+  { name: 'qa:needs-work',          color: 'd93f0b', description: 'QA Agent found issues' },
+  { name: 'infra:qa-broken',        color: 'F97316', description: 'QA Agent failed to run — manual review required' },
+  { name: 'jules',                  color: '5319e7', description: 'Jules AI Agent' }
+];
+
 function buildBoardUrl(repoOwner, projectNumber, isOrg) {
   const segment = isOrg ? 'orgs' : 'users';
   return `https://github.com/${segment}/${repoOwner}/projects/${projectNumber}/views/1?layout=board`;
@@ -397,21 +413,7 @@ async function runFullSetup() {
   console.log(`\n${yellow}${i18n.starting_setup}${reset}`);
 
   // Labels
-  const labels = [
-    { name: 'stage:exploration', color: '9b59b6', description: 'Issue is being evaluated' },
-    { name: 'stage:brainstorming', color: 'e84393', description: 'Proposed approaches awaiting PM gate' },
-    { name: 'stage:detailing', color: '3498db', description: 'Technical spec is being written' },
-    { name: 'stage:development', color: 'e67e22', description: 'Agent is implementing the spec' },
-    { name: 'stage:testing', color: '8e44ad', description: 'Agent is testing the implementation' },
-    { name: 'spec:approved', color: '0e8a16', description: 'Spec approved — agent can implement' },
-    { name: 'pr:in-review', color: 'e4e669', description: 'PR awaiting code review' },
-    { name: 'pr:approved', color: '0e8a16', description: 'PR approved, ready for merge' },
-    { name: 'architecture-violation', color: 'd93f0b', description: 'Invariant violation detected by CI' },
-    { name: 'qa:approved', color: '0e8a16', description: 'QA Agent approved the implementation' },
-    { name: 'qa:needs-work', color: 'd93f0b', description: 'QA Agent found issues' },
-    { name: 'infra:qa-broken', color: 'F97316', description: 'QA Agent failed to run — manual review required' },
-    { name: 'jules', color: '5319e7', description: 'Jules AI Agent' }
-  ];
+  const labels = PDLC_LABELS;
 
   console.log(`\n${cyan}${i18n.creating_labels}${reset}`);
   for (const label of labels) {
@@ -820,6 +822,13 @@ async function runLiteSetup() {
     console.log(`${red}${i18n.invalid_repo}${reset}`);
   }
 
+  let isOrg = false;
+  try {
+    const ownerType = execFileSync('gh', ['api', `repos/${repo}`, '--jq', '.owner.type'],
+      { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    isOrg = ownerType === 'Organization';
+  } catch (_) {}
+
   console.log(`\n${yellow}${i18n.starting_setup}${reset}`);
 
   installHook(sourceDir, targetDir);
@@ -834,7 +843,7 @@ async function runLiteSetup() {
     repoOwner,
     repoName,
     projectNumber: null,
-    isOrg: false,
+    isOrg,
     boardUrl: null,
     patAutoSet: false
   });
@@ -853,7 +862,7 @@ async function runUpgradeToAgentic() {
   }
 
   const ctx = JSON.parse(fs.readFileSync(contextPath, 'utf8'));
-  if (ctx.profile === 'full') {
+  if ((ctx.profile || 'full') === 'full') {
     console.log(`\n${green}✅ Already running full profile. Nothing to upgrade.${reset}\n`);
     rl.close();
     return;
@@ -884,21 +893,7 @@ async function runUpgradeToAgentic() {
   console.log(`\n${yellow}${i18n.starting_setup}${reset}`);
 
   // Labels
-  const labels = [
-    { name: 'stage:exploration',      color: '9b59b6', description: 'Issue is being evaluated' },
-    { name: 'stage:brainstorming',    color: 'e84393', description: 'Proposed approaches awaiting PM gate' },
-    { name: 'stage:detailing',        color: '3498db', description: 'Technical spec is being written' },
-    { name: 'stage:development',      color: 'e67e22', description: 'Agent is implementing the spec' },
-    { name: 'stage:testing',          color: '8e44ad', description: 'Agent is testing the implementation' },
-    { name: 'spec:approved',          color: '0e8a16', description: 'Spec approved — agent can implement' },
-    { name: 'pr:in-review',           color: 'e4e669', description: 'PR awaiting code review' },
-    { name: 'pr:approved',            color: '0e8a16', description: 'PR approved, ready for merge' },
-    { name: 'architecture-violation', color: 'd93f0b', description: 'Invariant violation detected by CI' },
-    { name: 'qa:approved',            color: '0e8a16', description: 'QA Agent approved the implementation' },
-    { name: 'qa:needs-work',          color: 'd93f0b', description: 'QA Agent found issues' },
-    { name: 'infra:qa-broken',        color: 'F97316', description: 'QA Agent failed to run — manual review required' },
-    { name: 'jules',                  color: '5319e7', description: 'Jules AI Agent' }
-  ];
+  const labels = PDLC_LABELS;
 
   console.log(`\n${cyan}${i18n.creating_labels}${reset}`);
   for (const label of labels) {
