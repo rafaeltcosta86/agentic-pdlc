@@ -837,8 +837,193 @@ async function runLiteSetup() {
   rl.close();
 }
 
-// Stubs — replaced by real implementations in Tasks 5-6
-async function runUpgradeToAgentic()  { console.error('runUpgradeToAgentic not yet implemented'); process.exit(1); }
+async function runUpgradeToAgentic() {
+  const contextPath = path.join(targetDir, '.agentic-pdlc', 'cli-context.json');
+  if (!fs.existsSync(contextPath)) {
+    console.error(`\n${red}${i18n.update_no_context}${reset}\n`);
+    rl.close();
+    process.exit(1);
+  }
+
+  const ctx = JSON.parse(fs.readFileSync(contextPath, 'utf8'));
+  if (ctx.profile === 'full') {
+    console.log(`\n${green}✅ Already running full profile. Nothing to upgrade.${reset}\n`);
+    rl.close();
+    return;
+  }
+
+  await checkGhAuth();
+  await checkAndRefreshProjectScope();
+
+  const { repoOwner, repoName } = ctx;
+  const repo = `${repoOwner}/${repoName}`;
+
+  const askProjectName = t(
+    `What is the project name for the board? (default: ${repoName.toUpperCase()}): `,
+    `Qual o nome do projeto em que o board será configurado? (padrão: ${repoName.toUpperCase()}): `,
+    `¿Cuál es el nombre del proyecto en el que se configurará el board? (por defecto: ${repoName.toUpperCase()}): `
+  );
+  const projectNameAnswer = await askQuestion(askProjectName);
+  const projectName = projectNameAnswer.trim() ? projectNameAnswer.trim().toUpperCase() : repoName.toUpperCase();
+  const boardName   = `BOARD - ${projectName}`;
+
+  let isOrg = ctx.isOrg || false;
+  try {
+    const ownerType = execFileSync('gh', ['api', `repos/${repo}`, '--jq', '.owner.type'],
+      { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    isOrg = ownerType === 'Organization';
+  } catch (_) {}
+
+  console.log(`\n${yellow}${i18n.starting_setup}${reset}`);
+
+  // Labels
+  const labels = [
+    { name: 'stage:exploration',      color: '9b59b6', description: 'Issue is being evaluated' },
+    { name: 'stage:brainstorming',    color: 'e84393', description: 'Proposed approaches awaiting PM gate' },
+    { name: 'stage:detailing',        color: '3498db', description: 'Technical spec is being written' },
+    { name: 'stage:development',      color: 'e67e22', description: 'Agent is implementing the spec' },
+    { name: 'stage:testing',          color: '8e44ad', description: 'Agent is testing the implementation' },
+    { name: 'spec:approved',          color: '0e8a16', description: 'Spec approved — agent can implement' },
+    { name: 'pr:in-review',           color: 'e4e669', description: 'PR awaiting code review' },
+    { name: 'pr:approved',            color: '0e8a16', description: 'PR approved, ready for merge' },
+    { name: 'architecture-violation', color: 'd93f0b', description: 'Invariant violation detected by CI' },
+    { name: 'qa:approved',            color: '0e8a16', description: 'QA Agent approved the implementation' },
+    { name: 'qa:needs-work',          color: 'd93f0b', description: 'QA Agent found issues' },
+    { name: 'infra:qa-broken',        color: 'F97316', description: 'QA Agent failed to run — manual review required' },
+    { name: 'jules',                  color: '5319e7', description: 'Jules AI Agent' }
+  ];
+
+  console.log(`\n${cyan}${i18n.creating_labels}${reset}`);
+  for (const label of labels) {
+    try {
+      execFileSync('gh', ['label', 'create', label.name, '--color', label.color, '--description', label.description, '--repo', repo, '--force'], { stdio: 'ignore' });
+      console.log(`  ${i18n.label_ok}${label.name}`);
+    } catch (err) {
+      console.log(`  ${i18n.label_warn}${label.name}`);
+    }
+  }
+
+  // Board
+  console.log(`\n${cyan}${i18n.creating_project}${reset}`);
+  let ownerId, projectId, projectNumber;
+  try {
+    if (isOrg) {
+      ownerId = execFileSync('gh', ['api', 'graphql', '-f', 'query=query($login: String!) { organization(login: $login) { id } }', '-f', `login=${repoOwner}`, '--jq', '.data.organization.id'],
+        { stdio: ['ignore', 'pipe', 'pipe'] }).toString().trim();
+    } else {
+      ownerId = execFileSync('gh', ['api', 'graphql', '-f', 'query={ viewer { id } }', '--jq', '.data.viewer.id'],
+        { stdio: ['ignore', 'pipe', 'pipe'] }).toString().trim();
+    }
+
+    const raw = execFileSync('gh', ['api', 'graphql', '-f',
+      'query=mutation($owner: ID!, $title: String!) { createProjectV2(input: {ownerId: $owner, title: $title}) { projectV2 { id number } } }',
+      '-f', `owner=${ownerId}`, '-f', `title=${boardName}`],
+      { stdio: ['ignore', 'pipe', 'pipe'] }).toString().trim();
+    const resp = raw ? JSON.parse(raw) : null;
+    if (resp?.errors) throw new Error(resp.errors.map(e => e.message).join('; '));
+    const pData = resp?.data?.createProjectV2?.projectV2;
+    projectId     = pData?.id;
+    projectNumber = pData?.number;
+    console.log(`  ${i18n.project_ok}${projectId})`);
+
+    try {
+      const repoNodeId = execFileSync('gh', ['api', `repos/${repo}`, '--jq', '.node_id'],
+        { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+      execFileSync('gh', ['api', 'graphql', '-f',
+        'query=mutation($projectId: ID!, $repositoryId: ID!) { linkProjectV2ToRepository(input: {projectId: $projectId, repositoryId: $repositoryId}) { repository { name } } }',
+        '-f', `projectId=${projectId}`, '-f', `repositoryId=${repoNodeId}`],
+        { stdio: 'ignore' });
+      console.log(`  ${i18n.link_project_ok}`);
+    } catch (_) {
+      console.log(`  ${i18n.link_project_warn}`);
+    }
+  } catch (err) {
+    console.log(`  ${i18n.project_err}${err.message}`);
+  }
+
+  let statusFieldId;
+  let optionMap = {};
+
+  if (projectId) {
+    console.log(`  ${cyan}${i18n.config_columns}${reset}`);
+    try {
+      statusFieldId = execFileSync('gh', ['api', 'graphql', '-f',
+        'query=query($projectId: ID!) { node(id: $projectId) { ... on ProjectV2 { fields(first: 20) { nodes { ... on ProjectV2SingleSelectField { id name } } } } } }',
+        '-f', `projectId=${projectId}`, '--jq', '.data.node.fields.nodes[] | select(.name == "Status") | .id'
+      ]).toString().trim();
+
+      if (statusFieldId) {
+        const columns = [
+          { name: '💡 Idea - No move to Exploration directly', description: 'Just tell your agent to work on issue #XX', color: 'GRAY' },
+          { name: '🔍 Exploration',     description: 'AI is analyzing code and context',            color: 'PURPLE' },
+          { name: '🧠 Brainstorming',   description: 'AI proposed approaches and trade-offs',       color: 'PINK'   },
+          { name: '📐 Detail Solution', description: 'AI is writing the technical spec',            color: 'BLUE'   },
+          { name: '✅ Approval',        description: 'Spec ready, awaiting `spec:approved` label',  color: 'GREEN'  },
+          { name: '⚙️ Development',    description: 'AI implementing the spec',                    color: 'ORANGE' },
+          { name: '🧪 Testing',         description: 'QA testing and CI pipeline checks',           color: 'RED'    },
+          { name: '👁 Code Review / PR',description: 'PR opened, awaiting your review',             color: 'YELLOW' },
+          { name: '🚀 Ready for Production', description: 'Merged and ready for production',        color: 'GREEN'  }
+        ];
+
+        const queryPayload = JSON.stringify({
+          query: `mutation($fieldId: ID!, $options: [ProjectV2SingleSelectFieldOptionInput!]) {
+            updateProjectV2Field(input: { fieldId: $fieldId, singleSelectOptions: $options }) {
+              projectV2Field { ... on ProjectV2SingleSelectField { options { id name } } }
+            }
+          }`,
+          variables: { fieldId: statusFieldId, options: columns }
+        });
+
+        const updateOutput = execFileSync('gh', ['api', 'graphql', '--input', '-'],
+          { input: queryPayload }).toString().trim();
+        const jsonResponse = updateOutput ? JSON.parse(updateOutput) : null;
+        const returnedOptions = jsonResponse?.data?.updateProjectV2Field?.projectV2Field?.options || [];
+        for (const opt of returnedOptions) optionMap[opt.name] = opt.id;
+        console.log(`  ${i18n.columns_ok}`);
+      }
+    } catch (_) {
+      console.log(`  ${i18n.columns_warn}`);
+    }
+  }
+
+  // Auto-provision PROJECT_PAT for personal repos
+  let patAutoSet = false;
+  if (projectId && !isOrg) {
+    try {
+      const tokenOut = execFileSync('gh', ['auth', 'token'],
+        { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' }).trim();
+      if (tokenOut) {
+        execFileSync('gh', ['secret', 'set', 'PROJECT_PAT', '--body', tokenOut, '--repo', repo],
+          { stdio: ['ignore', 'pipe', 'pipe'] });
+        patAutoSet = true;
+        console.log(`\n${green}✅ PROJECT_PAT secret set automatically (uses your gh OAuth token).${reset}`);
+      }
+    } catch (_) {
+      console.log(`\n${yellow}⚠️  Could not auto-set PROJECT_PAT. Agent will guide manual setup.${reset}`);
+    }
+  }
+
+  console.log(`\n${yellow}${i18n.scaffolding}${reset}`);
+  scaffoldFullTemplates(sourceDir, targetDir, projectId, statusFieldId, optionMap, repoOwner, repoName);
+
+  await setBranchProtection(repo, ['PDLC Stage Gate', 'QA Gate']);
+
+  const boardUrl = projectNumber ? buildBoardUrl(repoOwner, projectNumber, isOrg) : null;
+  writeCliContext(targetDir, 'full', {
+    projectName,
+    repoOwner,
+    repoName,
+    projectNumber,
+    isOrg,
+    boardUrl,
+    patAutoSet
+  });
+
+  const line1 = t('🎉 Upgrade complete! Board:', '🎉 Upgrade concluído! Board:', '🎉 ¡Actualización completada! Board:');
+  console.log(`\n${green}${line1} ${boardUrl || '(board creation failed)'}${reset}\n`);
+
+  rl.close();
+}
 
 // ─── Entry point ──────────────────────────────────────────────────────────────
 
