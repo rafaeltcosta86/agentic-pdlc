@@ -355,7 +355,7 @@ function writeCliContext(targetDir, profile, data) {
 
 // ─── runFullSetup ─────────────────────────────────────────────────────────────
 
-async function runFullSetup(isAgentic = false) {
+async function runFullSetup() {
   await checkGhAuth();
   await checkAndRefreshProjectScope();
 
