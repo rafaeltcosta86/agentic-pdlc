@@ -1,0 +1,22 @@
+language: "en-US"
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
+  path_instructions:
+    - path: ".github/workflows/**"
+      instructions: >
+        Pay close attention to GitHub Actions syntax correctness, trigger
+        semantics (push/pull_request/workflow_run events and their filters),
+        expression syntax (${{ }}), and shell quoting in run steps.
+        Flag any logic that could cause silent failures or unintended trigger
+        behavior.
+  review_status: true
+chat:
+  auto_reply: true
