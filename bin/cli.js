@@ -15,6 +15,7 @@ const rl = require.main === module
   : null;
 
 function askQuestion(query) {
+  if (!rl) throw new Error('askQuestion called in non-interactive context');
   return new Promise(resolve => rl.question(query, resolve));
 }
 
@@ -86,10 +87,6 @@ const reset = '\x1b[0m';
 const green = '\x1b[32m';
 const yellow = '\x1b[33m';
 const red = '\x1b[31m';
-
-console.log(`${cyan}================================================================${reset}`);
-console.log(`${cyan}${i18n.welcome}${reset}`);
-console.log(`${cyan}================================================================${reset}\n`);
 
 function buildBoardUrl(repoOwner, projectNumber, isOrg) {
   const segment = isOrg ? 'orgs' : 'users';
@@ -751,6 +748,10 @@ async function runUpgradeToAgentic()  { console.error('runUpgradeToAgentic not y
 // ─── Entry point ──────────────────────────────────────────────────────────────
 
 if (require.main === module) {
+  console.log(`${cyan}================================================================${reset}`);
+  console.log(`${cyan}${i18n.welcome}${reset}`);
+  console.log(`${cyan}================================================================${reset}\n`);
+
   const args = process.argv.slice(2);
   const mode = resolveMode(args);
 
