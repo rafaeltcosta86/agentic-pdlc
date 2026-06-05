@@ -18,7 +18,7 @@ jobs:
       contents: read
     env:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
-      PROJECT_ID: "{{PROJECT_ID}}"
+      PROJECT_ID: ${{ vars.PROJECT_ID }}
       STATUS_FIELD_ID: "{{STATUS_FIELD_ID}}"
       STATUS_DEVELOPMENT: "{{ID_DEVELOPMENT}}"
     steps:
@@ -62,7 +62,7 @@ jobs:
             });
 
       - name: Move board card to Development
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
         continue-on-error: true
         uses: actions/github-script@v8
         with:

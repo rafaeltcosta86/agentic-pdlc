@@ -9,7 +9,7 @@ on:
     types: [labeled, edited, closed]
 
 env:
-  PROJECT_ID: "{{PROJECT_ID}}"
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
   STATUS_FIELD_ID: "{{STATUS_FIELD_ID}}"
   STATUS_IDEA: "{{ID_IDEA}}"
   STATUS_BRAINSTORMING: "{{ID_BRAINSTORMING}}"
@@ -30,7 +30,7 @@ jobs:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
       - name: Detect Label and Move Issue
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
         uses: actions/github-script@v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
@@ -91,7 +91,7 @@ jobs:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
       - name: Check spec markers and swap labels
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
         uses: actions/github-script@v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
@@ -149,7 +149,7 @@ jobs:
   #   runs-on: ubuntu-latest
   #   steps:
   #     - name: Move issue to Idea
-  #       if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
+  #       if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
   #       uses: actions/github-script@v8
   #       with:
   #         github-token: ${{ env.PROJECT_TOKEN }}
@@ -179,7 +179,7 @@ jobs:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
       - name: Move linked issue to Testing
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
         uses: actions/github-script@v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
@@ -233,7 +233,7 @@ jobs:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
       - name: Move linked issue to Code Review / PR
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
         uses: actions/github-script@v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
@@ -281,7 +281,7 @@ jobs:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
       - name: Swap PR labels
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
         uses: actions/github-script@v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
@@ -300,7 +300,7 @@ jobs:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
       - name: Move issue to Production
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '{{PROJECT_ID}}' }}
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
         uses: actions/github-script@v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}

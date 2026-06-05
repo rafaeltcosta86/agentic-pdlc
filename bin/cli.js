@@ -80,6 +80,16 @@ const i18n = {
     '✅ Issue templates copiados para .github/ISSUE_TEMPLATE/',
     '✅ Issue templates copiados a .github/ISSUE_TEMPLATE/'
   ),
+  vars_project_id_ok: t(
+    '✅ vars.PROJECT_ID set as Actions Variable.',
+    '✅ vars.PROJECT_ID configurado como Variável do Actions.',
+    '✅ vars.PROJECT_ID configurado como Variable de Actions.'
+  ),
+  vars_project_id_warn: t(
+    '⚠️  Could not set vars.PROJECT_ID — token may lack variables:write scope.\n   Set manually: repo Settings → Secrets and variables → Variables → PROJECT_ID = ',
+    '⚠️  Não foi possível configurar vars.PROJECT_ID — o token pode não ter permissão variables:write.\n   Configure manualmente: repo Settings → Secrets and variables → Variables → PROJECT_ID = ',
+    '⚠️  No se pudo configurar vars.PROJECT_ID — el token puede no tener permiso variables:write.\n   Configura manualmente: repo Settings → Secrets and variables → Variables → PROJECT_ID = '
+  ),
 };
 
 const cyan = '\x1b[36m';
@@ -282,6 +292,29 @@ function scaffoldLiteTemplates(sourceDir, targetDir) {
   }
 }
 
+function setActionsVariable(repo, name, value, execFn = execFileSync) {
+  try {
+    execFn('gh', [
+      'api', `repos/${repo}/actions/variables/${name}`,
+      '--method', 'PATCH',
+      '-f', `name=${name}`,
+      '-f', `value=${value}`
+    ], { stdio: ['ignore', 'pipe', 'pipe'] });
+  } catch (err) {
+    const msg = (err.stderr?.toString() || '') + (err.message || '');
+    if (msg.includes('404') || msg.includes('Not Found')) {
+      execFn('gh', [
+        'api', `repos/${repo}/actions/variables`,
+        '--method', 'POST',
+        '-f', `name=${name}`,
+        '-f', `value=${value}`
+      ], { stdio: ['ignore', 'pipe', 'pipe'] });
+    } else {
+      throw err;
+    }
+  }
+}
+
 function scaffoldFullTemplates(sourceDir, targetDir, projectId, statusFieldId, optionMap, repoOwner, repoName) {
   const destTemplates = path.join(targetDir, '.agentic-pdlc', 'templates');
   fs.mkdirSync(destTemplates, { recursive: true });
@@ -342,7 +375,6 @@ function scaffoldFullTemplates(sourceDir, targetDir, projectId, statusFieldId, o
   const paPath = path.join(destTemplates, '.github', 'workflows', 'project-automation.yml');
   if (fs.existsSync(paPath) && Object.keys(optionMap).length > 0) {
     let wfContent = fs.readFileSync(paPath, 'utf8');
-    if (projectId)     wfContent = wfContent.replace(/\{\{PROJECT_ID\}\}/g,      () => projectId);
     if (statusFieldId) wfContent = wfContent.replace(/\{\{STATUS_FIELD_ID\}\}/g, () => statusFieldId);
     wfContent = wfContent.replace(/\{\{ID_IDEA\}\}/g,                () => optionMap['💡 Idea - No move to Exploration directly'] || 'MISSING_ID');
     wfContent = wfContent.replace(/\{\{ID_EXPLORATION\}\}/g,         () => optionMap['🔍 Exploration']         || 'MISSING_ID');
@@ -551,6 +583,16 @@ async function runFullSetup() {
     }
   } else if (projectId && isOrg) {
     console.log(`\n${yellow}ℹ️  Org repo detected — PROJECT_PAT will require manual setup for security.${reset}`);
+  }
+
+  // Set PROJECT_ID as GitHub Actions Variable
+  if (projectId) {
+    try {
+      setActionsVariable(repo, 'PROJECT_ID', projectId);
+      console.log(`${green}${i18n.vars_project_id_ok}${reset}`);
+    } catch (_) {
+      console.log(`${yellow}${i18n.vars_project_id_warn}${projectId}${reset}`);
+    }
   }
 
   await setBranchProtection(repo, ['PDLC Stage Gate', 'QA Gate']);
@@ -790,7 +832,7 @@ function resolveMode(args) {
 }
 
 // Export for testing
-if (typeof module !== 'undefined') module.exports = { resolveMode };
+if (typeof module !== 'undefined') module.exports = { resolveMode, setActionsVariable };
 
 // ─── runLiteSetup ─────────────────────────────────────────────────────────────
 
@@ -1002,6 +1044,16 @@ async function runUpgradeToAgentic() {
       }
     } catch (_) {
       console.log(`\n${yellow}⚠️  Could not auto-set PROJECT_PAT. Agent will guide manual setup.${reset}`);
+    }
+  }
+
+  // Set PROJECT_ID as GitHub Actions Variable
+  if (projectId) {
+    try {
+      setActionsVariable(repo, 'PROJECT_ID', projectId);
+      console.log(`${green}${i18n.vars_project_id_ok}${reset}`);
+    } catch (_) {
+      console.log(`${yellow}${i18n.vars_project_id_warn}${projectId}${reset}`);
     }
   }
 
