@@ -47,9 +47,11 @@ jobs:
             const statusField = node.fields.nodes.find(f => f.name === 'Status');
             if (!statusField) { core.setFailed('Status field not found on board'); return; }
             const opt = (name) => statusField.options.find(o => o.name.includes(name))?.id ?? '';
+            const ideaId = opt('Idea');
+            if (!ideaId) { core.setFailed('Required Status column "Idea" not found on board'); return; }
             core.setOutput('project_id', projectId);
             core.setOutput('status_field_id', statusField.id);
-            core.setOutput('status_idea', opt('Idea'));
+            core.setOutput('status_idea', ideaId);
             console.log('✅ Board IDs resolved by name');
 
   add-to-board:

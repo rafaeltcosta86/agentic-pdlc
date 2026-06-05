@@ -57,14 +57,27 @@ jobs:
             const statusField = node.fields.nodes.find(f => f.name === 'Status');
             if (!statusField) { core.setFailed('Status field not found on board'); return; }
             const opt = (name) => statusField.options.find(o => o.name.includes(name))?.id ?? '';
+            const ids = {
+              brainstorming:  opt('Brainstorming'),
+              detailing:      opt('Detailing'),
+              approval:       opt('Approval'),
+              development:    opt('Development'),
+              code_review_pr: opt('Code Review'),
+              production:     opt('Production'),
+            };
+            const missing = Object.entries(ids).filter(([, v]) => !v).map(([k]) => k);
+            if (missing.length > 0) {
+              core.setFailed(`Required Status columns not found on board: ${missing.join(', ')}`);
+              return;
+            }
             core.setOutput('project_id', projectId);
             core.setOutput('status_field_id', statusField.id);
-            core.setOutput('status_brainstorming',  opt('Brainstorming'));
-            core.setOutput('status_detailing',      opt('Detailing'));
-            core.setOutput('status_approval',       opt('Approval'));
-            core.setOutput('status_development',    opt('Development'));
-            core.setOutput('status_code_review_pr', opt('Code Review'));
-            core.setOutput('status_production',     opt('Production'));
+            core.setOutput('status_brainstorming',  ids.brainstorming);
+            core.setOutput('status_detailing',      ids.detailing);
+            core.setOutput('status_approval',       ids.approval);
+            core.setOutput('status_development',    ids.development);
+            core.setOutput('status_code_review_pr', ids.code_review_pr);
+            core.setOutput('status_production',     ids.production);
             console.log('✅ Board IDs resolved by name');
 
   # Single dispatcher — f(event) → target column → move card
@@ -110,8 +123,8 @@ jobs:
 
               // Issue labeled → stage column (uses shared classify logic)
               if (eventName === 'issues' && action === 'labeled') {
-                const label = context.payload.label.name;
-                const columnKey = classifyItem([label]);
+                const labelNames = (context.payload.issue.labels ?? []).map(l => l.name);
+                const columnKey = classifyItem(labelNames);
                 const targetStatusId = columnKey ? col(COLUMN_KEY_TO_ENV[columnKey]) : null;
                 if (!targetStatusId) return null;
                 return {
