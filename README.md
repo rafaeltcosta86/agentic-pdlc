@@ -1,57 +1,54 @@
-# 🤖 Agentic PDLC Framework
+# 🤖 Agentic PDLC
 
-> Do your AI agents build features that don't match the spec?
-> Do you find bugs and architecture violations only at the end of the lifecycle?
-> Are you the one manually moving cards across your board — every single time?
+> Does your AI agent add code you didn't ask for?
+> Does it skip the spec and jump straight to a PR?
+> Does it ignore the rules in your CLAUDE.md?
 
-**Agentic PDLC** gives your agents a shared rulebook, a self-moving board, and a CI that won't let broken code reach production. One `npx` command to set up.
+**Agentic PDLC** gives your agent a brake it can't ignore — a hook that makes it write the spec first, keep changes small, and stop at each gate. One `npx` to install.
 
 <div align="center">
-  <img src=".github/assets/agentic-pdlc-flow.svg" alt="Agentic PDLC Architecture Flow" width="100%">
+  <img src=".github/assets/agentic-pdlc-flow.svg" alt="Agentic PDLC: Upstream idea-to-spec, gated by spec:approved, into Downstream spec-to-production" width="100%">
 </div>
 
-Solo devs and small teams hit the same wall: one agent writes the spec, another implements it differently, a third reviews without knowing either. Agentic PDLC gives all of them a shared brief, automates the board, and puts a CI guard between your agents and production.
+---
+
+## Two modes — pick yours
+
+**`lite` (default) — the brake**
+Your agent writes the spec, waits for your approval, then implements it. It won't add code you didn't ask for. It won't open a PR before the spec is approved. It won't skip your `CLAUDE.md` rules — because the gate is a hook, not text the agent can ignore. Value on your first PR.
+
+**`--agentic` — see your whole pipeline**
+Everything in `lite`, plus a self-moving kanban board that shows your full product lifecycle, from **Idea → Production**. It makes transparent what needs your attention/approval, what's been done by the agent, and what's ready to merge. It supports as many agents as you need.
 
 ---
 
 ## ⚡ Why it works
 
-- 🗺️ **A transparent lifecycle** — Every feature travels a Kanban board from Idea to Production. You always know where things are.
-- 🤖 **A board that moves itself** — When you approve a spec, the card moves. When an agent opens a PR, the card moves. You just approve or reject.
-- 🧠 **Agents that agree with each other** — One briefing (`AGENTS.md`), read by every agent. Claude, Jules, Gemini — all pulling in the same direction, without you copy-pasting context between tabs.
-- 🛡️ **Code that can't silently break production** — A CI auditor checks every PR for architecture violations before anything reaches your main branch. *(Maturity Model — coming soon)*
+- 🛑 **A brake the agent can't ignore** — the gate is a hook, not text in CLAUDE.md. Text gets ignored; a hook does not.
+- 📋 **Spec before code** — the agent can't open a PR until the spec is approved, with acceptance criteria, edge cases, and files to change.
+- 🗺️ **See your whole pipeline** *(`--agentic` only)* — a board tracks every task from idea to production, and the gate between spec and code stays yours. You approve before anything ships.
 
 ---
 
 ## 🚀 Quick Start
 
-Run this in the root of your project:
-
 ```bash
 npx create-agentic-pdlc
 ```
 
-The CLI sets up your GitHub board, labels, and workflows, then hands over to your AI assistant to finish the configuration interactively. No YAML editing. No manual config.
+Installs `lite` by default — your AGENTS.md, CLAUDE.md, and the gate hook. Your AI assistant finishes the setup with you; no YAML to edit.
 
-**Already set up? Add or reconfigure optional agents at any time:**
+**Want the full board and pipeline view?**
+
+```bash
+npx create-agentic-pdlc --agentic
+```
+
+**Already set up? Add or change things any time:**
 
 ```bash
 npx create-agentic-pdlc --update
 ```
-
-Detects what is already configured (Jules, QA Agent, Sentinel) and interactively sets up what is missing. Your existing board IDs and customizations are never touched.
-
----
-
-## 🏗️ How It Works
-
-The framework splits work into two phases:
-
-### 1. You + AI: Idea → Spec
-Use conversational AI (e.g., **Claude Code**, **Gemini CLI**) as your brainstorming partner. Together, you flesh out user stories, acceptance criteria, and technical specifications until they are solid.
-
-### 2. Your agents: Spec → Production
-Once you approve the spec, autonomous implementation agents (e.g., **Jules**, **Sweep**, **Copilot Workspace**) pick up the task. The board moves automatically; the CI auditor guards the main branch.
 
 ---
 
@@ -71,11 +68,15 @@ One shared brief (`AGENTS.md`). Every agent reads it.
 
 ## 📦 What you get
 
-After setup, your project has:
+**`lite` (default)**
+- **`AGENTS.md`** — the shared brief every agent reads; your rules, once
+- **`CLAUDE.md`** — keep-changes-small rule + the stage gates
+- **`.agentic-pdlc/hooks/pdlc-stage-gate.sh`** — the hook; the agent can't open a PR until the spec is approved
 
-- **`AGENTS.md`** — The shared brief every agent reads. Your rules, once.
-- **`docs/pdlc.md`** — Your pipeline map: board columns, IDs, and who does what.
-- **`.github/workflows/`** — Three automations: board moves itself, agent wakes on spec approval, CI audits every PR.
+**`--agentic` (opt-in)**
+Everything in lite, plus:
+- **`docs/pdlc.md`** — your pipeline map: board columns and who does what
+- **`.github/workflows/`** — board automation: moves cards on spec approval, PR open, and CI pass
 
 ---
 
