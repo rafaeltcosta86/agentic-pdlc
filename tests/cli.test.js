@@ -34,13 +34,14 @@ describe('buildFullClaudeContent', () => {
 describe('setActionsVariable', () => {
   it('calls PATCH first', () => {
     const calls = [];
-    const execFn = (cmd, args) => { calls.push(args); };
+    const execFn = (cmd, args) => { calls.push([...args]); };
     const { setActionsVariable } = require('../bin/cli.js');
     setActionsVariable('owner/repo', 'PROJECT_ID', 'PVT_abc', execFn);
     assert.equal(calls.length, 1);
     assert.ok(calls[0].includes('--method'));
     assert.ok(calls[0].includes('PATCH'));
     assert.ok(calls[0].some(a => a.includes('PROJECT_ID')));
+    assert.ok(calls[0].some(a => a.includes('PVT_abc')));
   });
 
   it('falls back to POST on 404', () => {
@@ -59,7 +60,9 @@ describe('setActionsVariable', () => {
     setActionsVariable('owner/repo', 'PROJECT_ID', 'PVT_abc', execFn);
     assert.equal(calls.length, 2);
     assert.ok(calls[0].includes('PATCH'));
+    assert.ok(calls[0].some(a => a.includes('PVT_abc')));
     assert.ok(calls[1].includes('POST'));
+    assert.ok(calls[1].some(a => a.includes('PVT_abc')));
   });
 
   it('throws on 403', () => {
