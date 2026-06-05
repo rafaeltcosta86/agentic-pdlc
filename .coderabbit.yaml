@@ -22,11 +22,14 @@ reviews:
   labeling_instructions:
     - label: "architecture-violation"
       instructions: >
-        Apply when the PR introduces a change that violates documented architectural
-        invariants of this project: bypasses the PDLC stage gate, manipulates GitHub
-        labels that are reserved for automation (stage:*, spec:approved, qa:*),
-        breaks the template/CLI separation of concerns (e.g., business logic in
-        templates, template content in CLI), or otherwise contradicts the workflow
-        invariants documented in AGENTS.md or CLAUDE.md.
+        Apply when the PR introduces runtime behavior that violates documented
+        architectural invariants: code that bypasses the PDLC stage gate at runtime,
+        application code that programmatically sets or removes labels reserved for
+        automation (stage:*, spec:approved, qa:*) outside of their designated
+        automation workflows, business logic added directly to templates instead of
+        the CLI, or behavior that directly contradicts invariants in AGENTS.md or
+        CLAUDE.md. Do NOT apply for configuration changes to tools (e.g., updating
+        .coderabbit.yaml, GitHub Actions workflows, or CI config files) — those are
+        infrastructure, not invariant violations.
 chat:
   auto_reply: true
