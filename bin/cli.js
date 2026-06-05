@@ -282,6 +282,29 @@ function scaffoldLiteTemplates(sourceDir, targetDir) {
   }
 }
 
+function setActionsVariable(repo, name, value, execFn = execFileSync) {
+  try {
+    execFn('gh', [
+      'api', `repos/${repo}/actions/variables/${name}`,
+      '--method', 'PATCH',
+      '-f', `name=${name}`,
+      '-f', `value=${value}`
+    ], { stdio: ['ignore', 'pipe', 'pipe'] });
+  } catch (err) {
+    const msg = (err.stderr?.toString() || '') + (err.message || '');
+    if (msg.includes('404') || msg.includes('Not Found')) {
+      execFn('gh', [
+        'api', `repos/${repo}/actions/variables`,
+        '--method', 'POST',
+        '-f', `name=${name}`,
+        '-f', `value=${value}`
+      ], { stdio: ['ignore', 'pipe', 'pipe'] });
+    } else {
+      throw err;
+    }
+  }
+}
+
 function scaffoldFullTemplates(sourceDir, targetDir, projectId, statusFieldId, optionMap, repoOwner, repoName) {
   const destTemplates = path.join(targetDir, '.agentic-pdlc', 'templates');
   fs.mkdirSync(destTemplates, { recursive: true });
@@ -789,7 +812,7 @@ function resolveMode(args) {
 }
 
 // Export for testing
-if (typeof module !== 'undefined') module.exports = { resolveMode };
+if (typeof module !== 'undefined') module.exports = { resolveMode, setActionsVariable };
 
 // ─── runLiteSetup ─────────────────────────────────────────────────────────────
 

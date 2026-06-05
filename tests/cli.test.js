@@ -30,3 +30,48 @@ describe('buildFullClaudeContent', () => {
     assert.ok(result.includes('## Extra'));
   });
 });
+
+describe('setActionsVariable', () => {
+  it('calls PATCH first', () => {
+    const calls = [];
+    const execFn = (cmd, args) => { calls.push(args); };
+    const { setActionsVariable } = require('../bin/cli.js');
+    setActionsVariable('owner/repo', 'PROJECT_ID', 'PVT_abc', execFn);
+    assert.equal(calls.length, 1);
+    assert.ok(calls[0].includes('--method'));
+    assert.ok(calls[0].includes('PATCH'));
+    assert.ok(calls[0].some(a => a.includes('PROJECT_ID')));
+  });
+
+  it('falls back to POST on 404', () => {
+    const calls = [];
+    let callCount = 0;
+    const execFn = (cmd, args) => {
+      calls.push([...args]);
+      callCount++;
+      if (callCount === 1) {
+        const err = new Error('Not Found');
+        err.stderr = Buffer.from('Not Found');
+        throw err;
+      }
+    };
+    const { setActionsVariable } = require('../bin/cli.js');
+    setActionsVariable('owner/repo', 'PROJECT_ID', 'PVT_abc', execFn);
+    assert.equal(calls.length, 2);
+    assert.ok(calls[0].includes('PATCH'));
+    assert.ok(calls[1].includes('POST'));
+  });
+
+  it('throws on 403', () => {
+    const execFn = () => {
+      const err = new Error('Forbidden');
+      err.stderr = Buffer.from('Forbidden');
+      throw err;
+    };
+    const { setActionsVariable } = require('../bin/cli.js');
+    assert.throws(
+      () => setActionsVariable('owner/repo', 'PROJECT_ID', 'PVT_abc', execFn),
+      /Forbidden/
+    );
+  });
+});
