@@ -57,14 +57,27 @@ jobs:
             const statusField = node.fields.nodes.find(f => f.name === 'Status');
             if (!statusField) { core.setFailed('Status field not found on board'); return; }
             const opt = (name) => statusField.options.find(o => o.name.includes(name))?.id ?? '';
+            const ids = {
+              brainstorming:  opt('Brainstorming'),
+              detailing:      opt('Detailing'),
+              approval:       opt('Approval'),
+              development:    opt('Development'),
+              code_review_pr: opt('Code Review'),
+              production:     opt('Production'),
+            };
+            const missing = Object.entries(ids).filter(([, v]) => !v).map(([k]) => k);
+            if (missing.length > 0) {
+              core.setFailed(`Required Status columns not found on board: ${missing.join(', ')}`);
+              return;
+            }
             core.setOutput('project_id', projectId);
             core.setOutput('status_field_id', statusField.id);
-            core.setOutput('status_brainstorming',  opt('Brainstorming'));
-            core.setOutput('status_detailing',      opt('Detailing'));
-            core.setOutput('status_approval',       opt('Approval'));
-            core.setOutput('status_development',    opt('Development'));
-            core.setOutput('status_code_review_pr', opt('Code Review'));
-            core.setOutput('status_production',     opt('Production'));
+            core.setOutput('status_brainstorming',  ids.brainstorming);
+            core.setOutput('status_detailing',      ids.detailing);
+            core.setOutput('status_approval',       ids.approval);
+            core.setOutput('status_development',    ids.development);
+            core.setOutput('status_code_review_pr', ids.code_review_pr);
+            core.setOutput('status_production',     ids.production);
             console.log('✅ Board IDs resolved by name');
 
   # Single dispatcher — f(event) → target column → move card
@@ -84,30 +97,35 @@ jobs:
       STATUS_CODE_REVIEW_PR: ${{ needs.resolve-ids.outputs.status_code_review_pr }}
       STATUS_PRODUCTION: ${{ needs.resolve-ids.outputs.status_production }}
     steps:
+      - uses: actions/checkout@v5.0.1
       - name: Dispatch board move
         if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |
+            const { classifyItem } = require('./scripts/derive-column.js');
             const { owner, repo } = context.repo;
             const eventName = context.eventName;
             const action = context.payload.action;
+
+            const COLUMN_KEY_TO_ENV = {
+              'code_review_pr': 'STATUS_CODE_REVIEW_PR',
+              'development':    'STATUS_DEVELOPMENT',
+              'approval':       'STATUS_APPROVAL',
+              'detailing':      'STATUS_DETAILING',
+              'brainstorming':  'STATUS_BRAINSTORMING',
+            };
 
             // f(event) → { targetStatusId, linkedNodeIds, stageLabelsToClear, prLabelSwap }
             async function deriveMove() {
               const col = (key) => process.env[key];
 
-              // Issue labeled → stage column
+              // Issue labeled → stage column (uses shared classify logic)
               if (eventName === 'issues' && action === 'labeled') {
-                const labelMap = {
-                  'stage:brainstorming': col('STATUS_BRAINSTORMING'),
-                  'stage:detailing':     col('STATUS_DETAILING'),
-                  'stage:approval':      col('STATUS_APPROVAL'),
-                  'stage:development':   col('STATUS_DEVELOPMENT'),
-                };
-                const label = context.payload.label.name;
-                const targetStatusId = labelMap[label];
+                const labelNames = (context.payload.issue.labels ?? []).map(l => l.name);
+                const columnKey = classifyItem(labelNames);
+                const targetStatusId = columnKey ? col(COLUMN_KEY_TO_ENV[columnKey]) : null;
                 if (!targetStatusId) return null;
                 return {
                   targetStatusId,
