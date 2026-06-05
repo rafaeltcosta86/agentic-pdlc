@@ -10,10 +10,9 @@ const targetDir = process.cwd();
 // The directory where this script sits (globally/locally in node_modules)
 const sourceDir = path.join(__dirname, '..');
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+const rl = require.main === module
+  ? readline.createInterface({ input: process.stdin, output: process.stdout })
+  : null;
 
 function askQuestion(query) {
   return new Promise(resolve => rl.question(query, resolve));
@@ -732,13 +731,34 @@ async function runUpdate() {
   rl.close();
 }
 
+// ─── resolveMode ──────────────────────────────────────────────────────────────
+
+function resolveMode(args) {
+  if (args.includes('--update'))             return 'update';
+  if (args.includes('--upgrade-to-agentic')) return 'upgrade';
+  if (args.includes('--agentic'))            return 'full';
+  return 'lite';
+}
+
+// Export for testing
+if (typeof module !== 'undefined') module.exports = { resolveMode };
+
+// Stubs — replaced by real implementations in Tasks 4-6
+async function runLiteSetup()         { console.error('runLiteSetup not yet implemented'); process.exit(1); }
+async function runFullSetup()         { console.error('runFullSetup not yet implemented'); process.exit(1); }
+async function runUpgradeToAgentic()  { console.error('runUpgradeToAgentic not yet implemented'); process.exit(1); }
+
 // ─── Entry point ──────────────────────────────────────────────────────────────
 
-const args = process.argv.slice(2);
-const isAgentic = args.includes('--agentic');
+if (require.main === module) {
+  const args = process.argv.slice(2);
+  const mode = resolveMode(args);
 
-if (args.includes('--update')) {
-  runUpdate().catch(err => { console.error(err.message); rl.close(); process.exit(1); });
-} else {
-  runSetup(isAgentic).catch(err => { console.error(err.message); rl.close(); process.exit(1); });
+  const handler =
+    mode === 'update'  ? runUpdate :
+    mode === 'upgrade' ? runUpgradeToAgentic :
+    mode === 'full'    ? runFullSetup :
+                         runLiteSetup;
+
+  handler().catch(err => { console.error(err.message); rl.close(); process.exit(1); });
 }

@@ -1,15 +1,7 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 
-// We import helpers from cli.js once they are extracted.
-// For now, define the expected pure functions here as contracts.
-
-function resolveMode(args) {
-  if (args.includes('--update'))             return 'update';
-  if (args.includes('--upgrade-to-agentic')) return 'upgrade';
-  if (args.includes('--agentic'))            return 'full';
-  return 'lite';
-}
+const { resolveMode } = require('../bin/cli.js');
 
 describe('resolveMode', () => {
   it('returns lite when no flags', () => {
