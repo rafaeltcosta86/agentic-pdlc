@@ -28,7 +28,7 @@ jobs:
       - name: Resolve column IDs by name
         id: resolve
         if: ${{ env.PROJECT_TOKEN != '' && vars.PROJECT_ID != '' }}
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |
@@ -84,7 +84,7 @@ jobs:
     steps:
       - name: Detect Label and Move Issue
         if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |
@@ -144,7 +144,7 @@ jobs:
   #   steps:
   #     - name: Move issue to Idea
   #       if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
-  #       uses: actions/github-script@v8
+  #       uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
   #       with:
   #         github-token: ${{ env.PROJECT_TOKEN }}
   #         script: |
@@ -178,7 +178,7 @@ jobs:
     steps:
       - name: Move linked issue to Code Review / PR
         if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |
@@ -240,7 +240,7 @@ jobs:
     steps:
       - name: Move linked issue to Code Review and swap PR labels
         if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |
@@ -301,7 +301,7 @@ jobs:
     steps:
       - name: Move issue to Production
         if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |
@@ -344,7 +344,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Remove transient labels
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |

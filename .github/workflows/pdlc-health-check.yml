@@ -24,7 +24,7 @@ jobs:
       - name: Resolve column IDs by name
         id: resolve
         if: ${{ env.PROJECT_TOKEN != '' && vars.PROJECT_ID != '' }}
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |
@@ -75,7 +75,7 @@ jobs:
     steps:
       - name: Validate Board Configuration
         if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |
