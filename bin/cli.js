@@ -673,6 +673,13 @@ async function runUpdate() {
     process.exit(1);
   }
 
+  const ctx = JSON.parse(fs.readFileSync(contextPath, 'utf8'));
+  if ((ctx.profile || 'full') === 'lite') {
+    console.log(`\n${yellow}⚠️  Lite install detected. Run --upgrade-to-agentic to add the full board machine first.${reset}\n`);
+    rl.close();
+    return;
+  }
+
   const state = detectAgentState(targetDir);
   const sep = '─'.repeat(55);
 
