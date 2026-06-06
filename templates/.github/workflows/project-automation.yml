@@ -359,3 +359,42 @@ jobs:
               await github.rest.issues.removeLabel({ owner, repo, issue_number, name: label }).catch(() => {});
             }
             console.log(`Issue #${issue_number} labels cleaned up`);
+
+  move-card-on-issue-close:
+    name: Closed issue → Archive from board
+    if: github.event_name == 'issues' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+    steps:
+      - name: Archive board card
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ env.PROJECT_TOKEN }}
+          script: |
+            const nodeId = context.payload.issue.node_id;
+            let itemId;
+            try {
+              const added = await github.graphql(`
+                mutation($p: ID!, $c: ID!) {
+                  addProjectV2ItemById(input: {projectId: $p, contentId: $c}) { item { id } }
+                }`, { p: process.env.PROJECT_ID, c: nodeId });
+              itemId = added.addProjectV2ItemById.item.id;
+              if (!itemId) {
+                console.log(`Could not extract itemId from add response`);
+                return;
+              }
+            } catch (e) {
+              console.log(`Could not add issue to project: ${e.message}`);
+              return;
+            }
+            try {
+              await github.graphql(`
+                mutation($p: ID!, $i: ID!) {
+                  archiveProjectV2Item(input: {projectId: $p, itemId: $i}) { item { id } }
+                }`, { p: process.env.PROJECT_ID, i: itemId });
+              console.log(`Issue #${context.payload.issue.number} archived from board`);
+            } catch (e) {
+              console.log(`Could not archive item: ${e.message}`);
+            }
