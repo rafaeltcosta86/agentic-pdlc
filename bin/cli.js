@@ -60,6 +60,7 @@ const i18n = {
   cursor_rules_written: t('✅ Default cursor rules written to .cursorrules', '✅ Regras padrão do cursor salvas em .cursorrules', '✅ Reglas por defecto de cursor guardadas en .cursorrules'),
   setup_done: t('🎉 All set! Continue the setup with your agent:', '🎉 Aqui tá pronto! Continue o setup com o seu agente:', '🎉 ¡Listo! Continúa el setup con tu agente:'),
   setup_done_hint: t('>>> Tell it to read and execute the .agentic-setup.md file!', '>>> Diga a ele para ler e executar o arquivo .agentic-setup.md!', '>>> Dile que lea y ejecute el archivo .agentic-setup.md!'),
+  upgrade_hint: t('💡 To add the full board + multi-agent automation later: npx create-agentic-pdlc --upgrade-to-agentic', '💡 Para adicionar o board completo + automação multi-agente mais tarde: npx create-agentic-pdlc --upgrade-to-agentic', '💡 Para agregar el tablero completo + automatización multi-agente más tarde: npx create-agentic-pdlc --upgrade-to-agentic'),
   update_title: t('agentic-pdlc — Agent Configuration Status', 'agentic-pdlc — Status de Configuração dos Agentes', 'agentic-pdlc — Estado de Configuración de Agentes'),
   update_no_context: t('❌ No .agentic-pdlc/cli-context.json found. Run npx create-agentic-pdlc first.', '❌ Arquivo .agentic-pdlc/cli-context.json não encontrado. Rode npx create-agentic-pdlc primeiro.', '❌ Archivo .agentic-pdlc/cli-context.json no encontrado. Ejecuta npx create-agentic-pdlc primero.'),
   update_all_ok: t('All agents configured!', 'Todos os agentes configurados!', '¡Todos los agentes configurados!'),
@@ -891,7 +892,7 @@ async function runLiteSetup() {
   });
 
   copyAdapterFiles(agent, sourceDir, targetDir);
-  console.log(`${cyan}💡 To add the full board + multi-agent automation later: npx create-agentic-pdlc --upgrade-to-agentic${reset}`);
+  console.log(`${cyan}${i18n.upgrade_hint}${reset}`);
 
   rl.close();
 }
