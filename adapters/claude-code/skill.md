@@ -58,22 +58,22 @@ If any of these files are missing, you are in **Setup Mode**. Do not proceed wit
    - **CLAUDE.md:** If `.agentic-pdlc/templates/CLAUDE.md` exists and `CLAUDE.md` does not yet exist at the project root, write it — replacing only `{{PROJECT_NAME}}` with the project name. Skip if CLAUDE.md already exists (never downgrade).
    - **Lite profile:** If `cli-context.json` has `"profile": "lite"`, skip steps that reference `docs/pdlc.md`, `project-automation.yml`, `agent-trigger.yml`, and `pdlc-health-check.yml` — these are not installed in lite.
 6. Offer to run the `gh` commands for labels (`spec:approved`, `pr:in-review`, `pr:approved`, `architecture-violation`).
-7. **`PROJECT_PAT` secret (required for board automation):**
+7. **`PROJECT_TOKEN` secret (required for board automation):**
 
    Read `patAutoSet` from `.agentic-pdlc/cli-context.json`:
 
-   **If `patAutoSet === true`:** The CLI already configured this secret automatically. Print `✅ PROJECT_PAT is configured.` and continue to Step 8 — do not ask the user anything.
+   **If `patAutoSet === true`:** The CLI already configured this secret automatically. Print `✅ PROJECT_TOKEN is configured.` and continue to Step 8 — do not ask the user anything.
 
    **If `patAutoSet === false` (org repo):** Show the block below and wait for the user to reply "done" or "secret set" before continuing:
 
-   > Your repo is in an organization. For security, `PROJECT_PAT` must be a dedicated PAT (not your personal OAuth token). Without it, all board card movements in CI will silently skip — no error surfaced.
+   > Your repo is in an organization. For security, `PROJECT_TOKEN` must be a dedicated PAT (not your personal OAuth token). Without it, all board card movements in CI will silently skip — no error surfaced.
    >
    > 1. Open: **github.com/settings/tokens** → *Generate new token (classic)*
-   > 2. Name: `PROJECT_PAT — <repo-name>`
+   > 2. Name: `PROJECT_TOKEN — <repo-name>`
    > 3. Select scopes: ✅ `repo` + ✅ `project`
    > 4. Copy the token, then run:
    >    ```
-   >    gh secret set PROJECT_PAT --body "<your-token>" --repo <owner>/<repo>
+   >    gh secret set PROJECT_TOKEN --body "<your-token>" --repo <owner>/<repo>
    >    ```
    > 5. Reply **"done"** when finished.
 8. **IMPORTANT:** Delete the setup prompt file by running exactly:
