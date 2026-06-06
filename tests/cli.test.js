@@ -1,5 +1,9 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
+const os = require('os');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 
 const { resolveMode } = require('../bin/cli.js');
 
@@ -76,5 +80,39 @@ describe('setActionsVariable', () => {
       () => setActionsVariable('owner/repo', 'PROJECT_ID', 'PVT_abc', execFn),
       /Forbidden/
     );
+  });
+});
+
+describe('scaffoldLiteTemplates', () => {
+  it('copies CLAUDE.md and AGENTS.md but excludes .github/workflows', () => {
+    const { scaffoldLiteTemplates } = require('../bin/cli.js');
+    const src = path.join(__dirname, '..');
+    const tmp = path.join(os.tmpdir(), `pdlc-lite-${crypto.randomBytes(4).toString('hex')}`);
+    try {
+      scaffoldLiteTemplates(src, tmp);
+      const base = path.join(tmp, '.agentic-pdlc', 'templates');
+      assert.ok(fs.existsSync(path.join(base, 'CLAUDE.md')), 'CLAUDE.md should exist');
+      assert.ok(fs.existsSync(path.join(base, 'AGENTS.md')), 'AGENTS.md should exist');
+      assert.ok(!fs.existsSync(path.join(base, '.github', 'workflows')), '.github/workflows must not exist in lite');
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('scaffoldFullTemplates', () => {
+  it('copies .github/workflows with at least one yml file', () => {
+    const { scaffoldFullTemplates } = require('../bin/cli.js');
+    const src = path.join(__dirname, '..');
+    const tmp = path.join(os.tmpdir(), `pdlc-full-${crypto.randomBytes(4).toString('hex')}`);
+    try {
+      scaffoldFullTemplates(src, tmp, null, null, {}, 'owner', 'repo');
+      const wfDir = path.join(tmp, '.agentic-pdlc', 'templates', '.github', 'workflows');
+      assert.ok(fs.existsSync(wfDir), '.github/workflows should exist in full');
+      const ymls = fs.readdirSync(wfDir).filter(f => f.endsWith('.yml'));
+      assert.ok(ymls.length > 0, 'should contain at least one .yml file');
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
   });
 });
