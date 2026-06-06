@@ -1,6 +1,6 @@
 language: "en-US"
 reviews:
-  profile: "chill"
+  profile: "assertive"
   request_changes_workflow: false
   high_level_summary: true
   poem: false
@@ -10,6 +10,12 @@ reviews:
     base_branches:
       - main
   path_instructions:
+    - path: "bin/cli.js"
+      instructions: >
+        All user-facing console.log strings must use the t() translation helper.
+        New strings must be added to the i18n object and referenced via i18n.key_name.
+        Flag any hardcoded English-only string in console output as a violation of
+        the project's i18n pattern.
     - path: ".github/workflows/**"
       instructions: >
         Pay close attention to GitHub Actions syntax correctness, trigger
