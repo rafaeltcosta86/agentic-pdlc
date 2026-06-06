@@ -832,7 +832,7 @@ function resolveMode(args) {
 }
 
 // Export for testing
-if (typeof module !== 'undefined') module.exports = { resolveMode, setActionsVariable };
+if (typeof module !== 'undefined') module.exports = { resolveMode, setActionsVariable, scaffoldLiteTemplates, scaffoldFullTemplates };
 
 // ─── runLiteSetup ─────────────────────────────────────────────────────────────
 
@@ -891,6 +891,7 @@ async function runLiteSetup() {
   });
 
   copyAdapterFiles(agent, sourceDir, targetDir);
+  console.log(`${cyan}💡 To add the full board + multi-agent automation later: npx create-agentic-pdlc --upgrade-to-agentic${reset}`);
 
   rl.close();
 }
