@@ -569,21 +569,21 @@ async function runFullSetup() {
     }
   }
 
-  // Auto-provision PROJECT_PAT for personal repos
+  // Auto-provision PROJECT_TOKEN for personal repos
   let patAutoSet = false;
   if (projectId && !isOrg) {
     try {
       const tokenOut = execFileSync('gh', ['auth', 'token'], { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' }).trim();
       if (tokenOut) {
-        execFileSync('gh', ['secret', 'set', 'PROJECT_PAT', '--body', tokenOut, '--repo', repo], { stdio: ['ignore', 'pipe', 'pipe'] });
+        execFileSync('gh', ['secret', 'set', 'PROJECT_TOKEN', '--body', tokenOut, '--repo', repo], { stdio: ['ignore', 'pipe', 'pipe'] });
         patAutoSet = true;
-        console.log(`\n${green}✅ PROJECT_PAT secret set automatically (uses your gh OAuth token).${reset}`);
+        console.log(`\n${green}✅ PROJECT_TOKEN secret set automatically (uses your gh OAuth token).${reset}`);
       }
     } catch (err) {
-      console.log(`\n${yellow}⚠️  Could not auto-set PROJECT_PAT. Agent will guide manual setup.${reset}`);
+      console.log(`\n${yellow}⚠️  Could not auto-set PROJECT_TOKEN. Agent will guide manual setup.${reset}`);
     }
   } else if (projectId && isOrg) {
-    console.log(`\n${yellow}ℹ️  Org repo detected — PROJECT_PAT will require manual setup for security.${reset}`);
+    console.log(`\n${yellow}ℹ️  Org repo detected — PROJECT_TOKEN will require manual setup for security.${reset}`);
   }
 
   // Set PROJECT_ID as GitHub Actions Variable
@@ -1032,20 +1032,20 @@ async function runUpgradeToAgentic() {
     }
   }
 
-  // Auto-provision PROJECT_PAT for personal repos
+  // Auto-provision PROJECT_TOKEN for personal repos
   let patAutoSet = false;
   if (projectId && !isOrg) {
     try {
       const tokenOut = execFileSync('gh', ['auth', 'token'],
         { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' }).trim();
       if (tokenOut) {
-        execFileSync('gh', ['secret', 'set', 'PROJECT_PAT', '--body', tokenOut, '--repo', repo],
+        execFileSync('gh', ['secret', 'set', 'PROJECT_TOKEN', '--body', tokenOut, '--repo', repo],
           { stdio: ['ignore', 'pipe', 'pipe'] });
         patAutoSet = true;
-        console.log(`\n${green}✅ PROJECT_PAT secret set automatically (uses your gh OAuth token).${reset}`);
+        console.log(`\n${green}✅ PROJECT_TOKEN secret set automatically (uses your gh OAuth token).${reset}`);
       }
     } catch (_) {
-      console.log(`\n${yellow}⚠️  Could not auto-set PROJECT_PAT. Agent will guide manual setup.${reset}`);
+      console.log(`\n${yellow}⚠️  Could not auto-set PROJECT_TOKEN. Agent will guide manual setup.${reset}`);
     }
   }
 
