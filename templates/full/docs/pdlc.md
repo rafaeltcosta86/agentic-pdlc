@@ -9,8 +9,7 @@
 | 📐 Detail Solution | Claude is writing the technical spec | Label `stage:detailing` |
 | ✅ Approval | Spec ready, awaiting `spec:approved` label | Label `spec:approved` |
 | ⚙️ Development | Agent implementing the spec | Label `stage:development` |
-| 🧪 Testing | CI pipeline or AI QA Agent running (Variant B) | GitHub Actions / QA Agent |
-| 👁 Code Review / PR | PR opened (Variant A) or QA passed (Variant B) | GitHub Actions |
+| 👁 Code Review / PR | PR opened, awaiting your review | GitHub Actions |
 | 🚀 Ready for Production | Merged | GitHub Actions |
 
 <!--
@@ -20,8 +19,8 @@ Adapt columns as needed. The functional baseline is:
 
 ## Workflow Variants (QA Agent)
 
-- **Variant A (Default):** PRs bypass the `Testing` column and land directly in `Code Review / PR`.
-- **Variant B (QA Agent Enabled):** PRs land in the `Testing` column first. An AI QA agent verifies the PR, adding `qa:approved` or `qa:needs-work`. Only after a `qa:approved` is the issue moved to `Code Review / PR`.
+- **Variant A (Default):** PRs land directly in `Code Review / PR`.
+- **Variant B (QA Agent Enabled):** A QA agent verifies the PR before it moves to `Code Review / PR`, adding `qa:approved` or `qa:needs-work`.
 
 ## Board Identifiers (GitHub Projects)
 
@@ -40,7 +39,6 @@ REPO         = {{REPO_OWNER}}/{{REPO_NAME}}
 | 📐 Detail Solution | `{{ID_DETAIL}}` |
 | ✅ Approval | `{{ID_APPROVAL}}` |
 | ⚙️ Development | `{{ID_DEVELOPMENT}}` |
-| 🧪 Testing | `{{ID_TESTING}}` |
 | 👁 Code Review / PR | `{{ID_CODE_REVIEW_PR}}` |
 | 🚀 Ready for Production | `{{ID_READY_FOR_PRODUCTION}}` |
 
