@@ -58,6 +58,8 @@ const i18n = {
   setup_written: t('✅ Setup agent profile written to .agentic-setup.md\n', '✅ Perfil de setup do agente salvo em .agentic-setup.md\n', '✅ Perfil de configuración del agente guardado en .agentic-setup.md\n'),
   missing_claude: t('❌ Could not find instruction file at ', '❌ Não foi possível encontrar o arquivo de instrução em ', '❌ No se pudo encontrar el archivo de instrucción en '),
   cursor_rules_written: t('✅ Default cursor rules written to .cursorrules', '✅ Regras padrão do cursor salvas em .cursorrules', '✅ Reglas por defecto de cursor guardadas en .cursorrules'),
+  gemini_md_written: t('✅ GEMINI.md written to project root', '✅ GEMINI.md escrito na raiz do projeto', '✅ GEMINI.md escrito en la raíz del proyecto'),
+  gemini_done_hint: t('>>> Tell it to read GEMINI.md and AGENTS.md to start!', '>>> Diga a ele para ler GEMINI.md e AGENTS.md para começar!', '>>> Dile que lea GEMINI.md y AGENTS.md para empezar!'),
   setup_done: t('🎉 All set! Continue the setup with your agent:', '🎉 Aqui tá pronto! Continue o setup com o seu agente:', '🎉 ¡Listo! Continúa el setup con tu agente:'),
   setup_done_hint: t('>>> Tell it to read and execute the .agentic-setup.md file!', '>>> Diga a ele para ler e executar o arquivo .agentic-setup.md!', '>>> Dile que lea y ejecute el archivo .agentic-setup.md!'),
   upgrade_hint: t('💡 To add the full board + multi-agent automation later: npx create-agentic-pdlc --upgrade-to-agentic', '💡 Para adicionar o board completo + automação multi-agente mais tarde: npx create-agentic-pdlc --upgrade-to-agentic', '💡 Para agregar el tablero completo + automatización multi-agente más tarde: npx create-agentic-pdlc --upgrade-to-agentic'),
@@ -159,9 +161,9 @@ function copyDirSync(src, dest) {
   }
 }
 
-function printSetupDone() {
+function printSetupDone(hint) {
   const line1 = i18n.setup_done;
-  const line2 = i18n.setup_done_hint;
+  const line2 = hint || i18n.setup_done_hint;
   const sep = '='.repeat(Math.max(line1.length, line2.length));
   console.log(`\n${green}${sep}${reset}`);
   console.log(`${green}${line1}${reset}`);
@@ -283,6 +285,7 @@ async function setBranchProtection(repo, requiredChecks) {
 function copyAdapterFiles(agent, sourceDir, targetDir) {
   const claudeSetupSrc = path.join(sourceDir, 'adapters', 'claude-code', 'skill.md');
   const cursorSetupSrc = path.join(sourceDir, 'adapters', 'cursor',     'rules.md');
+  const geminiSetupSrc = path.join(sourceDir, 'adapters', 'gemini',     'gemini.md');
 
   if (agent === 'cursor') {
     if (fs.existsSync(cursorSetupSrc)) {
@@ -290,6 +293,14 @@ function copyAdapterFiles(agent, sourceDir, targetDir) {
       console.log(`${i18n.cursor_rules_written}`);
     }
   }
+
+  if (agent === 'gemini' && fs.existsSync(geminiSetupSrc)) {
+    fs.copyFileSync(geminiSetupSrc, path.join(targetDir, 'GEMINI.md'));
+    console.log(`${i18n.gemini_md_written}`);
+    printSetupDone(i18n.gemini_done_hint);
+    return;
+  }
+
   if (fs.existsSync(claudeSetupSrc)) {
     fs.copyFileSync(claudeSetupSrc, path.join(targetDir, '.agentic-setup.md'));
     console.log(`${i18n.setup_written}`);
