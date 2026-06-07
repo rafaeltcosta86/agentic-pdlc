@@ -397,15 +397,13 @@ function scaffoldFullTemplates(sourceDir, targetDir, projectId, statusFieldId, o
     pdlcContent = pdlcContent.replace(/\{\{REPO_OWNER\}\}/g, () => repoOwner);
     pdlcContent = pdlcContent.replace(/\{\{REPO_NAME\}\}/g,  () => repoName);
     if (Object.keys(optionMap).length > 0) {
-      pdlcContent = pdlcContent.replace(/\{\{ID_IDEA\}\}/g,                () => optionMap['💡 Idea - No move to Exploration directly'] || 'MISSING_ID');
-      pdlcContent = pdlcContent.replace(/\{\{ID_EXPLORATION\}\}/g,         () => optionMap['🔍 Exploration']         || 'MISSING_ID');
-      pdlcContent = pdlcContent.replace(/\{\{ID_BRAINSTORMING\}\}/g,       () => optionMap['🧠 Brainstorming']       || 'MISSING_ID');
-      pdlcContent = pdlcContent.replace(/\{\{ID_DETAIL\}\}/g,              () => optionMap['📐 Detail Solution']     || 'MISSING_ID');
-      pdlcContent = pdlcContent.replace(/\{\{ID_APPROVAL\}\}/g,            () => optionMap['✅ Approval']            || 'MISSING_ID');
-      pdlcContent = pdlcContent.replace(/\{\{ID_DEVELOPMENT\}\}/g,         () => optionMap['⚙️ Development']        || 'MISSING_ID');
-      pdlcContent = pdlcContent.replace(/\{\{ID_TESTING\}\}/g,             () => optionMap['🧪 Testing']             || 'MISSING_ID');
-      pdlcContent = pdlcContent.replace(/\{\{ID_CODE_REVIEW_PR\}\}/g,      () => optionMap['👁 Code Review / PR']   || 'MISSING_ID');
-      pdlcContent = pdlcContent.replace(/\{\{ID_READY_FOR_PRODUCTION\}\}/g,() => optionMap['🚀 Ready for Production']|| 'MISSING_ID');
+      pdlcContent = pdlcContent.replace(/\{\{ID_IDEA\}\}/g,                () => optionMap['💡 Idea']                  || 'MISSING_ID');
+      pdlcContent = pdlcContent.replace(/\{\{ID_BRAINSTORMING\}\}/g,       () => optionMap['🧠 Brainstorming']         || 'MISSING_ID');
+      pdlcContent = pdlcContent.replace(/\{\{ID_DETAIL\}\}/g,              () => optionMap['📐 Detail Solution']       || 'MISSING_ID');
+      pdlcContent = pdlcContent.replace(/\{\{ID_APPROVAL\}\}/g,            () => optionMap['✅ Approval']              || 'MISSING_ID');
+      pdlcContent = pdlcContent.replace(/\{\{ID_DEVELOPMENT\}\}/g,         () => optionMap['⚙️ Development']          || 'MISSING_ID');
+      pdlcContent = pdlcContent.replace(/\{\{ID_CODE_REVIEW_PR\}\}/g,      () => optionMap['👁 Code Review / PR']     || 'MISSING_ID');
+      pdlcContent = pdlcContent.replace(/\{\{ID_READY_FOR_PRODUCTION\}\}/g,() => optionMap['🚀 Ready for Production']  || 'MISSING_ID');
     }
     fs.writeFileSync(pdlcDest, pdlcContent);
     if (projectId && statusFieldId && Object.keys(optionMap).length > 0) {
@@ -420,15 +418,13 @@ function scaffoldFullTemplates(sourceDir, targetDir, projectId, statusFieldId, o
   if (fs.existsSync(paPath) && Object.keys(optionMap).length > 0) {
     let wfContent = fs.readFileSync(paPath, 'utf8');
     if (statusFieldId) wfContent = wfContent.replace(/\{\{STATUS_FIELD_ID\}\}/g, () => statusFieldId);
-    wfContent = wfContent.replace(/\{\{ID_IDEA\}\}/g,                () => optionMap['💡 Idea - No move to Exploration directly'] || 'MISSING_ID');
-    wfContent = wfContent.replace(/\{\{ID_EXPLORATION\}\}/g,         () => optionMap['🔍 Exploration']         || 'MISSING_ID');
-    wfContent = wfContent.replace(/\{\{ID_BRAINSTORMING\}\}/g,       () => optionMap['🧠 Brainstorming']       || 'MISSING_ID');
-    wfContent = wfContent.replace(/\{\{ID_DETAILING\}\}/g,           () => optionMap['📐 Detail Solution']     || 'MISSING_ID');
-    wfContent = wfContent.replace(/\{\{ID_APPROVAL\}\}/g,            () => optionMap['✅ Approval']            || 'MISSING_ID');
-    wfContent = wfContent.replace(/\{\{ID_DEVELOPMENT\}\}/g,         () => optionMap['⚙️ Development']        || 'MISSING_ID');
-    wfContent = wfContent.replace(/\{\{ID_TESTING\}\}/g,             () => optionMap['🧪 Testing']             || 'MISSING_ID');
-    wfContent = wfContent.replace(/\{\{ID_CODE_REVIEW_PR\}\}/g,      () => optionMap['👁 Code Review / PR']   || 'MISSING_ID');
-    wfContent = wfContent.replace(/\{\{ID_PRODUCTION\}\}/g,          () => optionMap['🚀 Ready for Production']|| 'MISSING_ID');
+    wfContent = wfContent.replace(/\{\{ID_IDEA\}\}/g,                () => optionMap['💡 Idea']                  || 'MISSING_ID');
+    wfContent = wfContent.replace(/\{\{ID_BRAINSTORMING\}\}/g,       () => optionMap['🧠 Brainstorming']         || 'MISSING_ID');
+    wfContent = wfContent.replace(/\{\{ID_DETAILING\}\}/g,           () => optionMap['📐 Detail Solution']       || 'MISSING_ID');
+    wfContent = wfContent.replace(/\{\{ID_APPROVAL\}\}/g,            () => optionMap['✅ Approval']              || 'MISSING_ID');
+    wfContent = wfContent.replace(/\{\{ID_DEVELOPMENT\}\}/g,         () => optionMap['⚙️ Development']          || 'MISSING_ID');
+    wfContent = wfContent.replace(/\{\{ID_CODE_REVIEW_PR\}\}/g,      () => optionMap['👁 Code Review / PR']     || 'MISSING_ID');
+    wfContent = wfContent.replace(/\{\{ID_PRODUCTION\}\}/g,          () => optionMap['🚀 Ready for Production']  || 'MISSING_ID');
     fs.writeFileSync(paPath, wfContent);
   }
 
@@ -564,15 +560,13 @@ async function runFullSetup() {
 
       if (statusFieldId) {
         const columns = [
-          { name: "💡 Idea - No move to Exploration directly", description: "Just tell your agent to work on issue #XX", color: "GRAY" },
-          { name: "🔍 Exploration", description: "AI is analyzing code and context", color: "PURPLE" },
-          { name: "🧠 Brainstorming", description: "AI proposed approaches and trade-offs", color: "PINK" },
-          { name: "📐 Detail Solution", description: "AI is writing the technical spec", color: "BLUE" },
-          { name: "✅ Approval", description: "Spec ready, awaiting `spec:approved` label", color: "GREEN" },
-          { name: "⚙️ Development", description: "AI implementing the spec", color: "ORANGE" },
-          { name: "🧪 Testing", description: "QA testing and CI pipeline checks", color: "RED" },
-          { name: "👁 Code Review / PR", description: "PR opened, awaiting your review", color: "YELLOW" },
-          { name: "🚀 Ready for Production", description: "Merged and ready for production", color: "GREEN" }
+          { name: "💡 Idea",               description: 'Tell your agent: "work on issue #XX"',       color: "GRAY"   },
+          { name: "🧠 Brainstorming",      description: "AI proposed approaches and trade-offs",       color: "PINK"   },
+          { name: "📐 Detail Solution",    description: "AI is writing the technical spec",            color: "BLUE"   },
+          { name: "✅ Approval",           description: "Spec ready, awaiting `spec:approved` label",  color: "GREEN"  },
+          { name: "⚙️ Development",       description: "AI implementing the spec",                    color: "ORANGE" },
+          { name: "👁 Code Review / PR",  description: "PR opened, awaiting your review",              color: "YELLOW" },
+          { name: "🚀 Ready for Production", description: "Merged and ready for production",           color: "GREEN"  },
         ];
 
         const updateFieldQuery = `mutation($fieldId: ID!, $options: [ProjectV2SingleSelectFieldOptionInput!]) {
@@ -1051,15 +1045,13 @@ async function runUpgradeToAgentic() {
 
       if (statusFieldId) {
         const columns = [
-          { name: '💡 Idea - No move to Exploration directly', description: 'Just tell your agent to work on issue #XX', color: 'GRAY' },
-          { name: '🔍 Exploration',     description: 'AI is analyzing code and context',            color: 'PURPLE' },
-          { name: '🧠 Brainstorming',   description: 'AI proposed approaches and trade-offs',       color: 'PINK'   },
-          { name: '📐 Detail Solution', description: 'AI is writing the technical spec',            color: 'BLUE'   },
-          { name: '✅ Approval',        description: 'Spec ready, awaiting `spec:approved` label',  color: 'GREEN'  },
-          { name: '⚙️ Development',    description: 'AI implementing the spec',                    color: 'ORANGE' },
-          { name: '🧪 Testing',         description: 'QA testing and CI pipeline checks',           color: 'RED'    },
-          { name: '👁 Code Review / PR',description: 'PR opened, awaiting your review',             color: 'YELLOW' },
-          { name: '🚀 Ready for Production', description: 'Merged and ready for production',        color: 'GREEN'  }
+          { name: '💡 Idea',               description: 'Tell your agent: "work on issue #XX"',      color: 'GRAY'   },
+          { name: '🧠 Brainstorming',      description: 'AI proposed approaches and trade-offs',      color: 'PINK'   },
+          { name: '📐 Detail Solution',    description: 'AI is writing the technical spec',           color: 'BLUE'   },
+          { name: '✅ Approval',           description: 'Spec ready, awaiting `spec:approved` label', color: 'GREEN'  },
+          { name: '⚙️ Development',       description: 'AI implementing the spec',                   color: 'ORANGE' },
+          { name: '👁 Code Review / PR',  description: 'PR opened, awaiting your review',             color: 'YELLOW' },
+          { name: '🚀 Ready for Production', description: 'Merged and ready for production',          color: 'GREEN'  },
         ];
 
         const queryPayload = JSON.stringify({
