@@ -304,7 +304,12 @@ function createLabelsForRepo(labels, repo) {
   for (const label of labels) {
     try {
       execFileSync('gh', ['label', 'create', label.name, '--color', label.color, '--description', label.description, '--repo', repo, '--force'], { stdio: 'ignore' });
-    } catch (_) {}
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        console.warn('\n⚠️  GitHub CLI (gh) is not installed. Skipping label creation.');
+        break;
+      }
+    }
   }
 }
 
@@ -769,6 +774,9 @@ async function runUpdate() {
   }
 
   const repo = ctx.repoOwner && ctx.repoName ? `${ctx.repoOwner}/${ctx.repoName}` : null;
+  if (!repo) {
+    console.warn(`\n${yellow}⚠️  Repository owner or name missing in cli-context.json. Automatic label creation will be skipped.${reset}`);
+  }
   const paPath = path.join(targetDir, '.github', 'workflows', 'project-automation.yml');
   const atPath = path.join(targetDir, '.github', 'workflows', 'agent-trigger.yml');
   const results = [];
@@ -782,8 +790,9 @@ async function runUpdate() {
       results.push(t('✅  Jules configured (@google-labs-jules)', '✅  Jules configurado (@google-labs-jules)', '✅  Jules configurado (@google-labs-jules)'));
     } else if (choice === 'b') {
       const handle = (await askQuestion(i18n.update_jules_ask_handle)).trim();
-      if (repo) createLabelsForRepo(JULES_LABELS, repo);
-      configureJules(atPath, handle, handle.replace('@', '').toLowerCase());
+      const labelName = handle.replace('@', '').toLowerCase();
+      if (repo) createLabelsForRepo([{ name: labelName, color: '5319e7', description: `${handle} AI Agent` }], repo);
+      configureJules(atPath, handle, labelName);
       results.push(t(`✅  Agent configured (${handle})`, `✅  Agente configurado (${handle})`, `✅  Agente configurado (${handle})`));
     } else {
       results.push(t('⏭  Jules — skipped', '⏭  Jules — pulado', '⏭  Jules — omitido'));
