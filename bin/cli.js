@@ -720,15 +720,6 @@ function uncommentYamlJob(content, jobCommentedLine) {
 function activateQaAgent(paPath) {
   let content = fs.readFileSync(paPath, 'utf8');
   content = uncommentYamlJob(content, '  # move-card-on-qa-pass:');
-
-  // Change STATUS_CODE_REVIEW_PR → STATUS_TESTING in move-card-on-pr-open only
-  const variantBIdx = content.indexOf('# 💡 VARIANT B');
-  if (variantBIdx !== -1) {
-    const before = content.slice(0, variantBIdx);
-    const after = content.slice(variantBIdx).replace('process.env.STATUS_CODE_REVIEW_PR', () => 'process.env.STATUS_TESTING');
-    content = before + after;
-  }
-
   fs.writeFileSync(paPath, content, 'utf8');
 }
 
