@@ -75,7 +75,11 @@ const i18n = {
   update_sentinel_ask: t("  Activate? CodeRabbit applies 'architecture-violation' label when violations are detected. (Y/n): ", "  Ativar? CodeRabbit aplica a label 'architecture-violation' quando detecta violações. (S/n): ", "  ¿Activar? CodeRabbit aplica la etiqueta 'architecture-violation' cuando detecta violaciones. (S/n): "),
   configuring_protection: t('[3/3] Configuring branch protection...', '[3/3] Configurando proteção de branch...', '[3/3] Configurando protección de rama...'),
   protection_ok: t('✅ Branch protection set — required checks: PDLC Stage Gate, QA Gate.', '✅ Proteção de branch configurada — checks obrigatórios: PDLC Stage Gate, QA Gate.', '✅ Protección de rama configurada — checks requeridos: PDLC Stage Gate, QA Gate.'),
-  protection_warn: t('⚠️  Branch protection could not be set automatically.\n     Set required checks manually: Settings → Branches → main → Required status checks.\n     Required: "PDLC Stage Gate" and "QA Gate"', '⚠️  Proteção de branch não pôde ser configurada automaticamente.\n     Configure manualmente: Settings → Branches → main → Required status checks.\n     Obrigatórios: "PDLC Stage Gate" e "QA Gate"', '⚠️  No se pudo configurar la protección de rama automáticamente.\n     Configúralo en: Settings → Branches → main → Required status checks.\n     Requeridos: "PDLC Stage Gate" y "QA Gate"'),
+  protection_warn: t(
+    '⚠️  Branch protection requires admin access — could not be set automatically.\n\n     What it does: prevents PRs from merging unless these CI checks pass:\n       • "PDLC Stage Gate" — blocks merge if the linked issue lacks spec:approved\n       • "QA Gate"         — blocks merge if automated QA checks failed\n\n     Without it: the workflow still runs, but PRs can be merged without approval.\n\n     To enable: Settings → Branches → main → Required status checks\n     Add: "PDLC Stage Gate" and "QA Gate"',
+    '⚠️  Proteção de branch requer acesso de admin — não pôde ser configurada automaticamente.\n\n     O que faz: impede que PRs sejam mergeados sem que esses checks de CI passem:\n       • "PDLC Stage Gate" — bloqueia merge se a issue não tiver spec:approved\n       • "QA Gate"         — bloqueia merge se os checks automáticos de QA falharem\n\n     Sem ela: o workflow continua funcionando, mas PRs podem ser mergeados sem aprovação.\n\n     Para ativar: Settings → Branches → main → Required status checks\n     Adicionar: "PDLC Stage Gate" e "QA Gate"',
+    '⚠️  La protección de rama requiere acceso de administrador — no se pudo configurar automáticamente.\n\n     Qué hace: impide que los PRs se fusionen sin que pasen estos checks de CI:\n       • "PDLC Stage Gate" — bloquea el merge si la issue no tiene spec:approved\n       • "QA Gate"         — bloquea el merge si los checks automáticos de QA fallaron\n\n     Sin ella: el flujo sigue funcionando, pero los PRs se pueden fusionar sin aprobación.\n\n     Para activar: Settings → Branches → main → Required status checks\n     Agregar: "PDLC Stage Gate" y "QA Gate"'
+  ),
   issue_templates_copied: t(
     '✅ Issue templates copied to .github/ISSUE_TEMPLATE/',
     '✅ Issue templates copiados para .github/ISSUE_TEMPLATE/',
@@ -91,6 +95,16 @@ const i18n = {
     '⚠️  Não foi possível configurar vars.PROJECT_ID — o token pode não ter permissão variables:write.\n   Configure manualmente: repo Settings → Secrets and variables → Variables → PROJECT_ID = ',
     '⚠️  No se pudo configurar vars.PROJECT_ID — el token puede no tener permiso variables:write.\n   Configura manualmente: repo Settings → Secrets and variables → Variables → PROJECT_ID = '
   ),
+  gh_not_installed: t(
+    '\n⚠️  GitHub CLI (gh) is not installed. Skipping label creation.',
+    '\n⚠️  GitHub CLI (gh) não está instalado. Pulando criação de labels.',
+    '\n⚠️  GitHub CLI (gh) no está instalado. Omitiendo creación de etiquetas.'
+  ),
+  repo_context_missing: t(
+    '\n⚠️  Repository owner or name missing in cli-context.json. Automatic label creation will be skipped.',
+    '\n⚠️  Dono ou nome do repositório ausente em cli-context.json. Criação automática de labels será pulada.',
+    '\n⚠️  Propietario o nombre del repositorio faltante en cli-context.json. Se omitirá la creación automática de etiquetas.'
+  ),
 };
 
 const cyan = '\x1b[36m';
@@ -100,19 +114,23 @@ const yellow = '\x1b[33m';
 const red = '\x1b[31m';
 
 const PDLC_LABELS = [
-  { name: 'stage:exploration',      color: '9b59b6', description: 'Issue is being evaluated' },
   { name: 'stage:brainstorming',    color: 'e84393', description: 'Proposed approaches awaiting PM gate' },
   { name: 'stage:detailing',        color: '3498db', description: 'Technical spec is being written' },
   { name: 'stage:development',      color: 'e67e22', description: 'Agent is implementing the spec' },
-  { name: 'stage:testing',          color: '8e44ad', description: 'Agent is testing the implementation' },
   { name: 'spec:approved',          color: '0e8a16', description: 'Spec approved — agent can implement' },
   { name: 'pr:in-review',           color: 'e4e669', description: 'PR awaiting code review' },
   { name: 'pr:approved',            color: '0e8a16', description: 'PR approved, ready for merge' },
   { name: 'architecture-violation', color: 'd93f0b', description: 'Invariant violation detected by CI' },
-  { name: 'qa:approved',            color: '0e8a16', description: 'QA Agent approved the implementation' },
-  { name: 'qa:needs-work',          color: 'd93f0b', description: 'QA Agent found issues' },
-  { name: 'infra:qa-broken',        color: 'F97316', description: 'QA Agent failed to run — manual review required' },
-  { name: 'jules',                  color: '5319e7', description: 'Jules AI Agent' }
+];
+
+const JULES_LABELS = [
+  { name: 'jules', color: '5319e7', description: 'Jules AI Agent' },
+];
+
+const QA_LABELS = [
+  { name: 'qa:approved',    color: '0e8a16', description: 'QA Agent approved the implementation' },
+  { name: 'qa:needs-work',  color: 'd93f0b', description: 'QA Agent found issues' },
+  { name: 'infra:qa-broken',color: 'F97316', description: 'QA Agent failed to run — manual review required' },
 ];
 
 function buildBoardUrl(repoOwner, projectNumber, isOrg) {
@@ -290,6 +308,19 @@ function scaffoldLiteTemplates(sourceDir, targetDir) {
   const issueTemplateDest = path.join(destTemplates, '.github', 'ISSUE_TEMPLATE');
   if (fs.existsSync(issueTemplateSrc)) {
     copyDirSync(issueTemplateSrc, issueTemplateDest);
+  }
+}
+
+function createLabelsForRepo(labels, repo) {
+  for (const label of labels) {
+    try {
+      execFileSync('gh', ['label', 'create', label.name, '--color', label.color, '--description', label.description, '--repo', repo, '--force'], { stdio: 'ignore' });
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        console.warn(i18n.gh_not_installed);
+        break;
+      }
+    }
   }
 }
 
@@ -753,6 +784,10 @@ async function runUpdate() {
     return;
   }
 
+  const repo = ctx.repoOwner && ctx.repoName ? `${ctx.repoOwner}/${ctx.repoName}` : null;
+  if (!repo) {
+    console.warn(`${yellow}${i18n.repo_context_missing}${reset}`);
+  }
   const paPath = path.join(targetDir, '.github', 'workflows', 'project-automation.yml');
   const atPath = path.join(targetDir, '.github', 'workflows', 'agent-trigger.yml');
   const results = [];
@@ -761,11 +796,14 @@ async function runUpdate() {
     console.log(`\n${cyan}${i18n.update_jules_header}${reset}`);
     const choice = (await askQuestion(i18n.update_jules_ask)).trim().toLowerCase();
     if (choice === 'a' || choice === '') {
+      if (repo) createLabelsForRepo(JULES_LABELS, repo);
       configureJules(atPath, '@google-labs-jules', 'jules');
       results.push(t('✅  Jules configured (@google-labs-jules)', '✅  Jules configurado (@google-labs-jules)', '✅  Jules configurado (@google-labs-jules)'));
     } else if (choice === 'b') {
       const handle = (await askQuestion(i18n.update_jules_ask_handle)).trim();
-      configureJules(atPath, handle, handle.replace('@', '').toLowerCase());
+      const labelName = handle.replace('@', '').toLowerCase();
+      if (repo) createLabelsForRepo([{ name: labelName, color: '5319e7', description: `${handle} AI Agent` }], repo);
+      configureJules(atPath, handle, labelName);
       results.push(t(`✅  Agent configured (${handle})`, `✅  Agente configurado (${handle})`, `✅  Agente configurado (${handle})`));
     } else {
       results.push(t('⏭  Jules — skipped', '⏭  Jules — pulado', '⏭  Jules — omitido'));
@@ -776,6 +814,7 @@ async function runUpdate() {
     console.log(`\n${cyan}${i18n.update_qa_header}${reset}`);
     const answer = (await askQuestion(i18n.update_qa_ask)).trim().toLowerCase();
     if (!['n', 'no', 'não', 'nao'].includes(answer)) {
+      if (repo) createLabelsForRepo(QA_LABELS, repo);
       activateQaAgent(paPath);
       results.push(t(
         '✅  QA Agent configured — Variant B activated (uses GITHUB_TOKEN, no extra secrets needed)',
