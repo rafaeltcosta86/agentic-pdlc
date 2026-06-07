@@ -26,7 +26,7 @@ fi
 
 LABELS=$(gh issue view "$ISSUE_NUM" --json labels --jq '[.labels[].name] | join(" ")' 2>/dev/null || echo "")
 
-if echo "$LABELS" | grep -qw "spec:approved" || echo "$LABELS" | grep -qw "stage:approval" || echo "$LABELS" | grep -qw "stage:development" || echo "$LABELS" | grep -qw "stage:testing" || echo "$LABELS" | grep -qw "human-approved"; then
+if echo "$LABELS" | grep -qw "spec:approved" || echo "$LABELS" | grep -qw "stage:development" || echo "$LABELS" | grep -qw "human-approved"; then
   echo "✅ PDLC: Issue #$ISSUE_NUM approved — gate passed."
   exit 0
 fi
@@ -34,6 +34,6 @@ fi
 STAGE=$(echo "$LABELS" | tr ' ' '\n' | grep "^stage:" | head -1 || echo "none")
 echo "❌ PDLC Stage Gate: Issue #$ISSUE_NUM is not approved."
 echo "   Current stage: $STAGE"
-echo "   Required: stage:approval OR spec:approved OR stage:development OR stage:testing OR human-approved label on the issue."
+echo "   Required: spec:approved OR stage:development OR human-approved label on the issue."
 echo "   Emergency bypass: rename branch to hotfix/<issue-number>-<description>."
 exit 1

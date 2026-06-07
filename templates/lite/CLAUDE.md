@@ -6,7 +6,7 @@
 
 ### Hook Enforcement
 
-A `PreToolUse` hook automatically blocks `gh pr create` if the linked issue lacks `spec:approved`.
+A `PreToolUse` hook blocks `gh pr create` unless the linked issue has `spec:approved`, `stage:development`, or `human-approved`.
 If blocked: check the issue labels and advance the spec before retrying.
 
 ### Invariants

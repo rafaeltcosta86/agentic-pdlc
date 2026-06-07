@@ -126,7 +126,7 @@ gh issue view <N> --json labels --jq '.labels[].name'
 
 If `spec:approved` is not present — stop. Go back to the issue, complete the spec, advance to `stage:approval`, and wait for the PM to add the label.
 
-> Claude Code enforces this automatically via a PreToolUse hook.
+> Claude Code enforces this automatically via a PreToolUse hook that allows `gh pr create` only when the issue has `spec:approved`, `stage:development`, or `human-approved`.
 > All other agents must enforce it manually — treat it as a hard constraint, not a guideline.
 
 ## Pipeline Updates
