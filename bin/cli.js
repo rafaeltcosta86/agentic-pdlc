@@ -94,6 +94,16 @@ const i18n = {
     '⚠️  Não foi possível configurar vars.PROJECT_ID — o token pode não ter permissão variables:write.\n   Configure manualmente: repo Settings → Secrets and variables → Variables → PROJECT_ID = ',
     '⚠️  No se pudo configurar vars.PROJECT_ID — el token puede no tener permiso variables:write.\n   Configura manualmente: repo Settings → Secrets and variables → Variables → PROJECT_ID = '
   ),
+  gh_not_installed: t(
+    '\n⚠️  GitHub CLI (gh) is not installed. Skipping label creation.',
+    '\n⚠️  GitHub CLI (gh) não está instalado. Pulando criação de labels.',
+    '\n⚠️  GitHub CLI (gh) no está instalado. Omitiendo creación de etiquetas.'
+  ),
+  repo_context_missing: t(
+    '\n⚠️  Repository owner or name missing in cli-context.json. Automatic label creation will be skipped.',
+    '\n⚠️  Dono ou nome do repositório ausente em cli-context.json. Criação automática de labels será pulada.',
+    '\n⚠️  Propietario o nombre del repositorio faltante en cli-context.json. Se omitirá la creación automática de etiquetas.'
+  ),
 };
 
 const cyan = '\x1b[36m';
@@ -306,7 +316,7 @@ function createLabelsForRepo(labels, repo) {
       execFileSync('gh', ['label', 'create', label.name, '--color', label.color, '--description', label.description, '--repo', repo, '--force'], { stdio: 'ignore' });
     } catch (err) {
       if (err.code === 'ENOENT') {
-        console.warn('\n⚠️  GitHub CLI (gh) is not installed. Skipping label creation.');
+        console.warn(i18n.gh_not_installed);
         break;
       }
     }
@@ -775,7 +785,7 @@ async function runUpdate() {
 
   const repo = ctx.repoOwner && ctx.repoName ? `${ctx.repoOwner}/${ctx.repoName}` : null;
   if (!repo) {
-    console.warn(`\n${yellow}⚠️  Repository owner or name missing in cli-context.json. Automatic label creation will be skipped.${reset}`);
+    console.warn(`${yellow}${i18n.repo_context_missing}${reset}`);
   }
   const paPath = path.join(targetDir, '.github', 'workflows', 'project-automation.yml');
   const atPath = path.join(targetDir, '.github', 'workflows', 'agent-trigger.yml');
