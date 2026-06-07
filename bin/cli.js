@@ -104,6 +104,11 @@ const i18n = {
     '\n⚠️  Dono ou nome do repositório ausente em cli-context.json. Criação automática de labels será pulada.',
     '\n⚠️  Propietario o nombre del repositorio faltante en cli-context.json. Se omitirá la creación automática de etiquetas.'
   ),
+  protection_private_repo: t(
+    '⚠️  GitHub allows Branch Protection only for public repos (or a paid plan).\n     👌  Don\'t worry, the workflow still runs smoothly, but PRs can be merged without approval.',
+    '⚠️  O GitHub permite Branch Protection apenas para repos públicos (ou plano pago).\n     👌  Sem problemas, o workflow continua funcionando normalmente, mas PRs podem ser mergeados sem aprovação.',
+    '⚠️  GitHub permite Branch Protection solo para repos públicos (o un plan de pago).\n     👌  No te preocupes, el workflow sigue funcionando normalmente, pero los PRs pueden fusionarse sin aprobación.'
+  ),
 };
 
 const cyan = '\x1b[36m';
@@ -244,10 +249,17 @@ function installHook(sourceDir, targetDir) {
 async function setBranchProtection(repo, requiredChecks) {
   console.log(`\n${cyan}${i18n.configuring_protection}${reset}`);
   try {
-    const defaultBranch = execFileSync(
-      'gh', ['api', `repos/${repo}`, '--jq', '.default_branch'],
+    const repoInfo = JSON.parse(execFileSync(
+      'gh', ['api', `repos/${repo}`, '--jq', '{private: .private, default_branch: .default_branch}'],
       { stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf8' }
-    ).trim() || 'main';
+    ).trim());
+
+    if (repoInfo.private) {
+      console.log(`  ${yellow}${i18n.protection_private_repo}${reset}`);
+      return;
+    }
+
+    const defaultBranch = repoInfo.default_branch || 'main';
 
     const protectionPayload = JSON.stringify({
       required_status_checks: { strict: false, contexts: requiredChecks },
