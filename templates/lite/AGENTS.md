@@ -92,6 +92,24 @@ Automation checks the issue body for `## Acceptance Criteria` and `## Files to M
 
 **NEVER apply `spec:approved`, `stage:development`, or `qa:*`.** These are owned by the PM and automation.
 
+## ⛔ NEVER Open a PR Without `spec:approved`
+
+**This is the most important rule in this file.**
+
+Opening a PR without `spec:approved` on the linked issue bypasses the human review gate and breaks the PDLC contract with your team.
+
+**Before running `gh pr create`, always verify:**
+
+```bash
+gh issue view <N> --json labels --jq '.labels[].name'
+# Must include: spec:approved
+```
+
+If `spec:approved` is not present — stop. Go back to the issue, complete the spec, advance to `stage:approval`, and wait for the PM to add the label.
+
+> Claude Code enforces this automatically via a PreToolUse hook.
+> All other agents must enforce it manually — treat it as a hard constraint, not a guideline.
+
 ## Stage Transition Rules (non-negotiable)
 
 MUST apply `stage:brainstorming` immediately on starting work — before reading any code,
