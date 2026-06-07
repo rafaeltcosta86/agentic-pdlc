@@ -9,7 +9,6 @@
 | 📐 Detail Solution | AI is writing the technical spec | Label `stage:detailing` |
 | ✅ Approval | Your turn, awaiting `spec:approved` label | Label `spec:approved` |
 | ⚙️ Development | AI implementing the spec | Label `stage:development` |
-| 🧪 Testing | CI pipeline running | GitHub Actions |
 | 👁 Code Review / PR | PR opened, awaiting human review | GitHub Actions |
 | 🚀 Ready for Production | Merged | GitHub Actions |
 
@@ -35,7 +34,6 @@ REPO         = {{REPO_OWNER}}/{{REPO_NAME}}
 | 📐 Detail Solution | `{{ID_DETAIL}}` |
 | ✅ Approval | `{{ID_APPROVAL}}` |
 | ⚙️ Development | `{{ID_DEVELOPMENT}}` |
-| 🧪 Testing | `{{ID_TESTING}}` |
 | 👁 Code Review / PR | `{{ID_CODE_REVIEW_PR}}` |
 | 🚀 Ready for Production | `{{ID_READY_FOR_PRODUCTION}}` |
 
@@ -103,7 +101,7 @@ Agents MUST NOT skip any stage. The ONLY authorized bypasses are:
 
 | Mechanism | Who authorizes | What it bypasses |
 |---|---|---|
-| `human-approved` label on issue | PM (human) only | All stage gates — automation adds `qa:approved` to linked PRs, moving card to Code Review / PR. `pdlc-stage-gate` accepts `stage:testing` as a valid post-gate state. |
+| `human-approved` label on issue | PM (human) only | All stage gates — automation adds `qa:approved` to linked PRs, moving card to Code Review / PR. |
 | Branch prefix `hotfix/` | PM (human) only | PR gate only |
 
 Agents MUST NOT self-authorize a bypass. Stop and ask the PM explicitly.
