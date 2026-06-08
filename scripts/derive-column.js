@@ -4,6 +4,7 @@
 const LABEL_PRIORITY = [
   { label: 'pr:in-review',        column: 'code_review_pr' },
   { label: 'pr:approved',         column: 'code_review_pr' },
+  { label: 'spec:approved',        column: 'development' },
   { label: 'stage:development',   column: 'development' },
   { label: 'stage:approval',      column: 'approval' },
   { label: 'stage:detailing',     column: 'detailing' },
