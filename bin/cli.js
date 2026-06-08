@@ -128,7 +128,7 @@ const i18n = {
   templates_copied: t('✅ Templates copied to .agentic-pdlc/templates/', '✅ Templates copiados para .agentic-pdlc/templates/', '✅ Plantillas copiadas a .agentic-pdlc/templates/'),
   pdlc_prefilled: t('✅ Pre-filled pdlc.md with Project ID, Status Field ID, and Column Option IDs.', '✅ pdlc.md preenchido com Project ID, Status Field ID, e Column Option IDs.', '✅ pdlc.md completado con Project ID, Status Field ID y Column Option IDs.'),
   setup_written: t('✅ Setup agent profile written to .agentic-setup.md\n', '✅ Perfil de setup do agente salvo em .agentic-setup.md\n', '✅ Perfil de configuración del agente guardado en .agentic-setup.md\n'),
-  claude_setup_written: t('✅ .agentic-setup.md written for Claude Code\n', '✅ .agentic-setup.md escrito para Claude Code\n', '✅ .agentic-setup.md escrito para Claude Code\n'),
+  claude_setup_written: t('✅ .agentic-setup.md written for Claude Code', '✅ .agentic-setup.md escrito para Claude Code', '✅ .agentic-setup.md escrito para Claude Code'),
   missing_claude: t('⚠️ Claude Code adapter file not bundled — .agentic-setup.md skipped. Expected: ', '⚠️ Arquivo do adaptador Claude Code não encontrado — .agentic-setup.md ignorado. Esperado: ', '⚠️ Archivo del adaptador Claude Code no encontrado — .agentic-setup.md omitido. Esperado: '),
   cursor_rules_written: t('✅ Default cursor rules written to .cursorrules', '✅ Regras padrão do cursor salvas em .cursorrules', '✅ Reglas por defecto de cursor guardadas en .cursorrules'),
   gemini_md_written: t('✅ GEMINI.md written to project root', '✅ GEMINI.md escrito na raiz do projeto', '✅ GEMINI.md escrito en la raíz del proyecto'),
@@ -368,7 +368,7 @@ function copyAdapterFiles(agentChoice, sourceDir, targetDir) {
       fs.copyFileSync(claudeSetupSrc, path.join(targetDir, '.agentic-setup.md'));
       console.log(i18n.claude_setup_written);
     } else {
-      console.warn(`${i18n.missing_claude}${claudeSetupSrc}`);
+      console.warn(`${yellow}${i18n.missing_claude}${claudeSetupSrc}${reset}`);
     }
   }
 
