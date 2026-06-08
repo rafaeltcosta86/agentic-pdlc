@@ -360,6 +360,33 @@ async function setBranchProtection(repo, requiredChecks) {
   }
 }
 
+function linkProjectToRepository(repo, projectId, execFn) {
+  execFn = execFn || execFileSync;
+  try {
+    const repoNodeId = execFn(
+      'gh',
+      ['api', `repos/${repo}`, '--jq', '.node_id'],
+      { stdio: ['ignore', 'pipe', 'ignore'] }
+    ).toString().trim();
+    execFn(
+      'gh',
+      [
+        'api', 'graphql', '-f',
+        'query=mutation($projectId: ID!, $repositoryId: ID!) { linkProjectV2ToRepository(input: {projectId: $projectId, repositoryId: $repositoryId}) { repository { name } } }',
+        '-f', `projectId=${projectId}`,
+        '-f', `repositoryId=${repoNodeId}`
+      ],
+      { stdio: ['ignore', 'ignore', 'pipe'] }
+    );
+    console.log(`  ${i18n.link_project_ok}`);
+  } catch (err) {
+    const reason = (err.stderr || '').toString().trim().split('\n')[0];
+    console.log(`  ${yellow}${i18n.link_project_warn}${reset}`);
+    if (reason) console.log(`  ${yellow}  ${i18n.link_project_reason}${reason}${reset}`);
+    console.log(`  ${yellow}  ${i18n.link_project_manual}${reset}`);
+  }
+}
+
 function copyAdapterFiles(agentChoice, sourceDir, targetDir) {
   const claudeSetupSrc = path.join(sourceDir, 'adapters', 'claude-code', 'skill.md');
   const cursorSetupSrc = path.join(sourceDir, 'adapters', 'cursor',     'rules.md');
@@ -983,7 +1010,7 @@ function resolveMode(args) {
 }
 
 // Export for testing
-if (typeof module !== 'undefined') module.exports = { resolveMode, setActionsVariable, scaffoldLiteTemplates, scaffoldFullTemplates, copyAdapterFiles };
+if (typeof module !== 'undefined') module.exports = { resolveMode, setActionsVariable, scaffoldLiteTemplates, scaffoldFullTemplates, copyAdapterFiles, linkProjectToRepository };
 
 // ─── runLiteSetup ─────────────────────────────────────────────────────────────
 
