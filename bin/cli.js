@@ -295,7 +295,11 @@ function copyAdapterFiles(agent, sourceDir, targetDir) {
   }
 
   if (agent === 'gemini' && fs.existsSync(geminiSetupSrc)) {
-    fs.copyFileSync(geminiSetupSrc, path.join(targetDir, 'GEMINI.md'));
+    const projectName = path.basename(targetDir).toUpperCase();
+    let geminiContent = fs.readFileSync(geminiSetupSrc, 'utf8');
+    geminiContent = geminiContent.replace(/\{\{PROJECT_NAME\}\}/g, projectName);
+    geminiContent = geminiContent.replace(/\{\{EXTRA_PATTERNS\}\}/g, '');
+    fs.writeFileSync(path.join(targetDir, 'GEMINI.md'), geminiContent, 'utf8');
     console.log(`${i18n.gemini_md_written}`);
     printSetupDone(i18n.gemini_done_hint);
     return;
