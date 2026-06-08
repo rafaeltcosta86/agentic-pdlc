@@ -294,7 +294,7 @@ function copyAdapterFiles(agent, sourceDir, targetDir) {
     }
   }
 
-  if (agent === 'gemini' && fs.existsSync(geminiSetupSrc)) {
+  if ((agent === 'gemini' || agent === 'antigravity') && fs.existsSync(geminiSetupSrc)) {
     const projectName = path.basename(targetDir).toUpperCase();
     let geminiContent = fs.readFileSync(geminiSetupSrc, 'utf8');
     geminiContent = geminiContent.replace(/\{\{PROJECT_NAME\}\}/g, projectName);
