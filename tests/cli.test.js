@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const { resolveMode } = require('../bin/cli.js');
+const { resolveMode, copyAdapterFiles } = require('../bin/cli.js');
 
 describe('resolveMode', () => {
   it('returns lite when no flags', () => {
@@ -96,6 +96,105 @@ describe('scaffoldLiteTemplates', () => {
       assert.ok(!fs.existsSync(path.join(base, '.github', 'workflows')), '.github/workflows must not exist in lite');
     } finally {
       fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('copyAdapterFiles', () => {
+  function makeSourceDir(tmp) {
+    const adapters = path.join(tmp, 'adapters');
+    const claudeSrc = path.join(adapters, 'claude-code');
+    const cursorSrc = path.join(adapters, 'cursor');
+    const geminiSrc = path.join(adapters, 'gemini');
+    fs.mkdirSync(claudeSrc, { recursive: true });
+    fs.mkdirSync(cursorSrc, { recursive: true });
+    fs.mkdirSync(geminiSrc, { recursive: true });
+    fs.writeFileSync(path.join(claudeSrc, 'skill.md'), '# Claude skill');
+    fs.writeFileSync(path.join(cursorSrc, 'rules.md'), '# Cursor rules');
+    fs.writeFileSync(path.join(geminiSrc, 'gemini.md'), '# Gemini {{PROJECT_NAME}} {{EXTRA_PATTERNS}}');
+    return tmp;
+  }
+
+  it("'multi' installs all three adapters", () => {
+    const src = path.join(os.tmpdir(), `pdlc-src-${crypto.randomBytes(4).toString('hex')}`);
+    const dst = path.join(os.tmpdir(), `pdlc-dst-${crypto.randomBytes(4).toString('hex')}`);
+    try {
+      makeSourceDir(src);
+      fs.mkdirSync(dst, { recursive: true });
+      copyAdapterFiles('multi', src, dst);
+      assert.ok(fs.existsSync(path.join(dst, '.agentic-setup.md')), '.agentic-setup.md');
+      assert.ok(fs.existsSync(path.join(dst, 'GEMINI.md')),          'GEMINI.md');
+      assert.ok(fs.existsSync(path.join(dst, '.cursorrules')),        '.cursorrules');
+    } finally {
+      fs.rmSync(src, { recursive: true, force: true });
+      fs.rmSync(dst, { recursive: true, force: true });
+    }
+  });
+
+  it("'claude' installs only .agentic-setup.md", () => {
+    const src = path.join(os.tmpdir(), `pdlc-src-${crypto.randomBytes(4).toString('hex')}`);
+    const dst = path.join(os.tmpdir(), `pdlc-dst-${crypto.randomBytes(4).toString('hex')}`);
+    try {
+      makeSourceDir(src);
+      fs.mkdirSync(dst, { recursive: true });
+      copyAdapterFiles('claude', src, dst);
+      assert.ok(fs.existsSync(path.join(dst, '.agentic-setup.md')), '.agentic-setup.md');
+      assert.ok(!fs.existsSync(path.join(dst, 'GEMINI.md')),         'GEMINI.md must not exist');
+      assert.ok(!fs.existsSync(path.join(dst, '.cursorrules')),       '.cursorrules must not exist');
+    } finally {
+      fs.rmSync(src, { recursive: true, force: true });
+      fs.rmSync(dst, { recursive: true, force: true });
+    }
+  });
+
+  it("'gemini' installs only GEMINI.md with project name substituted", () => {
+    const src = path.join(os.tmpdir(), `pdlc-src-${crypto.randomBytes(4).toString('hex')}`);
+    const dst = path.join(os.tmpdir(), `pdlc-dst-${crypto.randomBytes(4).toString('hex')}`);
+    try {
+      makeSourceDir(src);
+      fs.mkdirSync(dst, { recursive: true });
+      copyAdapterFiles('gemini', src, dst);
+      assert.ok(!fs.existsSync(path.join(dst, '.agentic-setup.md')), '.agentic-setup.md must not exist');
+      assert.ok(fs.existsSync(path.join(dst, 'GEMINI.md')),           'GEMINI.md');
+      assert.ok(!fs.existsSync(path.join(dst, '.cursorrules')),        '.cursorrules must not exist');
+      const content = fs.readFileSync(path.join(dst, 'GEMINI.md'), 'utf8');
+      assert.ok(!content.includes('{{PROJECT_NAME}}'), 'PROJECT_NAME placeholder must be replaced');
+      assert.ok(!content.includes('{{EXTRA_PATTERNS}}'), 'EXTRA_PATTERNS placeholder must be replaced');
+    } finally {
+      fs.rmSync(src, { recursive: true, force: true });
+      fs.rmSync(dst, { recursive: true, force: true });
+    }
+  });
+
+  it("'cursor' installs only .cursorrules", () => {
+    const src = path.join(os.tmpdir(), `pdlc-src-${crypto.randomBytes(4).toString('hex')}`);
+    const dst = path.join(os.tmpdir(), `pdlc-dst-${crypto.randomBytes(4).toString('hex')}`);
+    try {
+      makeSourceDir(src);
+      fs.mkdirSync(dst, { recursive: true });
+      copyAdapterFiles('cursor', src, dst);
+      assert.ok(!fs.existsSync(path.join(dst, '.agentic-setup.md')), '.agentic-setup.md must not exist');
+      assert.ok(!fs.existsSync(path.join(dst, 'GEMINI.md')),          'GEMINI.md must not exist');
+      assert.ok(fs.existsSync(path.join(dst, '.cursorrules')),         '.cursorrules');
+    } finally {
+      fs.rmSync(src, { recursive: true, force: true });
+      fs.rmSync(dst, { recursive: true, force: true });
+    }
+  });
+
+  it("'other' installs no adapter files", () => {
+    const src = path.join(os.tmpdir(), `pdlc-src-${crypto.randomBytes(4).toString('hex')}`);
+    const dst = path.join(os.tmpdir(), `pdlc-dst-${crypto.randomBytes(4).toString('hex')}`);
+    try {
+      makeSourceDir(src);
+      fs.mkdirSync(dst, { recursive: true });
+      copyAdapterFiles('other', src, dst);
+      assert.ok(!fs.existsSync(path.join(dst, '.agentic-setup.md')), '.agentic-setup.md must not exist');
+      assert.ok(!fs.existsSync(path.join(dst, 'GEMINI.md')),          'GEMINI.md must not exist');
+      assert.ok(!fs.existsSync(path.join(dst, '.cursorrules')),        '.cursorrules must not exist');
+    } finally {
+      fs.rmSync(src, { recursive: true, force: true });
+      fs.rmSync(dst, { recursive: true, force: true });
     }
   });
 });
