@@ -80,7 +80,7 @@ If any of these files are missing, you are in **Setup Mode**. Do not proceed wit
    ```
    rm -f .agentic-setup.md .agentic-setup-prompt.md .agentic-pdlc/SETUP_PROMPT.md && rm -rf .agentic-pdlc/templates/
    ```
-   **Do NOT run `git add` or any other git command.** These files were never committed and do not exist in the git index. This command must run **before** the commit step.
+   **Do NOT run `git add` or any other git command.** The setup prompt files were never committed and do not exist in the git index. The `templates/` removal must run **before** the commit step so those files are excluded from the `chore: setup` commit.
 9. Commit everything with the message: `chore: setup agentic-pdlc framework`.
 10. Conclude Setup Mode. Read `boardUrl` from `.agentic-pdlc/cli-context.json` and show the user exactly this (do not reconstruct the URL — `boardUrl` already includes the correct `users/` or `orgs/` path segment and `?layout=board`):
 
