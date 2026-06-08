@@ -10,13 +10,70 @@ const targetDir = process.cwd();
 // The directory where this script sits (globally/locally in node_modules)
 const sourceDir = path.join(__dirname, '..');
 
-const rl = require.main === module
+let rl = require.main === module
   ? readline.createInterface({ input: process.stdin, output: process.stdout })
   : null;
 
 function askQuestion(query) {
   if (!rl) throw new Error('askQuestion called in non-interactive context');
   return new Promise(resolve => rl.question(query, resolve));
+}
+
+async function selectAgent() {
+  const options = [
+    { value: 'multi',  label: 'Multi-agent  (installs adapters for Claude, gemini CLI, Antigravity and Cursor)' },
+    { value: 'claude', label: 'Claude Code' },
+    { value: 'gemini', label: 'Gemini CLI / Antigravity' },
+    { value: 'cursor', label: 'Cursor' },
+    { value: 'other',  label: 'Other' },
+  ];
+
+  const needsRl = rl !== null;
+  if (rl) { rl.close(); rl = null; }
+
+  process.stdout.write(`\n${cyan}${i18n.ask_agent_prompt}${reset}\n\n`);
+
+  let idx = 0;
+
+  function render(first) {
+    if (!first) process.stdout.write(`\x1B[${options.length}A`);
+    for (let i = 0; i < options.length; i++) {
+      const active = i === idx;
+      const prefix = active ? `${cyan}❯ ` : '  ';
+      const label  = active ? `${cyan}${options[i].label}${reset}` : options[i].label;
+      process.stdout.write(`\r\x1B[K${prefix}${label}\n`);
+    }
+  }
+
+  process.stdout.write('\x1B[?25l');
+  render(true);
+
+  return new Promise((resolve) => {
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdin.setEncoding('utf8');
+
+    function finish(value) {
+      process.stdin.removeListener('data', onKey);
+      process.stdin.setRawMode(false);
+      process.stdin.pause();
+      process.stdout.write('\x1B[?25h');
+      if (needsRl) {
+        rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+      }
+      resolve(value);
+    }
+
+    function onKey(key) {
+      if (key === '\x03') { finish('other'); process.exit(0); }
+      if (key === '\x1B[A') idx = Math.max(0, idx - 1);
+      if (key === '\x1B[B') idx = Math.min(options.length - 1, idx + 1);
+      if (key === '\r' || key === '\n') { finish(options[idx].value); return; }
+      render(false);
+    }
+
+    process.stdin.on('data', onKey);
+  });
 }
 
 // Detect language
@@ -36,7 +93,6 @@ const i18n = {
   gh_ok: t('✅ GitHub CLI is authenticated.', '✅ GitHub CLI está autenticado.', '✅ GitHub CLI está autenticado.'),
   gh_error: t('❌ GitHub CLI (gh) is not installed or not authenticated.', '❌ GitHub CLI (gh) não está instalado ou não autenticado.', '❌ GitHub CLI (gh) no está instalado o no está autenticado.'),
   gh_install: t('Please install it from https://cli.github.com/ and run "gh auth login" before continuing.\n', 'Por favor, instale em https://cli.github.com/ e rode "gh auth login" antes de continuar.\n', 'Por favor, instálalo desde https://cli.github.com/ y ejecuta "gh auth login" antes de continuar.\n'),
-  ask_agent: t('Which AI Agent will you use for the setup? (e.g. claude, cursor, copilot, antigravity, or other): ', 'Qual Agente de IA você usará para o setup? (ex: claude, cursor, copilot, antigravity, ou outro): ', '¿Qué Agente de IA usarás para la configuración? (ej: claude, cursor, copilot, antigravity, u otro): '),
   ask_repo: t('What is your GitHub repository URL? (e.g., https://github.com/YOUR_USER/repo_name): ', 'Qual é a URL do seu repositório no GitHub? (ex: https://github.com/SEU_USUARIO/repo_name): ', '¿Cuál es la URL de tu repositorio en GitHub? (ej: https://github.com/TU_USUARIO/repo_name): '),
   invalid_repo: t('❌ Invalid repository URL. Expected format: https://github.com/OWNER/REPO', '❌ URL de repositório inválida. Formato esperado: https://github.com/OWNER/REPO', '❌ URL de repositorio inválida. Formato esperado: https://github.com/OWNER/REPO'),
   ask_org: t('Does this repository belong to a personal User account (e.g., github.com/rafaeltcosta86) or an Organization (e.g., github.com/google-labs)? (user/org): ', 'Esse repositório pertence a um Usuário pessoal (ex: github.com/rafaeltcosta86) ou a uma Organização (ex: github.com/google-labs)? (user/org): ', '¿Este repositorio pertenece a un Usuario personal (ej: github.com/rafaeltcosta86) o a una Organización (ej: github.com/google-labs)? (user/org): '),
@@ -60,6 +116,8 @@ const i18n = {
   cursor_rules_written: t('✅ Default cursor rules written to .cursorrules', '✅ Regras padrão do cursor salvas em .cursorrules', '✅ Reglas por defecto de cursor guardadas en .cursorrules'),
   gemini_md_written: t('✅ GEMINI.md written to project root', '✅ GEMINI.md escrito na raiz do projeto', '✅ GEMINI.md escrito en la raíz del proyecto'),
   gemini_done_hint: t('>>> Tell it to read GEMINI.md and AGENTS.md to start!', '>>> Diga a ele para ler GEMINI.md e AGENTS.md para começar!', '>>> Dile que lea GEMINI.md y AGENTS.md para empezar!'),
+  other_done_hint: t('>>> Read AGENTS.md to get started!', '>>> Leia o AGENTS.md para começar!', '>>> Lee AGENTS.md para empezar!'),
+  ask_agent_prompt: t('Which agent(s) will your team use?', 'Qual(is) agente(s) o seu time vai usar?', '¿Qué agente(s) usará tu equipo?'),
   setup_done: t('🎉 All set! Continue the setup with your agent:', '🎉 Aqui tá pronto! Continue o setup com o seu agente:', '🎉 ¡Listo! Continúa el setup con tu agente:'),
   setup_done_hint: t('>>> Tell it to read and execute the .agentic-setup.md file!', '>>> Diga a ele para ler e executar o arquivo .agentic-setup.md!', '>>> Dile que lea y ejecute el archivo .agentic-setup.md!'),
   upgrade_hint: t('💡 To add the full board + multi-agent automation later: npx create-agentic-pdlc --upgrade-to-agentic', '💡 Para adicionar o board completo + automação multi-agente mais tarde: npx create-agentic-pdlc --upgrade-to-agentic', '💡 Para agregar el tablero completo + automatización multi-agente más tarde: npx create-agentic-pdlc --upgrade-to-agentic'),
@@ -282,35 +340,60 @@ async function setBranchProtection(repo, requiredChecks) {
   }
 }
 
-function copyAdapterFiles(agent, sourceDir, targetDir) {
+function copyAdapterFiles(agentChoice, sourceDir, targetDir) {
   const claudeSetupSrc = path.join(sourceDir, 'adapters', 'claude-code', 'skill.md');
   const cursorSetupSrc = path.join(sourceDir, 'adapters', 'cursor',     'rules.md');
   const geminiSetupSrc = path.join(sourceDir, 'adapters', 'gemini',     'gemini.md');
+  const projectName    = path.basename(targetDir).toUpperCase();
 
-  if (agent === 'cursor') {
-    if (fs.existsSync(cursorSetupSrc)) {
-      fs.copyFileSync(cursorSetupSrc, path.join(targetDir, '.cursorrules'));
-      console.log(`${i18n.cursor_rules_written}`);
+  function installClaude() {
+    if (fs.existsSync(claudeSetupSrc)) {
+      fs.copyFileSync(claudeSetupSrc, path.join(targetDir, '.agentic-setup.md'));
+      console.log(i18n.setup_written);
+    } else {
+      console.error(`${i18n.missing_claude}${claudeSetupSrc}`);
     }
   }
 
-  if (agent === 'gemini' && fs.existsSync(geminiSetupSrc)) {
-    const projectName = path.basename(targetDir).toUpperCase();
-    let geminiContent = fs.readFileSync(geminiSetupSrc, 'utf8');
-    geminiContent = geminiContent.replace(/\{\{PROJECT_NAME\}\}/g, projectName);
-    geminiContent = geminiContent.replace(/\{\{EXTRA_PATTERNS\}\}/g, '');
-    fs.writeFileSync(path.join(targetDir, 'GEMINI.md'), geminiContent, 'utf8');
-    console.log(`${i18n.gemini_md_written}`);
-    printSetupDone(i18n.gemini_done_hint);
-    return;
+  function installGemini() {
+    if (fs.existsSync(geminiSetupSrc)) {
+      let content = fs.readFileSync(geminiSetupSrc, 'utf8');
+      content = content.replace(/\{\{PROJECT_NAME\}\}/g, projectName);
+      content = content.replace(/\{\{EXTRA_PATTERNS\}\}/g, '');
+      fs.writeFileSync(path.join(targetDir, 'GEMINI.md'), content, 'utf8');
+      console.log(i18n.gemini_md_written);
+    }
   }
 
-  if (fs.existsSync(claudeSetupSrc)) {
-    fs.copyFileSync(claudeSetupSrc, path.join(targetDir, '.agentic-setup.md'));
-    console.log(`${i18n.setup_written}`);
-    printSetupDone();
-  } else {
-    console.error(`${i18n.missing_claude}${claudeSetupSrc}`);
+  function installCursor() {
+    if (fs.existsSync(cursorSetupSrc)) {
+      fs.copyFileSync(cursorSetupSrc, path.join(targetDir, '.cursorrules'));
+      console.log(i18n.cursor_rules_written);
+    }
+  }
+
+  switch (agentChoice) {
+    case 'multi':
+      installClaude();
+      installGemini();
+      installCursor();
+      printSetupDone();
+      break;
+    case 'claude':
+      installClaude();
+      printSetupDone();
+      break;
+    case 'gemini':
+      installGemini();
+      printSetupDone(i18n.gemini_done_hint);
+      break;
+    case 'cursor':
+      installCursor();
+      printSetupDone();
+      break;
+    default:
+      console.log(i18n.other_done_hint);
+      printSetupDone();
   }
 }
 
@@ -462,11 +545,7 @@ async function runFullSetup() {
   await checkGhAuth();
   await checkAndRefreshProjectScope();
 
-  const agentAnswer = await askQuestion(i18n.ask_agent);
-  const agent = agentAnswer.trim().toLowerCase();
-  if (!['claude', 'cursor', 'copilot'].includes(agent)) {
-    console.log(t(`ℹ️ Generating Universal Setup for '${agent}' (Compatible with any Markdown-reading agent).`, `ℹ️ Gerando Setup Universal para '${agent}' (Compatível com qualquer agente que leia Markdown).`, `ℹ️ Generando Setup Universal para '${agent}' (Compatible con cualquier agente que lea Markdown).`));
-  }
+  const agentChoice = await selectAgent();
 
   let repoOwner, repoName, repo;
   while (true) {
@@ -667,7 +746,7 @@ async function runFullSetup() {
 
   installHook(sourceDir, targetDir);
 
-  copyAdapterFiles(agent, sourceDir, targetDir);
+  copyAdapterFiles(agentChoice, sourceDir, targetDir);
 
   rl.close();
 }
@@ -884,22 +963,14 @@ function resolveMode(args) {
 }
 
 // Export for testing
-if (typeof module !== 'undefined') module.exports = { resolveMode, setActionsVariable, scaffoldLiteTemplates, scaffoldFullTemplates };
+if (typeof module !== 'undefined') module.exports = { resolveMode, setActionsVariable, scaffoldLiteTemplates, scaffoldFullTemplates, copyAdapterFiles };
 
 // ─── runLiteSetup ─────────────────────────────────────────────────────────────
 
 async function runLiteSetup() {
   await checkGhAuth();
 
-  const agentAnswer = await askQuestion(i18n.ask_agent);
-  const agent = agentAnswer.trim().toLowerCase();
-  if (!['claude', 'cursor', 'copilot'].includes(agent)) {
-    console.log(t(
-      `ℹ️ Generating Universal Setup for '${agent}' (Compatible with any Markdown-reading agent).`,
-      `ℹ️ Gerando Setup Universal para '${agent}' (Compatível com qualquer agente que leia Markdown).`,
-      `ℹ️ Generando Setup Universal para '${agent}' (Compatible con cualquier agente que lea Markdown).`
-    ));
-  }
+  const agentChoice = await selectAgent();
 
   let repoOwner, repoName, repo;
   while (true) {
@@ -942,7 +1013,7 @@ async function runLiteSetup() {
     patAutoSet: false
   });
 
-  copyAdapterFiles(agent, sourceDir, targetDir);
+  copyAdapterFiles(agentChoice, sourceDir, targetDir);
   console.log(`${cyan}${i18n.upgrade_hint}${reset}`);
 
   rl.close();
