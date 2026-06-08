@@ -215,3 +215,51 @@ describe('scaffoldFullTemplates', () => {
     }
   });
 });
+
+describe('linkProjectToRepository', () => {
+  const { linkProjectToRepository } = require('../bin/cli.js');
+
+  it('logs ok message on success', () => {
+    const logs = [];
+    const execFn = () => 'node_id_abc';
+    const orig = console.log;
+    console.log = (...a) => logs.push(a.join(' '));
+    linkProjectToRepository('owner/repo', 'PVT_123', execFn);
+    console.log = orig;
+    assert.ok(logs.some(l => l.includes('✅')), 'expected ok message');
+  });
+
+  it('logs warning with reason when execFn throws with stderr', () => {
+    const logs = [];
+    const err = new Error('Command failed');
+    err.stderr = Buffer.from('Resource not accessible by personal access token\nmore detail');
+    const execFn = (_cmd, args) => {
+      if (args.includes('graphql')) throw err;
+      return 'node_id_abc';
+    };
+    const orig = console.log;
+    console.log = (...a) => logs.push(a.join(' '));
+    linkProjectToRepository('owner/repo', 'PVT_123', execFn);
+    console.log = orig;
+    assert.ok(logs.some(l => l.includes('⚠️')), 'expected warning');
+    assert.ok(logs.some(l => l.includes('Resource not accessible')), 'expected first line of stderr');
+    assert.ok(logs.some(l => l.includes('Manual:')), 'expected manual steps');
+  });
+
+  it('logs warning without reason when stderr is empty', () => {
+    const logs = [];
+    const err = new Error('Command failed');
+    err.stderr = Buffer.from('');
+    const execFn = (_cmd, args) => {
+      if (args.includes('graphql')) throw err;
+      return 'node_id_abc';
+    };
+    const orig = console.log;
+    console.log = (...a) => logs.push(a.join(' '));
+    linkProjectToRepository('owner/repo', 'PVT_123', execFn);
+    console.log = orig;
+    assert.ok(logs.some(l => l.includes('⚠️')), 'expected warning');
+    assert.ok(!logs.some(l => l.includes('Reason:')), 'no reason line when stderr empty');
+    assert.ok(logs.some(l => l.includes('Manual:')), 'expected manual steps');
+  });
+});
