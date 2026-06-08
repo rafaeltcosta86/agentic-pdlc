@@ -122,11 +122,9 @@ const i18n = {
   link_project_ok: t('✅ Project linked to repository.', '✅ Projeto vinculado ao repositório.', '✅ Proyecto vinculado al repositorio.'),
   link_project_warn: t('⚠️ Failed to link project to repository. Link it manually in GitHub Projects settings.', '⚠️ Falha ao vincular projeto ao repositório. Faça isso manualmente nas configurações do GitHub Projects.', '⚠️ Fallo al vincular el proyecto al repositorio. Hazlo manualmente en la configuración de GitHub Projects.'),
   link_project_reason: t('Reason: ', 'Motivo: ', 'Motivo: '),
-  link_project_manual: t(
-    'Manual: GitHub → Your Project → Settings → Linked repositories → Add repository',
+  link_project_manual: t('Manual: GitHub → Your Project → Settings → Linked repositories → Add repository',
     'Manual: GitHub → Seu Projeto → Configurações → Repositórios vinculados → Adicionar repositório',
-    'Manual: GitHub → Tu Proyecto → Configuración → Repositorios vinculados → Agregar repositorio'
-  ),
+    'Manual: GitHub → Tu Proyecto → Configuración → Repositorios vinculados → Agregar repositorio'),
   config_columns: t('Configuring Project Columns...', 'Configurando colunas do Projeto...', 'Configurando columnas del Proyecto...'),
   columns_ok: t('✅ Project columns configured successfully.', '✅ Colunas do projeto configuradas com sucesso.', '✅ Columnas del proyecto configuradas con éxito.'),
   columns_warn: t('⚠️ Failed to configure project columns. You may need to add them manually.', '⚠️ Falha ao configurar colunas. Você pode precisar adicioná-las manualmente.', '⚠️ Fallo al configurar columnas. Es posible que debas agregarlas manualmente.'),
