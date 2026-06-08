@@ -121,6 +121,10 @@ const i18n = {
   project_err: t('❌ Failed to create project. Error: ', '❌ Falha ao criar o projeto. Erro: ', '❌ Fallo al crear el proyecto. Error: '),
   link_project_ok: t('✅ Project linked to repository.', '✅ Projeto vinculado ao repositório.', '✅ Proyecto vinculado al repositorio.'),
   link_project_warn: t('⚠️ Failed to link project to repository. Link it manually in GitHub Projects settings.', '⚠️ Falha ao vincular projeto ao repositório. Faça isso manualmente nas configurações do GitHub Projects.', '⚠️ Fallo al vincular el proyecto al repositorio. Hazlo manualmente en la configuración de GitHub Projects.'),
+  link_project_reason: t('Reason: ', 'Motivo: ', 'Motivo: '),
+  link_project_manual: t('Manual: GitHub → Your Project → Settings → Linked repositories → Add repository',
+    'Manual: GitHub → Seu Projeto → Configurações → Repositórios vinculados → Adicionar repositório',
+    'Manual: GitHub → Tu Proyecto → Configuración → Repositorios vinculados → Agregar repositorio'),
   config_columns: t('Configuring Project Columns...', 'Configurando colunas do Projeto...', 'Configurando columnas del Proyecto...'),
   columns_ok: t('✅ Project columns configured successfully.', '✅ Colunas do projeto configuradas com sucesso.', '✅ Columnas del proyecto configuradas con éxito.'),
   columns_warn: t('⚠️ Failed to configure project columns. You may need to add them manually.', '⚠️ Falha ao configurar colunas. Você pode precisar adicioná-las manualmente.', '⚠️ Fallo al configurar columnas. Es posible que debas agregarlas manualmente.'),
@@ -354,6 +358,33 @@ async function setBranchProtection(repo, requiredChecks) {
     console.log(`  ${green}${i18n.protection_ok}${reset}`);
   } catch (_) {
     console.log(`  ${yellow}${i18n.protection_warn}${reset}`);
+  }
+}
+
+function linkProjectToRepository(repo, projectId, execFn) {
+  execFn = execFn || execFileSync;
+  try {
+    const repoNodeId = execFn(
+      'gh',
+      ['api', `repos/${repo}`, '--jq', '.node_id'],
+      { stdio: ['ignore', 'pipe', 'pipe'] }
+    ).toString().trim();
+    execFn(
+      'gh',
+      [
+        'api', 'graphql', '-f',
+        'query=mutation($projectId: ID!, $repositoryId: ID!) { linkProjectV2ToRepository(input: {projectId: $projectId, repositoryId: $repositoryId}) { repository { name } } }',
+        '-f', `projectId=${projectId}`,
+        '-f', `repositoryId=${repoNodeId}`
+      ],
+      { stdio: ['ignore', 'ignore', 'pipe'] }
+    );
+    console.log(`  ${i18n.link_project_ok}`);
+  } catch (err) {
+    const reason = (err.stderr || err.message || '').toString().trim().split('\n')[0];
+    console.log(`  ${yellow}${i18n.link_project_warn}${reset}`);
+    if (reason) console.log(`  ${yellow}  ${i18n.link_project_reason}${reason}${reset}`);
+    console.log(`  ${yellow}  ${i18n.link_project_manual}${reset}`);
   }
 }
 
@@ -641,13 +672,7 @@ async function runFullSetup() {
 
     console.log(`  ${i18n.project_ok}${projectId})`);
 
-    try {
-      const repoNodeId = execFileSync('gh', ['api', `repos/${repo}`, '--jq', '.node_id'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
-      execFileSync('gh', ['api', 'graphql', '-f', `query=mutation($projectId: ID!, $repositoryId: ID!) { linkProjectV2ToRepository(input: {projectId: $projectId, repositoryId: $repositoryId}) { repository { name } } }`, '-f', `projectId=${projectId}`, '-f', `repositoryId=${repoNodeId}`], { stdio: 'ignore' });
-      console.log(`  ${i18n.link_project_ok}`);
-    } catch (err) {
-      console.log(`  ${i18n.link_project_warn}`);
-    }
+    linkProjectToRepository(repo, projectId);
 
   } catch (err) {
     const isScopeError = (err.message || '').includes("required scopes") || (err.stderr || '').toString().includes("required scopes");
@@ -980,7 +1005,7 @@ function resolveMode(args) {
 }
 
 // Export for testing
-if (typeof module !== 'undefined') module.exports = { resolveMode, setActionsVariable, scaffoldLiteTemplates, scaffoldFullTemplates, copyAdapterFiles };
+if (typeof module !== 'undefined') module.exports = { resolveMode, setActionsVariable, scaffoldLiteTemplates, scaffoldFullTemplates, copyAdapterFiles, linkProjectToRepository };
 
 // ─── runLiteSetup ─────────────────────────────────────────────────────────────
 
@@ -1111,17 +1136,7 @@ async function runUpgradeToAgentic() {
     projectNumber = pData?.number;
     console.log(`  ${i18n.project_ok}${projectId})`);
 
-    try {
-      const repoNodeId = execFileSync('gh', ['api', `repos/${repo}`, '--jq', '.node_id'],
-        { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
-      execFileSync('gh', ['api', 'graphql', '-f',
-        'query=mutation($projectId: ID!, $repositoryId: ID!) { linkProjectV2ToRepository(input: {projectId: $projectId, repositoryId: $repositoryId}) { repository { name } } }',
-        '-f', `projectId=${projectId}`, '-f', `repositoryId=${repoNodeId}`],
-        { stdio: 'ignore' });
-      console.log(`  ${i18n.link_project_ok}`);
-    } catch (_) {
-      console.log(`  ${i18n.link_project_warn}`);
-    }
+    linkProjectToRepository(repo, projectId);
   } catch (err) {
     console.log(`  ${i18n.project_err}${err.message}`);
   }
