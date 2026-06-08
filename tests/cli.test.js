@@ -223,9 +223,12 @@ describe('linkProjectToRepository', () => {
     const logs = [];
     const execFn = () => 'node_id_abc';
     const orig = console.log;
-    console.log = (...a) => logs.push(a.join(' '));
-    linkProjectToRepository('owner/repo', 'PVT_123', execFn);
-    console.log = orig;
+    try {
+      console.log = (...a) => logs.push(a.join(' '));
+      linkProjectToRepository('owner/repo', 'PVT_123', execFn);
+    } finally {
+      console.log = orig;
+    }
     assert.ok(logs.some(l => l.includes('✅')), 'expected ok message');
   });
 
@@ -238,9 +241,12 @@ describe('linkProjectToRepository', () => {
       return 'node_id_abc';
     };
     const orig = console.log;
-    console.log = (...a) => logs.push(a.join(' '));
-    linkProjectToRepository('owner/repo', 'PVT_123', execFn);
-    console.log = orig;
+    try {
+      console.log = (...a) => logs.push(a.join(' '));
+      linkProjectToRepository('owner/repo', 'PVT_123', execFn);
+    } finally {
+      console.log = orig;
+    }
     assert.ok(logs.some(l => l.includes('⚠️')), 'expected warning');
     assert.ok(logs.some(l => l.includes('Resource not accessible')), 'expected first line of stderr');
     assert.ok(logs.some(l => l.includes('Manual:')), 'expected manual steps');
@@ -255,9 +261,12 @@ describe('linkProjectToRepository', () => {
       return 'node_id_abc';
     };
     const orig = console.log;
-    console.log = (...a) => logs.push(a.join(' '));
-    linkProjectToRepository('owner/repo', 'PVT_123', execFn);
-    console.log = orig;
+    try {
+      console.log = (...a) => logs.push(a.join(' '));
+      linkProjectToRepository('owner/repo', 'PVT_123', execFn);
+    } finally {
+      console.log = orig;
+    }
     assert.ok(logs.some(l => l.includes('⚠️')), 'expected warning');
     assert.ok(!logs.some(l => l.includes('Reason:')), 'no reason line when stderr empty');
     assert.ok(logs.some(l => l.includes('Manual:')), 'expected manual steps');

@@ -366,7 +366,7 @@ function linkProjectToRepository(repo, projectId, execFn) {
     const repoNodeId = execFn(
       'gh',
       ['api', `repos/${repo}`, '--jq', '.node_id'],
-      { stdio: ['ignore', 'pipe', 'ignore'] }
+      { stdio: ['ignore', 'pipe', 'pipe'] }
     ).toString().trim();
     execFn(
       'gh',
@@ -380,7 +380,7 @@ function linkProjectToRepository(repo, projectId, execFn) {
     );
     console.log(`  ${i18n.link_project_ok}`);
   } catch (err) {
-    const reason = (err.stderr || '').toString().trim().split('\n')[0];
+    const reason = (err.stderr || err.message || '').toString().trim().split('\n')[0];
     console.log(`  ${yellow}${i18n.link_project_warn}${reset}`);
     if (reason) console.log(`  ${yellow}  ${i18n.link_project_reason}${reason}${reset}`);
     console.log(`  ${yellow}  ${i18n.link_project_manual}${reset}`);
