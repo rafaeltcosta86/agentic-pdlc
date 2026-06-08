@@ -78,7 +78,7 @@ If any of these files are missing, you are in **Setup Mode**. Do not proceed wit
    > 5. Reply **"done"** when finished.
 8. **IMPORTANT:** Delete the setup prompt file by running exactly:
    ```
-   rm -f .agentic-setup.md .agentic-setup-prompt.md .agentic-pdlc/SETUP_PROMPT.md
+   rm -f .agentic-setup.md .agentic-setup-prompt.md .agentic-pdlc/SETUP_PROMPT.md && rm -rf .agentic-pdlc/templates/
    ```
    **Do NOT run `git add` or any other git command.** These files were never committed and do not exist in the git index. This command must run **before** the commit step.
 9. Commit everything with the message: `chore: setup agentic-pdlc framework`.
