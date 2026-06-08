@@ -29,9 +29,25 @@ async function selectAgent() {
   ];
 
   const needsRl = rl !== null;
-  if (rl) { rl.close(); rl = null; }
 
   process.stdout.write(`\n${cyan}${i18n.ask_agent_prompt}${reset}\n\n`);
+
+  if (!process.stdin.isTTY) {
+    // Non-interactive fallback: numbered list via readline
+    for (let i = 0; i < options.length; i++) {
+      process.stdout.write(`  ${i + 1}) ${options[i].label}\n`);
+    }
+    process.stdout.write('\n');
+    if (!rl) rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    return new Promise((resolve) => {
+      rl.question(t('Enter number (default 1): ', 'Digite o número (padrão 1): ', 'Ingresa el número (predeterminado 1): '), (ans) => {
+        const n = parseInt(ans.trim(), 10);
+        resolve(options[(n >= 1 && n <= options.length) ? n - 1 : 0].value);
+      });
+    });
+  }
+
+  if (rl) { rl.close(); rl = null; }
 
   let idx = 0;
 
