@@ -671,13 +671,7 @@ async function runFullSetup() {
 
     console.log(`  ${i18n.project_ok}${projectId})`);
 
-    try {
-      const repoNodeId = execFileSync('gh', ['api', `repos/${repo}`, '--jq', '.node_id'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
-      execFileSync('gh', ['api', 'graphql', '-f', `query=mutation($projectId: ID!, $repositoryId: ID!) { linkProjectV2ToRepository(input: {projectId: $projectId, repositoryId: $repositoryId}) { repository { name } } }`, '-f', `projectId=${projectId}`, '-f', `repositoryId=${repoNodeId}`], { stdio: 'ignore' });
-      console.log(`  ${i18n.link_project_ok}`);
-    } catch (err) {
-      console.log(`  ${i18n.link_project_warn}`);
-    }
+    linkProjectToRepository(repo, projectId);
 
   } catch (err) {
     const isScopeError = (err.message || '').includes("required scopes") || (err.stderr || '').toString().includes("required scopes");
@@ -1141,17 +1135,7 @@ async function runUpgradeToAgentic() {
     projectNumber = pData?.number;
     console.log(`  ${i18n.project_ok}${projectId})`);
 
-    try {
-      const repoNodeId = execFileSync('gh', ['api', `repos/${repo}`, '--jq', '.node_id'],
-        { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
-      execFileSync('gh', ['api', 'graphql', '-f',
-        'query=mutation($projectId: ID!, $repositoryId: ID!) { linkProjectV2ToRepository(input: {projectId: $projectId, repositoryId: $repositoryId}) { repository { name } } }',
-        '-f', `projectId=${projectId}`, '-f', `repositoryId=${repoNodeId}`],
-        { stdio: 'ignore' });
-      console.log(`  ${i18n.link_project_ok}`);
-    } catch (_) {
-      console.log(`  ${i18n.link_project_warn}`);
-    }
+    linkProjectToRepository(repo, projectId);
   } catch (err) {
     console.log(`  ${i18n.project_err}${err.message}`);
   }
