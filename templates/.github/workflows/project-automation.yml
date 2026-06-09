@@ -96,15 +96,20 @@ jobs:
               if (eventName === 'pull_request' && (action === 'opened' || action === 'reopened')) {
                 const prNumber = context.payload.pull_request.number;
                 const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
-                const linkedIssues = [...(pr.body ?? '').matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)]
-                  .map(m => parseInt(m[1]));
+                const linkedIssues = [...new Set([...(pr.body ?? '').matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)]
+                  .map(m => parseInt(m[1])))];
                 const stageLabels = ['stage:development', 'stage:brainstorming', 'stage:detailing', 'jules'];
-
-                if (linkedIssues.length > 0) {
-                  const nodes = await Promise.all(linkedIssues.map(async n => {
+                const nodes = (await Promise.all(linkedIssues.map(async n => {
+                  try {
                     const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
                     return { nodeId: issue.node_id, issueNumber: n };
-                  }));
+                  } catch (e) {
+                    if (e.status === 404) { console.log(`Linked issue #${n} not found — skipping`); return null; }
+                    throw e;
+                  }
+                }))).filter(Boolean);
+
+                if (nodes.length > 0) {
                   return {
                     targetStatusId: col('STATUS_CODE_REVIEW_PR'),
                     nodeIds: nodes.map(n => n.nodeId),
@@ -127,14 +132,19 @@ jobs:
               if (eventName === 'pull_request_review' && context.payload.review.state === 'approved') {
                 const prNumber = context.payload.pull_request.number;
                 const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
-                const linkedIssues = [...(pr.body ?? '').matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)]
-                  .map(m => parseInt(m[1]));
-
-                if (linkedIssues.length > 0) {
-                  const nodes = await Promise.all(linkedIssues.map(async n => {
+                const linkedIssues = [...new Set([...(pr.body ?? '').matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)]
+                  .map(m => parseInt(m[1])))];
+                const nodes = (await Promise.all(linkedIssues.map(async n => {
+                  try {
                     const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
                     return { nodeId: issue.node_id, issueNumber: n };
-                  }));
+                  } catch (e) {
+                    if (e.status === 404) { console.log(`Linked issue #${n} not found — skipping`); return null; }
+                    throw e;
+                  }
+                }))).filter(Boolean);
+
+                if (nodes.length > 0) {
                   return {
                     targetStatusId: col('STATUS_CODE_REVIEW_PR'),
                     nodeIds: nodes.map(n => n.nodeId),
@@ -157,14 +167,19 @@ jobs:
               if (eventName === 'pull_request' && action === 'closed' && context.payload.pull_request.merged) {
                 const prNumber = context.payload.pull_request.number;
                 const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
-                const linkedIssues = [...(pr.body ?? '').matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)]
-                  .map(m => parseInt(m[1]));
-
-                if (linkedIssues.length > 0) {
-                  const nodes = await Promise.all(linkedIssues.map(async n => {
+                const linkedIssues = [...new Set([...(pr.body ?? '').matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)]
+                  .map(m => parseInt(m[1])))];
+                const nodes = (await Promise.all(linkedIssues.map(async n => {
+                  try {
                     const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
                     return { nodeId: issue.node_id, issueNumber: n };
-                  }));
+                  } catch (e) {
+                    if (e.status === 404) { console.log(`Linked issue #${n} not found — skipping`); return null; }
+                    throw e;
+                  }
+                }))).filter(Boolean);
+
+                if (nodes.length > 0) {
                   return {
                     targetStatusId: col('STATUS_PRODUCTION'),
                     nodeIds: nodes.map(n => n.nodeId),
