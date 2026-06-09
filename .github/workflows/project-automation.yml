@@ -15,7 +15,7 @@ jobs:
     if: github.event_name != 'issues' || github.event.action != 'closed'
     runs-on: ubuntu-latest
     concurrency:
-      group: board-${{ github.event.issue.number || github.event.pull_request.number }}
+      group: board-${{ github.event.issue.number }}-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     env:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
@@ -101,9 +101,15 @@ jobs:
 
               // Issue labeled → re-fetch current labels → stage column
               if (eventName === 'issues' && action === 'labeled') {
-                const { data: issue } = await github.rest.issues.get({
-                  owner, repo, issue_number: context.payload.issue.number
-                });
+                let issue;
+                try {
+                  ({ data: issue } = await github.rest.issues.get({
+                    owner, repo, issue_number: context.payload.issue.number
+                  }));
+                } catch (e) {
+                  if (e.status === 404) { console.log('Issue not found — skipping board move'); return null; }
+                  throw e;
+                }
                 const labelNames = issue.labels.map(l => l.name);
                 const columnKey = classifyItem(labelNames);
                 const targetStatusId = columnKey ? col(COLUMN_KEY_TO_ENV[columnKey]) : null;
@@ -247,9 +253,6 @@ jobs:
               }
             }
 
-            if (move.stageLabelsToClear.length > 0 && move.issueNumbers.length === 0) {
-              // no linked issue numbers tracked for stage-label events (issue is identified by nodeId only)
-            }
 
             if (move.prLabelSwap) {
               const { prNumber, remove, add } = move.prLabelSwap;
