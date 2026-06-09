@@ -6,12 +6,11 @@ on:
   pull_request_review:
     types: [submitted]
   issues:
-    types: [labeled, edited, closed]
+    types: [labeled, closed]
 
 env:
   PROJECT_ID: ${{ vars.PROJECT_ID }}
   STATUS_FIELD_ID: "{{STATUS_FIELD_ID}}"
-  STATUS_IDEA: "{{ID_IDEA}}"
   STATUS_BRAINSTORMING: "{{ID_BRAINSTORMING}}"
   STATUS_DETAILING: "{{ID_DETAILING}}"
   STATUS_APPROVAL: "{{ID_APPROVAL}}"
@@ -20,46 +19,189 @@ env:
   STATUS_PRODUCTION: "{{ID_PRODUCTION}}"
 
 jobs:
-  # Issue Labeled → Move Upstream
-  move-card-on-label:
-    name: Upstream Label → Move Card
-    if: github.event_name == 'issues' && github.event.action == 'labeled'
+  # Single dispatcher — f(event) → target column → move card
+  move-card:
+    name: Board Dispatcher
+    if: github.event_name != 'issues' || github.event.action != 'closed'
     runs-on: ubuntu-latest
+    concurrency:
+      group: board-${{ github.event.issue.number }}-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     env:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
-      - name: Detect Label and Move Issue
+      - name: Dispatch board move
         if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
         uses: actions/github-script@v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |
-            const labelName = context.payload.label.name;
-            let targetStatusId = null;
-            let stageName = null;
-
-            if (labelName === 'stage:brainstorming') {
-              targetStatusId = process.env.STATUS_BRAINSTORMING;
-              stageName = 'Brainstorming';
-            } else if (labelName === 'stage:detailing') {
-              targetStatusId = process.env.STATUS_DETAILING;
-              stageName = 'Detailing';
-            } else if (labelName === 'stage:approval') {
-              targetStatusId = process.env.STATUS_APPROVAL;
-              stageName = 'Approval';
-            } else if (labelName === 'stage:development') {
-              targetStatusId = process.env.STATUS_DEVELOPMENT;
-              stageName = 'Development';
+            // classifyItem — inlined (no checkout needed)
+            const LABEL_PRIORITY = [
+              { label: 'pr:in-review',       column: 'code_review_pr' },
+              { label: 'pr:approved',         column: 'code_review_pr' },
+              { label: 'spec:approved',       column: 'development'    },
+              { label: 'stage:development',   column: 'development'    },
+              { label: 'stage:approval',      column: 'approval'       },
+              { label: 'stage:detailing',     column: 'detailing'      },
+              { label: 'stage:brainstorming', column: 'brainstorming'  },
+            ];
+            function classifyItem(labelNames) {
+              for (const { label, column } of LABEL_PRIORITY) {
+                if (labelNames.includes(label)) return column;
+              }
+              return null;
             }
 
-            if (!targetStatusId) {
-              console.log('No stage PDLC label found. Skipping.');
-              return;
+            const { owner, repo } = context.repo;
+            const eventName = context.eventName;
+            const action = context.payload.action;
+
+            const COLUMN_KEY_TO_ENV = {
+              'code_review_pr': 'STATUS_CODE_REVIEW_PR',
+              'development':    'STATUS_DEVELOPMENT',
+              'approval':       'STATUS_APPROVAL',
+              'detailing':      'STATUS_DETAILING',
+              'brainstorming':  'STATUS_BRAINSTORMING',
+            };
+
+            async function deriveMove() {
+              const col = (key) => process.env[key];
+
+              // Issue labeled → re-fetch current labels → stage column
+              if (eventName === 'issues' && action === 'labeled') {
+                let issue;
+                try {
+                  ({ data: issue } = await github.rest.issues.get({
+                    owner, repo, issue_number: context.payload.issue.number
+                  }));
+                } catch (e) {
+                  if (e.status === 404) { console.log('Issue not found — skipping board move'); return null; }
+                  throw e;
+                }
+                const labelNames = issue.labels.map(l => l.name);
+                const columnKey = classifyItem(labelNames);
+                const targetStatusId = columnKey ? col(COLUMN_KEY_TO_ENV[columnKey]) : null;
+                if (!targetStatusId) return null;
+                return {
+                  targetStatusId,
+                  nodeIds: [issue.node_id],
+                  issueNumbers: [],
+                  stageLabelsToClear: [],
+                  prLabelSwap: null,
+                };
+              }
+
+              // PR opened/reopened → Code Review
+              if (eventName === 'pull_request' && (action === 'opened' || action === 'reopened')) {
+                const prNumber = context.payload.pull_request.number;
+                const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+                const linkedIssues = [...new Set([...(pr.body ?? '').matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)]
+                  .map(m => parseInt(m[1])))];
+                const stageLabels = ['stage:development', 'stage:brainstorming', 'stage:detailing', 'jules'];
+                const nodes = (await Promise.all(linkedIssues.map(async n => {
+                  try {
+                    const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
+                    return { nodeId: issue.node_id, issueNumber: n };
+                  } catch (e) {
+                    if (e.status === 404) { console.log(`Linked issue #${n} not found — skipping`); return null; }
+                    throw e;
+                  }
+                }))).filter(Boolean);
+
+                if (nodes.length > 0) {
+                  return {
+                    targetStatusId: col('STATUS_CODE_REVIEW_PR'),
+                    nodeIds: nodes.map(n => n.nodeId),
+                    issueNumbers: nodes.map(n => n.issueNumber),
+                    stageLabelsToClear: stageLabels,
+                    prLabelSwap: { add: 'pr:in-review', prNumber },
+                  };
+                } else {
+                  return {
+                    targetStatusId: col('STATUS_CODE_REVIEW_PR'),
+                    nodeIds: [context.payload.pull_request.node_id],
+                    issueNumbers: [],
+                    stageLabelsToClear: [],
+                    prLabelSwap: { add: 'pr:in-review', prNumber },
+                  };
+                }
+              }
+
+              // PR review approved → Code Review + swap PR labels
+              if (eventName === 'pull_request_review' && context.payload.review.state === 'approved') {
+                const prNumber = context.payload.pull_request.number;
+                const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+                const linkedIssues = [...new Set([...(pr.body ?? '').matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)]
+                  .map(m => parseInt(m[1])))];
+                const nodes = (await Promise.all(linkedIssues.map(async n => {
+                  try {
+                    const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
+                    return { nodeId: issue.node_id, issueNumber: n };
+                  } catch (e) {
+                    if (e.status === 404) { console.log(`Linked issue #${n} not found — skipping`); return null; }
+                    throw e;
+                  }
+                }))).filter(Boolean);
+
+                if (nodes.length > 0) {
+                  return {
+                    targetStatusId: col('STATUS_CODE_REVIEW_PR'),
+                    nodeIds: nodes.map(n => n.nodeId),
+                    issueNumbers: nodes.map(n => n.issueNumber),
+                    stageLabelsToClear: [],
+                    prLabelSwap: { remove: 'pr:in-review', add: 'pr:approved', prNumber },
+                  };
+                } else {
+                  return {
+                    targetStatusId: col('STATUS_CODE_REVIEW_PR'),
+                    nodeIds: [context.payload.pull_request.node_id],
+                    issueNumbers: [],
+                    stageLabelsToClear: [],
+                    prLabelSwap: { remove: 'pr:in-review', add: 'pr:approved', prNumber },
+                  };
+                }
+              }
+
+              // PR merged → Production
+              if (eventName === 'pull_request' && action === 'closed' && context.payload.pull_request.merged) {
+                const prNumber = context.payload.pull_request.number;
+                const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+                const linkedIssues = [...new Set([...(pr.body ?? '').matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)]
+                  .map(m => parseInt(m[1])))];
+                const nodes = (await Promise.all(linkedIssues.map(async n => {
+                  try {
+                    const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
+                    return { nodeId: issue.node_id, issueNumber: n };
+                  } catch (e) {
+                    if (e.status === 404) { console.log(`Linked issue #${n} not found — skipping`); return null; }
+                    throw e;
+                  }
+                }))).filter(Boolean);
+
+                if (nodes.length > 0) {
+                  return {
+                    targetStatusId: col('STATUS_PRODUCTION'),
+                    nodeIds: nodes.map(n => n.nodeId),
+                    issueNumbers: nodes.map(n => n.issueNumber),
+                    stageLabelsToClear: ['stage:approval'],
+                    prLabelSwap: null,
+                  };
+                } else {
+                  return {
+                    targetStatusId: col('STATUS_PRODUCTION'),
+                    nodeIds: [context.payload.pull_request.node_id],
+                    issueNumbers: [],
+                    stageLabelsToClear: [],
+                    prLabelSwap: null,
+                  };
+                }
+              }
+
+              return null;
             }
 
-            const { issue: { number, node_id } } = context.payload;
-
-            const moveItem = async (nodeId, statusId) => {
+            async function moveItem(nodeId, targetStatusId) {
               const { addProjectV2ItemById: { item } } = await github.graphql(`
                 mutation($p: ID!, $c: ID!) {
                   addProjectV2ItemById(input: {projectId: $p, contentId: $c}) { item { id } }
@@ -72,38 +214,39 @@ jobs:
                   }
                 }`, {
                   p: process.env.PROJECT_ID, i: item.id, f: process.env.STATUS_FIELD_ID,
-                  v: { singleSelectOptionId: statusId }
+                  v: { singleSelectOptionId: targetStatusId }
                 });
-            };
+            }
 
-            await moveItem(node_id, targetStatusId);
-            console.log(`Issue #${number} moved to ${stageName}`);
+            const move = await deriveMove();
+            if (!move) {
+              console.log('No board move needed for this event. Skipping.');
+              return;
+            }
 
-  auto-move-to-approval:
-    name: Spec complete → stage:approval
-    if: >
-      github.event_name == 'issues' &&
-      github.event.action == 'edited' &&
-      contains(github.event.issue.labels.*.name, 'stage:detailing')
-    runs-on: ubuntu-latest
-    env:
-      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
-    steps:
-      - name: Check spec markers and swap labels
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
-        uses: actions/github-script@v8
-        with:
-          github-token: ${{ env.PROJECT_TOKEN }}
-          script: |
-            const body = context.payload.issue.body ?? '';
-            if (!body.includes('## Acceptance Criteria') || !body.includes('## Files to modify')) return;
+            for (const nodeId of move.nodeIds) {
+              await moveItem(nodeId, move.targetStatusId);
+            }
 
-            const { owner, repo } = context.repo;
-            const issue_number = context.payload.issue.number;
+            for (const issueNumber of move.issueNumbers) {
+              for (const label of move.stageLabelsToClear) {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number: issueNumber, name: label })
+                  .catch(e => { if (e.status !== 404) { core.error(`Failed to remove label ${label}: ${e.message}`); throw e; } });
+              }
+            }
 
-            await github.rest.issues.addLabels({ owner, repo, issue_number, labels: ['stage:approval'] }).catch(() => {});
-            await github.rest.issues.removeLabel({ owner, repo, issue_number, name: 'stage:detailing' }).catch(() => {});
-            console.log(`Issue #${issue_number} auto-moved to stage:approval`);
+            if (move.prLabelSwap) {
+              const { prNumber, remove, add } = move.prLabelSwap;
+              if (remove) {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number: prNumber, name: remove })
+                  .catch(e => { if (e.status !== 404) { core.error(`Failed to remove PR label ${remove}: ${e.message}`); throw e; } });
+              }
+              if (add) {
+                await github.rest.issues.addLabels({ owner, repo, issue_number: prNumber, labels: [add] });
+              }
+            }
+
+            console.log(`✅ Board move complete → ${move.targetStatusId} (${move.nodeIds.length} item(s))`);
 
   # human-approved on issue → qa:approved on linked open PRs
   handle-human-approved:
@@ -146,6 +289,8 @@ jobs:
   #   name: architecture-violation → 💡 Idea
   #   if: github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'architecture-violation'
   #   runs-on: ubuntu-latest
+  #   env:
+  #     PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
   #   steps:
   #     - name: Move issue to Idea
   #       if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
@@ -153,189 +298,44 @@ jobs:
   #       with:
   #         github-token: ${{ env.PROJECT_TOKEN }}
   #         script: |
+  #           const projectId = process.env.PROJECT_ID;
+  #           const { node } = await github.graphql(`query($id:ID!){node(id:$id){...on ProjectV2{fields(first:20){nodes{...on ProjectV2SingleSelectField{id name options{id name}}}}}}}`, { id: projectId });
+  #           const statusField = node.fields.nodes.find(f => f.name === 'Status');
+  #           const ideaId = statusField?.options.find(o => o.name.includes('Idea'))?.id;
+  #           if (!ideaId) { core.setFailed('Idea column not found'); return; }
   #           const { issue: { number, node_id } } = context.payload;
-  #           const { addProjectV2ItemById: { item } } = await github.graphql(`
-  #             mutation($p: ID!, $c: ID!) {
-  #               addProjectV2ItemById(input: {projectId: $p, contentId: $c}) { item { id } }
-  #             }`, { p: process.env.PROJECT_ID, c: node_id });
-  #           await github.graphql(`
-  #             mutation($p: ID!, $i: ID!, $f: ID!, $v: ProjectV2FieldValue!) {
-  #               updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f, value: $v}) {
-  #                 projectV2Item { id }
-  #               }
-  #             }`, {
-  #               p: process.env.PROJECT_ID, i: item.id, f: process.env.STATUS_FIELD_ID,
-  #               v: { singleSelectOptionId: process.env.STATUS_IDEA }
-  #             });
+  #           const { addProjectV2ItemById: { item } } = await github.graphql(`mutation($p:ID!,$c:ID!){addProjectV2ItemById(input:{projectId:$p,contentId:$c}){item{id}}}`, { p: projectId, c: node_id });
+  #           await github.graphql(`mutation($p:ID!,$i:ID!,$f:ID!,$v:ProjectV2FieldValue!){updateProjectV2ItemFieldValue(input:{projectId:$p,itemId:$i,fieldId:$f,value:$v}){projectV2Item{id}}}`, { p: projectId, i: item.id, f: statusField.id, v: { singleSelectOptionId: ideaId } });
   #           console.log(`Issue #${number} moved to Idea`);
 
-  # PR Opened → Keep linked issue in Development (Variant B — QA Agent enabled; QA pass moves to Code Review / PR)
-  move-card-on-pr-open:
-    name: Open PR → Development
-    if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'reopened')
-    runs-on: ubuntu-latest
-    env:
-      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
-    steps:
-      - name: Move linked issue to Development
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
-        uses: actions/github-script@v8
-        with:
-          github-token: ${{ env.PROJECT_TOKEN }}
-          script: |
-            const prNumber = context.payload.pull_request.number;
-            const { owner, repo } = context.repo;
-
-            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
-            const body = pr.body ?? '';
-
-            // Extract issues linked via "Closes #N", "Fixes #N", "Resolves #N"
-            const linkedIssues = [...body.matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)]
-              .map(m => parseInt(m[1]));
-
-            const moveItem = async (nodeId) => {
-              const { addProjectV2ItemById: { item } } = await github.graphql(`
-                mutation($p: ID!, $c: ID!) {
-                  addProjectV2ItemById(input: {projectId: $p, contentId: $c}) { item { id } }
-                }`, { p: process.env.PROJECT_ID, c: nodeId });
-
-              await github.graphql(`
-                mutation($p: ID!, $i: ID!, $f: ID!, $v: ProjectV2FieldValue!) {
-                  updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f, value: $v}) {
-                    projectV2Item { id }
-                  }
-                }`, {
-                  p: process.env.PROJECT_ID, i: item.id, f: process.env.STATUS_FIELD_ID,
-                  v: { singleSelectOptionId: process.env.STATUS_DEVELOPMENT }
-                });
-            };
-
-            if (linkedIssues.length > 0) {
-              for (const n of linkedIssues) {
-                const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
-                await moveItem(issue.node_id);
-                console.log(`Issue #${n} → Development`);
-              }
-            } else {
-              await moveItem(pr.node_id);
-              console.log(`PR #${prNumber} → Development (no linked issue)`);
-            }
-
-            await github.rest.issues.addLabels({ owner, repo, issue_number: prNumber, labels: ['pr:in-review'] }).catch(() => {});
-
-  # QA Approved → Move linked issue to Code Review / PR
-  move-card-on-qa-pass:
-    name: qa:approved → Code Review / PR
-    if: github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'qa:approved'
-    runs-on: ubuntu-latest
-    env:
-      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
-    steps:
-      - name: Move linked issue to Code Review / PR
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
-        uses: actions/github-script@v8
-        with:
-          github-token: ${{ env.PROJECT_TOKEN }}
-          script: |
-            const prNumber = context.payload.pull_request.number;
-            const { owner, repo } = context.repo;
-            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
-            const body = pr.body ?? '';
-            const linkedIssues = [...body.matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)].map(m => parseInt(m[1]));
-            const moveItem = async (nodeId) => {
-              const { addProjectV2ItemById: { item } } = await github.graphql(`
-                mutation($p: ID!, $c: ID!) {
-                  addProjectV2ItemById(input: {projectId: $p, contentId: $c}) { item { id } }
-                }`, { p: process.env.PROJECT_ID, c: nodeId });
-              await github.graphql(`
-                mutation($p: ID!, $i: ID!, $f: ID!, $v: ProjectV2FieldValue!) {
-                  updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f, value: $v}) {
-                    projectV2Item { id }
-                  }
-                }`, {
-                  p: process.env.PROJECT_ID, i: item.id, f: process.env.STATUS_FIELD_ID,
-                  v: { singleSelectOptionId: process.env.STATUS_CODE_REVIEW_PR }
-                });
-            };
-            if (linkedIssues.length > 0) {
-              for (const n of linkedIssues) {
-                const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
-                await moveItem(issue.node_id);
-                if (issue.labels?.some(l => l.name === 'stage:testing')) {
-                  await github.rest.issues.removeLabel({ owner, repo, issue_number: n, name: 'stage:testing' }).catch(() => {});
-                }
-                console.log(`Issue #${n} → Code Review / PR`);
-              }
-            } else {
-              await moveItem(pr.node_id);
-              console.log(`PR #${prNumber} → Code Review / PR (no linked issue)`);
-            }
-
-  # Review Approved → Add Label
-  move-card-on-review-approved:
-    name: Approved PR → Add Label
-    if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
-    runs-on: ubuntu-latest
-    env:
-      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
-    steps:
-      - name: Swap PR labels
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
-        uses: actions/github-script@v8
-        with:
-          github-token: ${{ env.PROJECT_TOKEN }}
-          script: |
-            const prNumber = context.payload.pull_request.number;
-            const { owner, repo } = context.repo;
-            try { await github.rest.issues.removeLabel({ owner, repo, issue_number: prNumber, name: 'pr:in-review' }); } catch {}
-            await github.rest.issues.addLabels({ owner, repo, issue_number: prNumber, labels: ['pr:approved'] }).catch(() => {});
-
-  # PR Merged → Production
-  move-card-on-pr-merge:
-    name: Merged PR → Production
-    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
-    env:
-      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
-    steps:
-      - name: Move issue to Production
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
-        uses: actions/github-script@v8
-        with:
-          github-token: ${{ env.PROJECT_TOKEN }}
-          script: |
-            const prNumber = context.payload.pull_request.number;
-            const { owner, repo } = context.repo;
-            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
-            const body = pr.body ?? '';
-            const linkedIssues = [...body.matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)].map(m => parseInt(m[1]));
-
-            const moveItem = async (nodeId) => {
-              const { addProjectV2ItemById: { item } } = await github.graphql(`
-                mutation($p: ID!, $c: ID!) {
-                  addProjectV2ItemById(input: {projectId: $p, contentId: $c}) { item { id } }
-                }`, { p: process.env.PROJECT_ID, c: nodeId });
-              await github.graphql(`
-                mutation($p: ID!, $i: ID!, $f: ID!, $v: ProjectV2FieldValue!) {
-                  updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f, value: $v}) {
-                    projectV2Item { id }
-                  }
-                }`, { p: process.env.PROJECT_ID, i: item.id, f: process.env.STATUS_FIELD_ID,
-                      v: { singleSelectOptionId: process.env.STATUS_PRODUCTION } });
-            };
-
-            if (linkedIssues.length > 0) {
-              for (const n of linkedIssues) {
-                const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
-                await moveItem(issue.node_id);
-                if (issue.labels?.some(l => l.name === 'stage:approval')) {
-                  await github.rest.issues.removeLabel({ owner, repo, issue_number: n, name: 'stage:approval' }).catch(() => {});
-                }
-                console.log(`Issue #${n} → Production`);
-              }
-            } else {
-              await moveItem(pr.node_id);
-            }
+  # OPTIONAL: Uncomment when QA Agent (Variant B) is configured
+  # move-card-on-qa-pass:
+  #   name: qa:approved → Code Review / PR
+  #   if: github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'qa:approved'
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+  #   steps:
+  #     - name: Move linked issue to Code Review / PR
+  #       if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
+  #       uses: actions/github-script@v8
+  #       with:
+  #         github-token: ${{ env.PROJECT_TOKEN }}
+  #         script: |
+  #           const prNumber = context.payload.pull_request.number;
+  #           const { owner, repo } = context.repo;
+  #           const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+  #           const linkedIssues = [...(pr.body ?? '').matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)].map(m => parseInt(m[1]));
+  #           const moveItem = async (nodeId) => {
+  #             const { addProjectV2ItemById: { item } } = await github.graphql(`mutation($p:ID!,$c:ID!){addProjectV2ItemById(input:{projectId:$p,contentId:$c}){item{id}}}`, { p: process.env.PROJECT_ID, c: nodeId });
+  #             await github.graphql(`mutation($p:ID!,$i:ID!,$f:ID!,$v:ProjectV2FieldValue!){updateProjectV2ItemFieldValue(input:{projectId:$p,itemId:$i,fieldId:$f,value:$v}){projectV2Item{id}}}`, { p: process.env.PROJECT_ID, i: item.id, f: process.env.STATUS_FIELD_ID, v: { singleSelectOptionId: process.env.STATUS_CODE_REVIEW_PR } });
+  #           };
+  #           if (linkedIssues.length > 0) {
+  #             for (const n of linkedIssues) {
+  #               const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
+  #               await moveItem(issue.node_id);
+  #             }
+  #           } else { await moveItem(context.payload.pull_request.node_id); }
 
   cleanup-labels-on-close:
     name: Issue closed → strip stage/agent labels

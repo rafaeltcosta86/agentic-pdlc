@@ -9,30 +9,27 @@ on:
     types: [labeled, closed]
 
 jobs:
-  resolve-ids:
-    name: Resolve Board Column IDs
+  # Single dispatcher — f(event) → target column → move card
+  move-card:
+    name: Board Dispatcher
     if: github.event_name != 'issues' || github.event.action != 'closed'
     runs-on: ubuntu-latest
+    concurrency:
+      group: board-${{ github.event.issue.number }}-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     env:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
-    outputs:
-      project_id: ${{ steps.resolve.outputs.project_id }}
-      status_field_id: ${{ steps.resolve.outputs.status_field_id }}
-      status_brainstorming: ${{ steps.resolve.outputs.status_brainstorming }}
-      status_detailing: ${{ steps.resolve.outputs.status_detailing }}
-      status_approval: ${{ steps.resolve.outputs.status_approval }}
-      status_development: ${{ steps.resolve.outputs.status_development }}
-      status_code_review_pr: ${{ steps.resolve.outputs.status_code_review_pr }}
-      status_production: ${{ steps.resolve.outputs.status_production }}
+      PROJECT_ID: ${{ vars.PROJECT_ID }}
     steps:
-      - name: Resolve column IDs by name
-        id: resolve
-        if: ${{ env.PROJECT_TOKEN != '' && vars.PROJECT_ID != '' }}
+      - uses: actions/checkout@v5.0.1
+
+      - name: Resolve column IDs
+        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
           script: |
-            const projectId = '${{ vars.PROJECT_ID }}';
+            const projectId = process.env.PROJECT_ID;
             if (!projectId || projectId === '{{PROJECT_ID}}') {
               core.warning('vars.PROJECT_ID not set — board features disabled');
               return;
@@ -70,36 +67,17 @@ jobs:
               core.setFailed(`Required Status columns not found on board: ${missing.join(', ')}`);
               return;
             }
-            core.setOutput('project_id', projectId);
-            core.setOutput('status_field_id', statusField.id);
-            core.setOutput('status_brainstorming',  ids.brainstorming);
-            core.setOutput('status_detailing',      ids.detailing);
-            core.setOutput('status_approval',       ids.approval);
-            core.setOutput('status_development',    ids.development);
-            core.setOutput('status_code_review_pr', ids.code_review_pr);
-            core.setOutput('status_production',     ids.production);
+            core.exportVariable('STATUS_FIELD_ID',      statusField.id);
+            core.exportVariable('STATUS_BRAINSTORMING', ids.brainstorming);
+            core.exportVariable('STATUS_DETAILING',     ids.detailing);
+            core.exportVariable('STATUS_APPROVAL',      ids.approval);
+            core.exportVariable('STATUS_DEVELOPMENT',   ids.development);
+            core.exportVariable('STATUS_CODE_REVIEW_PR', ids.code_review_pr);
+            core.exportVariable('STATUS_PRODUCTION',    ids.production);
             console.log('✅ Board IDs resolved by name');
 
-  # Single dispatcher — f(event) → target column → move card
-  move-card:
-    name: Board Dispatcher
-    needs: [resolve-ids]
-    if: needs.resolve-ids.outputs.project_id != ''
-    runs-on: ubuntu-latest
-    env:
-      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
-      PROJECT_ID: ${{ needs.resolve-ids.outputs.project_id }}
-      STATUS_FIELD_ID: ${{ needs.resolve-ids.outputs.status_field_id }}
-      STATUS_BRAINSTORMING: ${{ needs.resolve-ids.outputs.status_brainstorming }}
-      STATUS_DETAILING: ${{ needs.resolve-ids.outputs.status_detailing }}
-      STATUS_APPROVAL: ${{ needs.resolve-ids.outputs.status_approval }}
-      STATUS_DEVELOPMENT: ${{ needs.resolve-ids.outputs.status_development }}
-      STATUS_CODE_REVIEW_PR: ${{ needs.resolve-ids.outputs.status_code_review_pr }}
-      STATUS_PRODUCTION: ${{ needs.resolve-ids.outputs.status_production }}
-    steps:
-      - uses: actions/checkout@v5.0.1
       - name: Dispatch board move
-        if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
+        if: ${{ env.PROJECT_TOKEN != '' && env.STATUS_FIELD_ID != '' }}
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ env.PROJECT_TOKEN }}
@@ -121,15 +99,24 @@ jobs:
             async function deriveMove() {
               const col = (key) => process.env[key];
 
-              // Issue labeled → stage column (uses shared classify logic)
+              // Issue labeled → re-fetch current labels → stage column
               if (eventName === 'issues' && action === 'labeled') {
-                const labelNames = (context.payload.issue.labels ?? []).map(l => l.name);
+                let issue;
+                try {
+                  ({ data: issue } = await github.rest.issues.get({
+                    owner, repo, issue_number: context.payload.issue.number
+                  }));
+                } catch (e) {
+                  if (e.status === 404) { console.log('Issue not found — skipping board move'); return null; }
+                  throw e;
+                }
+                const labelNames = issue.labels.map(l => l.name);
                 const columnKey = classifyItem(labelNames);
                 const targetStatusId = columnKey ? col(COLUMN_KEY_TO_ENV[columnKey]) : null;
                 if (!targetStatusId) return null;
                 return {
                   targetStatusId,
-                  nodeIds: [context.payload.issue.node_id],
+                  nodeIds: [issue.node_id],
                   issueNumbers: [],
                   stageLabelsToClear: [],
                   prLabelSwap: null,
@@ -140,15 +127,20 @@ jobs:
               if (eventName === 'pull_request' && (action === 'opened' || action === 'reopened')) {
                 const prNumber = context.payload.pull_request.number;
                 const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
-                const linkedIssues = [...(pr.body ?? '').matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)]
-                  .map(m => parseInt(m[1]));
+                const linkedIssues = [...new Set([...(pr.body ?? '').matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)]
+                  .map(m => parseInt(m[1])))];
                 const stageLabels = ['stage:development', 'stage:brainstorming', 'stage:detailing', 'jules'];
-
-                if (linkedIssues.length > 0) {
-                  const nodes = await Promise.all(linkedIssues.map(async n => {
+                const nodes = (await Promise.all(linkedIssues.map(async n => {
+                  try {
                     const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
                     return { nodeId: issue.node_id, issueNumber: n };
-                  }));
+                  } catch (e) {
+                    if (e.status === 404) { console.log(`Linked issue #${n} not found — skipping`); return null; }
+                    throw e;
+                  }
+                }))).filter(Boolean);
+
+                if (nodes.length > 0) {
                   return {
                     targetStatusId: col('STATUS_CODE_REVIEW_PR'),
                     nodeIds: nodes.map(n => n.nodeId),
@@ -171,14 +163,19 @@ jobs:
               if (eventName === 'pull_request_review' && context.payload.review.state === 'approved') {
                 const prNumber = context.payload.pull_request.number;
                 const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
-                const linkedIssues = [...(pr.body ?? '').matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)]
-                  .map(m => parseInt(m[1]));
-
-                if (linkedIssues.length > 0) {
-                  const nodes = await Promise.all(linkedIssues.map(async n => {
+                const linkedIssues = [...new Set([...(pr.body ?? '').matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)]
+                  .map(m => parseInt(m[1])))];
+                const nodes = (await Promise.all(linkedIssues.map(async n => {
+                  try {
                     const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
                     return { nodeId: issue.node_id, issueNumber: n };
-                  }));
+                  } catch (e) {
+                    if (e.status === 404) { console.log(`Linked issue #${n} not found — skipping`); return null; }
+                    throw e;
+                  }
+                }))).filter(Boolean);
+
+                if (nodes.length > 0) {
                   return {
                     targetStatusId: col('STATUS_CODE_REVIEW_PR'),
                     nodeIds: nodes.map(n => n.nodeId),
@@ -201,14 +198,19 @@ jobs:
               if (eventName === 'pull_request' && action === 'closed' && context.payload.pull_request.merged) {
                 const prNumber = context.payload.pull_request.number;
                 const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
-                const linkedIssues = [...(pr.body ?? '').matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)]
-                  .map(m => parseInt(m[1]));
-
-                if (linkedIssues.length > 0) {
-                  const nodes = await Promise.all(linkedIssues.map(async n => {
+                const linkedIssues = [...new Set([...(pr.body ?? '').matchAll(/(?:Closes?|Fixes?|Resolves?)\s+#(\d+)/gi)]
+                  .map(m => parseInt(m[1])))];
+                const nodes = (await Promise.all(linkedIssues.map(async n => {
+                  try {
                     const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
                     return { nodeId: issue.node_id, issueNumber: n };
-                  }));
+                  } catch (e) {
+                    if (e.status === 404) { console.log(`Linked issue #${n} not found — skipping`); return null; }
+                    throw e;
+                  }
+                }))).filter(Boolean);
+
+                if (nodes.length > 0) {
                   return {
                     targetStatusId: col('STATUS_PRODUCTION'),
                     nodeIds: nodes.map(n => n.nodeId),
@@ -266,9 +268,6 @@ jobs:
               }
             }
 
-            if (move.stageLabelsToClear.length > 0 && move.issueNumbers.length === 0) {
-              // no linked issue numbers tracked for stage-label events (issue is identified by nodeId only)
-            }
 
             if (move.prLabelSwap) {
               const { prNumber, remove, add } = move.prLabelSwap;
@@ -286,35 +285,27 @@ jobs:
   # OPTIONAL: Uncomment to enable architecture-violation → Idea
   # move-violation-to-board:
   #   name: architecture-violation → 💡 Idea
-  #   needs: [resolve-ids]
   #   if: github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'architecture-violation'
   #   runs-on: ubuntu-latest
   #   env:
   #     PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
-  #     PROJECT_ID: ${{ needs.resolve-ids.outputs.project_id }}
-  #     STATUS_FIELD_ID: ${{ needs.resolve-ids.outputs.status_field_id }}
-  #     STATUS_IDEA: ${{ needs.resolve-ids.outputs.status_idea }}
+  #     PROJECT_ID: ${{ vars.PROJECT_ID }}
   #   steps:
-  #     - name: Move issue to Idea
+  #     - name: Resolve and move to Idea
   #       if: ${{ env.PROJECT_TOKEN != '' && env.PROJECT_ID != '' }}
   #       uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
   #       with:
   #         github-token: ${{ env.PROJECT_TOKEN }}
   #         script: |
+  #           // Resolve Idea column ID dynamically
+  #           const projectId = process.env.PROJECT_ID;
+  #           const { node } = await github.graphql(`query($id:ID!){node(id:$id){...on ProjectV2{fields(first:20){nodes{...on ProjectV2SingleSelectField{id name options{id name}}}}}}}`, { id: projectId });
+  #           const statusField = node.fields.nodes.find(f => f.name === 'Status');
+  #           const ideaId = statusField?.options.find(o => o.name.includes('Idea'))?.id;
+  #           if (!ideaId) { core.setFailed('Idea column not found'); return; }
   #           const { issue: { number, node_id } } = context.payload;
-  #           const { addProjectV2ItemById: { item } } = await github.graphql(`
-  #             mutation($p: ID!, $c: ID!) {
-  #               addProjectV2ItemById(input: {projectId: $p, contentId: $c}) { item { id } }
-  #             }`, { p: process.env.PROJECT_ID, c: node_id });
-  #           await github.graphql(`
-  #             mutation($p: ID!, $i: ID!, $f: ID!, $v: ProjectV2FieldValue!) {
-  #               updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f, value: $v}) {
-  #                 projectV2Item { id }
-  #               }
-  #             }`, {
-  #               p: process.env.PROJECT_ID, i: item.id, f: process.env.STATUS_FIELD_ID,
-  #               v: { singleSelectOptionId: process.env.STATUS_IDEA }
-  #             });
+  #           const { addProjectV2ItemById: { item } } = await github.graphql(`mutation($p:ID!,$c:ID!){addProjectV2ItemById(input:{projectId:$p,contentId:$c}){item{id}}}`, { p: projectId, c: node_id });
+  #           await github.graphql(`mutation($p:ID!,$i:ID!,$f:ID!,$v:ProjectV2FieldValue!){updateProjectV2ItemFieldValue(input:{projectId:$p,itemId:$i,fieldId:$f,value:$v}){projectV2Item{id}}}`, { p: projectId, i: item.id, f: statusField.id, v: { singleSelectOptionId: ideaId } });
   #           console.log(`Issue #${number} moved to Idea`);
 
   cleanup-labels-on-close:
